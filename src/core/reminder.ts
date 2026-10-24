@@ -20,7 +20,7 @@ export function planReminder(feeds: Feed[], settings: Settings, now: number): Re
   if (at <= now) return null;
   return {
     at,
-    body: `It has been ${span(interval)} since ${babyName(settings)}'s last feed started. Last side: ${sideWord(endSide(last))}.`,
+    body: `It has been ${span(interval)} since ${babyName(settings)}'s last feed started. Ended on the ${sideWord(endSide(last))}.`,
   };
 }
 

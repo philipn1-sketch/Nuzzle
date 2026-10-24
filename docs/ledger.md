@@ -34,3 +34,21 @@ Confirmed all round 1 fixes. Verdict: one more pass. Ranked problems and what wa
 10. Cut the gap line on every History row. **Done.**
 
 The flow is now carried into the design stage, where a fresh critic rechecks every earlier item along with the screens.
+
+## Round 3: design and build (critic C, fresh, used the web preview and screenshots)
+
+Verdict: one more pass. Confirmed every round 1 and 2 item is built, except one regression and two likeness slips, all listed below.
+
+1. Undo on the "Started" snackbar after a switch threw the feed away for good. **Fixed:** any side tap hides that snackbar, and Undo on a start now shows "Feed discarded" with its own Undo.
+2. The snackbar was a bright cream block at night. **Fixed:** dark surface with a honey outline.
+3. Cyan switch knob in Settings (a Huckleberry colour and a default look). **Fixed:** replaced with the app's own On and Off control.
+4. Snackbar actions were 48 tall. **Fixed:** 56.
+5. Discard sat where Settings sits. **Fixed:** moved under the side buttons; Settings never moves.
+6. "Still feeding?" answers looked like loose text. **Fixed:** two filled 56 tall buttons.
+7. The due state only changed colour. **Fixed:** adds "Past your 2h reminder time" in words.
+8. Editor steppers shifted and sat hard left; sub minute feeds edited as 0. **Fixed:** steppers span the row with a fixed centre; any side with time shows at least 1 minute.
+9. History rows top aligned, repeated the number for one side feeds, last day under the button. **Fixed:** centred rows, "Left only" or "Right only", extra bottom room.
+10. Zero minute stretches in "L 0m then R 0m" and the reminder card arriving with the snackbar. **Fixed:** stretches under 30 seconds are left out; the card waits for the snackbar to go.
+11. At the largest text size the side buttons could be pushed off screen. **Fixed:** only the top part scrolls; the buttons are pinned.
+12. "Last side:" in the notification echoed Huckleberry, and the ask read like a suggested interval. **Fixed:** "Ended on the right."; "Want a reminder after each feed starts? You choose how long in Settings."
+13. Two near identical reminder labels. **Fixed:** the stepper is labelled "After".

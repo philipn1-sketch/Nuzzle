@@ -33,7 +33,8 @@ export const sideRuns = (f: Feed, now: number): { side: Side; ms: number }[] => 
     if (prev && prev.side === s.side) prev.ms += segMs(s, now);
     else runs.push({ side: s.side, ms: segMs(s, now) });
   }
-  return runs;
+  const real = runs.filter((r) => r.ms >= 30_000);
+  return real.length ? real : runs.slice(-1);
 };
 
 const live = (feeds: Feed[]) => feeds.filter((f) => f.deletedAt === null);
@@ -107,10 +108,12 @@ export interface FeedDraft {
   endedOn: Side;
 }
 
+const editorMinutes = (ms: number) => (ms <= 0 ? 0 : Math.max(1, Math.round(ms / 60_000)));
+
 export const draftFrom = (f: Feed, now: number): FeedDraft => ({
   start: feedStart(f),
-  leftMin: Math.round(sideMs(f, 'L', now) / 60_000),
-  rightMin: Math.round(sideMs(f, 'R', now) / 60_000),
+  leftMin: editorMinutes(sideMs(f, 'L', now)),
+  rightMin: editorMinutes(sideMs(f, 'R', now)),
   endedOn: endSide(f),
 });
 

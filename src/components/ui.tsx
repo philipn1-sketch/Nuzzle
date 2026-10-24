@@ -43,6 +43,17 @@ export function PrimaryButton({ label, onPress, hint, testID }: { label: string;
   );
 }
 
+/** A filled button for choices inside a card. */
+export function SecondaryButton({ label, onPress, testID, strong }: { label: string; onPress: () => void; testID?: string; strong?: boolean }) {
+  const p = usePalette();
+  return (
+    <Pressable testID={testID} onPress={onPress} accessibilityRole="button"
+      style={({ pressed }) => [styles.secondary, { backgroundColor: p.bg, borderColor: strong ? p.accent : 'transparent', opacity: pressed ? 0.75 : 1 }]}>
+      <T tone={strong ? 'accent' : 'ink'} style={{ textAlign: 'center' }}>{label}</T>
+    </Pressable>
+  );
+}
+
 /** A text button that is still a full 56 tall to hit. */
 export function QuietButton({ label, onPress, tone = 'muted', testID, style }: { label: string; onPress: () => void; tone?: Tone; testID?: string; style?: StyleProp<ViewStyle> }) {
   return (
@@ -121,14 +132,14 @@ export function SnackbarSlot() {
   return (
     <Animated.View
       accessibilityLiveRegion="polite"
-      style={[styles.snack, { backgroundColor: p.ink, opacity: y, transform: [{ translateY: y.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}
+      style={[styles.snack, { backgroundColor: p.surface, borderColor: p.accent, opacity: y, transform: [{ translateY: y.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}
     >
-      <Text style={[type.label, { color: p.bg, flex: 1, minWidth: 140 }]}>{snack.message}</Text>
+      <Text style={[type.body, { color: p.ink, flex: 1, minWidth: 140 }]}>{snack.message}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {snack.actions.map((a) => (
           <Pressable key={a.label} testID={`snack-${a.label.toLowerCase()}`} accessibilityRole="button" hitSlop={6}
             onPress={() => { hideSnack(); a.onPress(); }} style={styles.snackAction}>
-            <Text style={[type.body, { color: p.bg, textDecorationLine: 'underline' }]}>{a.label}</Text>
+            <Text style={[type.body, { color: p.accent, textDecorationLine: 'underline' }]}>{a.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -138,6 +149,7 @@ export function SnackbarSlot() {
 
 const styles = StyleSheet.create({
   primary: { minHeight: 60, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
+  secondary: { flexGrow: 1, flexBasis: 140, minHeight: TAP, borderRadius: radius.row, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m, paddingVertical: space.s },
   quiet: { minHeight: TAP, minWidth: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
   pill: { minHeight: TAP, minWidth: TAP, borderRadius: TAP / 2, paddingHorizontal: space.l, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.side, paddingVertical: space.s, gap: space.m, minHeight: TAP + space.l },
@@ -145,6 +157,6 @@ const styles = StyleSheet.create({
   topTitle: { flex: 1, textAlign: 'center' },
   choice: { flexDirection: 'row', borderWidth: 1.5, borderRadius: radius.row, overflow: 'hidden' },
   choiceItem: { flex: 1, minHeight: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
-  snack: { borderRadius: radius.row, paddingHorizontal: space.l, paddingVertical: space.s, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.s },
-  snackAction: { minHeight: 48, minWidth: TAP, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space.s },
+  snack: { borderRadius: radius.row, borderWidth: 1.5, paddingHorizontal: space.l, paddingVertical: space.s, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.s },
+  snackAction: { minHeight: TAP, minWidth: TAP, justifyContent: 'center', alignItems: 'center', paddingHorizontal: space.s },
 });

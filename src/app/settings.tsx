@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Linking, ScrollView, Share, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Linking, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { Stepper } from '../components/Stepper';
 import { Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
@@ -41,20 +41,16 @@ export default function SettingsScreen() {
         </Section>
 
         <Section label="Reminder">
-          <View style={styles.line}>
-            <T style={{ flex: 1 }}>Remind me after a feed starts</T>
-            <Switch
-              testID="reminders-switch"
-              value={settings.remindersOn}
-              onValueChange={(v) => updateSettings({ remindersOn: v, reminderAsked: true })}
-              trackColor={{ true: p.accent, false: line(p) }}
-              thumbColor={p.ink}
-              accessibilityLabel="Remind me after a feed starts"
-            />
-          </View>
+          <T>Remind me after a feed starts</T>
+          <Choice<'on' | 'off'>
+            label="Reminder"
+            value={settings.remindersOn ? 'on' : 'off'}
+            onChange={(v) => updateSettings({ remindersOn: v === 'on', reminderAsked: true })}
+            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+          />
           {settings.remindersOn && (
             <View style={{ gap: space.s }}>
-              <T tone="muted" style={type.label}>Remind me this long after a feed starts</T>
+              <T tone="muted" style={type.label}>After</T>
               <Stepper
                 label="Reminder time"
                 testID="interval"
@@ -120,6 +116,5 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.side, paddingBottom: space.xxl },
   section: { gap: space.m, paddingVertical: space.l, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
   input: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l },
-  line: { flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: TAP },
   left: { alignSelf: 'flex-start', paddingHorizontal: 0 },
 });

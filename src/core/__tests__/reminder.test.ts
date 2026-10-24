@@ -12,13 +12,13 @@ describe('reminder scheduling', () => {
   it('is set her interval after the last feed started', () => {
     const plan = planReminder([saved(0, 'R')], settings, T0 + 20 * MIN)!;
     expect(plan.at).toBe(T0 + 120 * MIN);
-    expect(plan.body).toBe("It has been 2h since Baby's last feed started. Last side: right.");
+    expect(plan.body).toBe("It has been 2h since Baby's last feed started. Ended on the right.");
   });
 
   it('uses her own interval and the baby name', () => {
     const plan = planReminder([saved(0, 'L')], { ...settings, intervalMin: 165, babyName: 'Daphne' }, T0)!;
     expect(plan.at).toBe(T0 + 165 * MIN);
-    expect(plan.body).toBe("It has been 2h 45m since Daphne's last feed started. Last side: left.");
+    expect(plan.body).toBe("It has been 2h 45m since Daphne's last feed started. Ended on the left.");
   });
 
   it('moves when a feed is edited', () => {

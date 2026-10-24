@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.s },
   btn: { width: TAP, height: TAP, borderRadius: radius.row, alignItems: 'center', justifyContent: 'center' },
   sign: { fontSize: 28, lineHeight: 32, fontWeight: '600' },
-  valueBox: { minWidth: 96, flexShrink: 1, alignItems: 'center', justifyContent: 'center', minHeight: TAP },
+  valueBox: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: TAP },
   input: { minWidth: 72, textAlign: 'center', borderBottomWidth: 2, paddingVertical: 4 },
 });

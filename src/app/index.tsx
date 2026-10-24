@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { SideButton, type SideState } from '../components/SideButton';
-import { Card, PillButton, PrimaryButton, QuietButton, Screen, SnackbarSlot, T, TopBar } from '../components/ui';
+import { Card, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import {
   activeFeed, dayKey, endSide, feedStart, groupByDay, isDue, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
@@ -32,7 +32,7 @@ export default function Home() {
     return suggested === side ? 'suggested' : 'rest';
   };
 
-  const showAsk = !active && last !== null && !settings.reminderAsked && permission === 'undetermined';
+  const showAsk = !active && last !== null && !settings.reminderAsked && permission === 'undetermined' && app.snack === null;
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
   const reminder = permission === 'granted' ? planReminder(feeds, settings, now) : null;
   const due = isDue(feeds, settings, now);
@@ -42,15 +42,9 @@ export default function Home() {
     <Screen>
       <TopBar
         left={<PillButton label="History" onPress={() => router.push('/history')} testID="open-history" />}
-        right={
-          active ? (
-            <QuietButton label="Discard" onPress={app.discard} testID="discard" />
-          ) : (
-            <PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />
-          )
-        }
+        right={<PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />}
       />
-      <ScrollView contentContainerStyle={styles.scroll} bounces={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
         <View style={styles.top}>
           {active ? (
             <Card style={styles.answer}>
@@ -70,6 +64,7 @@ export default function Home() {
               </T>
               {today && <T tone="muted" style={type.label}>Today so far: {today.count} {today.count === 1 ? 'feed' : 'feeds'}, L {mins(today.leftMs)}m, R {mins(today.rightMs)}m</T>}
               {reminder && <T tone="muted" style={type.label}>Reminder at {timeOf(reminder.at)}</T>}
+              {due && <T tone="accent" style={type.label}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>}
             </Card>
           ) : (
             <Card style={styles.answer}>
@@ -82,11 +77,10 @@ export default function Home() {
             <Card>
               <T style={type.title}>Still feeding?</T>
               <T tone="muted" style={[type.label, { marginTop: space.xs }]}>This feed has been going for {span(now - feedStart(active))}.</T>
-              <View style={styles.cardActions}>
-                <QuietButton label="Yes, still feeding" tone="accent" onPress={app.keepFeeding} testID="still-yes" />
-                <QuietButton
+              <View style={styles.cardButtons}>
+                <SecondaryButton label="Yes, still feeding" strong onPress={app.keepFeeding} testID="still-yes" />
+                <SecondaryButton
                   label="Save and fix the time"
-                  tone="ink"
                   testID="still-fix"
                   onPress={() => {
                     const saved = app.done();
@@ -99,34 +93,36 @@ export default function Home() {
 
           {showAsk && (
             <Card>
-              <T style={type.body}>Get a reminder {span(settings.intervalMin * 60_000)} after a feed starts?</T>
-              <View style={styles.cardActions}>
-                <QuietButton label="Turn on" tone="accent" onPress={app.askReminders} testID="reminders-on" />
-                <QuietButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true })} testID="reminders-not-now" />
+              <T style={type.body}>Want a reminder after each feed starts?</T>
+              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>You choose how long in Settings. It starts at {span(settings.intervalMin * 60_000)}.</T>
+              <View style={styles.cardButtons}>
+                <SecondaryButton label="Turn on" strong onPress={app.askReminders} testID="reminders-on" />
+                <SecondaryButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true })} testID="reminders-not-now" />
               </View>
             </Card>
           )}
         </View>
-
-        <View style={styles.bottom}>
-          <SnackbarSlot />
-          {active && <PrimaryButton label="Done" onPress={app.done} testID="done" hint="Stops and saves this feed" />}
-          <View style={styles.sides}>
-            {(['L', 'R'] as const).map((s) => (
-              <SideButton key={s} side={s} state={sideState(s)} ms={active ? sideMs(active, s, now) : null} onPress={() => app.tap(s)} />
-            ))}
-          </View>
-        </View>
       </ScrollView>
+
+      <View style={styles.bottom}>
+        <SnackbarSlot />
+        {active && <PrimaryButton label="Done" onPress={app.done} testID="done" hint="Stops and saves this feed" />}
+        <View style={styles.sides}>
+          {(['L', 'R'] as const).map((s) => (
+            <SideButton key={s} side={s} state={sideState(s)} ms={active ? sideMs(active, s, now) : null} onPress={() => app.tap(s)} />
+          ))}
+        </View>
+        {active && <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" style={{ alignSelf: 'center' }} />}
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: 'space-between', paddingHorizontal: space.side, gap: space.l },
+  scroll: { paddingHorizontal: space.side, paddingBottom: space.l },
   top: { gap: space.m, paddingTop: space.s },
   answer: { gap: space.xs, minHeight: 168, justifyContent: 'center' },
-  cardActions: { flexDirection: 'row', flexWrap: 'wrap', marginTop: space.s, marginHorizontal: -space.m },
-  bottom: { gap: space.m },
+  cardButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s, marginTop: space.l },
+  bottom: { gap: space.m, paddingHorizontal: space.side, paddingTop: space.s },
   sides: { flexDirection: 'row', gap: space.m },
 });

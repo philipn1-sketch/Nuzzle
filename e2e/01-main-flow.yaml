@@ -20,6 +20,7 @@ appId: com.philipnader.nuzzle
     id: "side-R"
 - assertVisible: "Feeding on the right"
 - assertVisible: "Tap to pause"
+- assertNotVisible: "Started on the left."
 - takeScreenshot: night-03-home-running
 - tapOn:
     id: "side-R"
@@ -41,8 +42,10 @@ appId: com.philipnader.nuzzle
     id: "done"
 - assertVisible: "Ended on the right"
 - assertVisible: "Start here"
-- assertVisible:
-    text: "Get a reminder.*"
+- extendedWaitUntil:
+    visible:
+      text: "Want a reminder.*"
+    timeout: 12000
 - takeScreenshot: night-06-home-ask-reminders
 - tapOn:
     id: "reminders-on"

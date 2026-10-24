@@ -50,7 +50,8 @@ export default function History() {
             );
           }
           const f = item.feed;
-          const runs = sideRuns(f, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ');
+          const sideList = sideRuns(f, now);
+          const runs = sideList.length === 1 ? `${sideList[0].side === 'L' ? 'Left' : 'Right'} only` : sideList.map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ');
           return (
             <Pressable
               testID={`feed-row-${f.id}`}
@@ -82,9 +83,9 @@ export default function History() {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: space.side, paddingBottom: space.xl, flexGrow: 1 },
+  list: { paddingHorizontal: space.side, paddingBottom: space.xxl * 2, flexGrow: 1 },
   dayHead: { paddingTop: space.xl, paddingBottom: space.s, paddingHorizontal: space.xs, gap: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.m, minHeight: 64, paddingHorizontal: space.l, paddingVertical: space.m },
+  row: { flexDirection: 'row', alignItems: 'center', alignContent: 'center', flexWrap: 'wrap', columnGap: space.m, rowGap: space.xs, minHeight: 64, paddingHorizontal: space.l, paddingVertical: space.m },
   rowFirst: { borderTopLeftRadius: radius.row, borderTopRightRadius: radius.row },
   rowLast: { borderBottomLeftRadius: radius.row, borderBottomRightRadius: radius.row },
   time: { minWidth: 84, fontVariant: ['tabular-nums'] },

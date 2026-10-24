@@ -122,8 +122,18 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       tick();
       if (!before) {
         showSnack(`Started on the ${sideWord(side)}.`, [
-          { label: 'Undo', onPress: () => commit([], [next.id]) },
+          {
+            label: 'Undo',
+            onPress: () => {
+              const current = feedsRef.current.find((f) => f.id === next.id) ?? next;
+              commit([], [next.id]);
+              showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([current]) }]);
+            },
+          },
         ]);
+      } else {
+        // a switch or pause makes the "Started" snackbar out of date
+        setSnack(null);
       }
     },
     [commit, showSnack],
