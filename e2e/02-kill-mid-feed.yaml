@@ -1,0 +1,8 @@
+# Starts a feed and closes the app. run.sh then kills it, moves the clock on an hour and runs 03.
+appId: com.philipnader.nuzzle
+---
+- launchApp
+- tapOn:
+    id: "side-L"
+- assertVisible: "Feeding on the left"
+- stopApp

@@ -1,0 +1,51 @@
+# Main flow: first launch, start, switch, pause, carry on, stop, Undo, stop again, reminder on.
+appId: com.philipnader.nuzzle
+---
+- launchApp:
+    clearState: true
+    permissions:
+      all: allow
+- assertVisible: "No feeds yet"
+- takeScreenshot: night-01-home-first-launch
+- tapOn:
+    id: "side-L"
+- assertVisible: "Feeding on the left"
+- assertVisible: "Started on the left."
+- takeScreenshot: night-02-home-started
+- waitForAnimationToEnd
+- extendedWaitUntil:
+    notVisible: "Started on the left."
+    timeout: 10000
+- tapOn:
+    id: "side-R"
+- assertVisible: "Feeding on the right"
+- assertVisible: "Tap to pause"
+- takeScreenshot: night-03-home-running
+- tapOn:
+    id: "side-R"
+- assertVisible: "Paused"
+- assertVisible: "Tap to carry on"
+- takeScreenshot: night-04-home-paused
+- tapOn:
+    id: "side-R"
+- assertVisible: "Feeding on the right"
+- tapOn:
+    id: "done"
+- assertVisible:
+    text: "Saved.*ended on the right."
+- takeScreenshot: night-05-home-just-saved
+- tapOn:
+    id: "snack-undo"
+- assertVisible: "Feeding on the right"
+- tapOn:
+    id: "done"
+- assertVisible: "Ended on the right"
+- assertVisible: "Start here"
+- assertVisible:
+    text: "Get a reminder.*"
+- takeScreenshot: night-06-home-ask-reminders
+- tapOn:
+    id: "reminders-on"
+- assertVisible:
+    text: "Reminder at.*"
+- takeScreenshot: night-07-home-idle

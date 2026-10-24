@@ -1,0 +1,68 @@
+# History, edit, delete with Undo, add a forgotten feed, settings, then the day theme.
+appId: com.philipnader.nuzzle
+---
+- launchApp
+- tapOn:
+    id: "open-history"
+- assertVisible: "History"
+- assertVisible: "Today"
+- takeScreenshot: night-09-history
+- tapOn:
+    id: "feed-row-.*"
+    index: 0
+- assertVisible: "Edit feed"
+- takeScreenshot: night-10-edit-feed
+- tapOn:
+    id: "left-more"
+- tapOn:
+    id: "save-feed"
+- assertVisible: "Feed updated."
+- tapOn:
+    id: "feed-row-.*"
+    index: 0
+- tapOn:
+    id: "delete-feed"
+- assertVisible: "Feed deleted."
+- takeScreenshot: night-11-history-just-deleted
+- tapOn:
+    id: "snack-undo"
+- tapOn:
+    id: "add-feed"
+- assertVisible: "Add a feed"
+- tapOn:
+    id: "save-feed"
+- assertVisible: "Add some minutes on at least one side."
+- takeScreenshot: night-12-add-feed-problem
+- tapOn:
+    id: "right-more"
+- tapOn:
+    id: "right-more"
+- repeat:
+    times: 3
+    commands:
+      - tapOn:
+          id: "time-less"
+- tapOn:
+    id: "save-feed"
+- tapOn:
+    id: "back"
+- tapOn:
+    id: "open-settings"
+- assertVisible: "Settings"
+- takeScreenshot: night-13-settings
+- tapOn: "Day"
+- takeScreenshot: day-13-settings
+- tapOn:
+    id: "back"
+- takeScreenshot: day-07-home-idle
+- tapOn:
+    id: "open-history"
+- takeScreenshot: day-09-history
+- tapOn:
+    id: "back"
+- tapOn:
+    id: "side-L"
+- takeScreenshot: day-03-home-running
+- tapOn:
+    id: "discard"
+- assertVisible: "Feed discarded."
