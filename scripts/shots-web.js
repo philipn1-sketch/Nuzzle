@@ -1,0 +1,111 @@
+// Screenshots every screen and state of the web preview, in night and day themes.
+// Usage: node scripts/shots-web.js <out dir> [only theme]
+const { chromium } = require('playwright');
+
+const MIN = 60_000;
+const URL = 'http://localhost:8790/';
+
+function sampleFeeds(now) {
+  const feeds = [];
+  let t = now - 95 * MIN;
+  const shapes = [[9, 7, 'R'], [12, 0, 'L'], [8, 10, 'L'], [0, 14, 'R'], [11, 9, 'R'], [10, 6, 'L'], [7, 12, 'R'], [13, 8, 'L'], [9, 9, 'R'], [6, 11, 'L']];
+  shapes.forEach(([l, r, ended], i) => {
+    const first = ended === 'L' ? 'R' : 'L';
+    const ms = { L: l * MIN, R: r * MIN };
+    const segs = [];
+    let s = t;
+    if (ms[first] > 0) { segs.push({ side: first, start: s, end: s + ms[first] }); s += ms[first]; }
+    segs.push({ side: ended, start: s, end: s + ms[ended] });
+    feeds.push({ id: `sample${i}`, status: 'saved', segments: segs, deletedAt: null });
+    t -= (130 + ((i * 37) % 60)) * MIN;
+  });
+  return feeds;
+}
+
+async function main() {
+  const out = process.argv[2];
+  const only = process.argv[3];
+  const b = await chromium.launch();
+  const errors = [];
+  for (const theme of only ? [only] : ['night', 'day']) {
+    const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: theme === 'night' ? 'dark' : 'light' });
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => errors.push(`${theme}: ${e.message}`));
+    const settings = (extra = {}) => ({ babyName: '', remindersOn: true, intervalMin: 120, theme, reminderAsked: true, ...extra });
+    const load = async (feeds, extra) => {
+      await p.goto(URL);
+      await p.evaluate(([f, s]) => {
+        localStorage.setItem('nuzzle.feeds', JSON.stringify(f));
+        localStorage.setItem('nuzzle.settings', JSON.stringify(s));
+      }, [feeds, settings(extra)]);
+      await p.goto(URL);
+      await p.waitForSelector('[data-testid="side-L"]');
+      await p.waitForTimeout(250);
+    };
+    const shot = async (name) => p.screenshot({ path: `${out}/${theme}-${name}.png` });
+    const now = Date.now();
+
+    await load([], { reminderAsked: false });
+    await shot('01-home-first-launch');
+
+    await load(sampleFeeds(now));
+    await shot('02-home-idle');
+
+    await p.click('[data-testid="side-L"]');
+    await p.waitForTimeout(300);
+    await shot('03-home-started-snackbar');
+    await p.waitForTimeout(2200);
+    await p.click('[data-testid="side-R"]');
+    await p.waitForTimeout(1300);
+    await shot('04-home-running');
+    await p.click('[data-testid="side-R"]');
+    await p.waitForTimeout(400);
+    await shot('05-home-paused');
+    await p.click('[data-testid="side-L"]');
+    await p.waitForTimeout(3000);
+    await p.click('[data-testid="done"]');
+    await p.waitForTimeout(400);
+    await shot('06-home-just-saved');
+
+    const old = sampleFeeds(now - 70 * MIN);
+    await load(old);
+    await shot('07-home-reminder-due');
+
+    await load(sampleFeeds(now), { reminderAsked: false });
+    await shot('08-home-ask-reminders');
+
+    const long = [...sampleFeeds(now - 200 * MIN), { id: 'running', status: 'running', segments: [{ side: 'L', start: now - 160 * MIN, end: null }], deletedAt: null }];
+    await load(long);
+    await shot('09-home-still-feeding');
+
+    await load(sampleFeeds(now));
+    await p.click('[data-testid="open-history"]');
+    await p.waitForTimeout(400);
+    await shot('10-history');
+    await p.click('[data-testid="feed-row-sample1"]');
+    await p.waitForTimeout(400);
+    await shot('11-edit-feed');
+    await p.click('[data-testid="cancel"]');
+    await p.waitForTimeout(300);
+    await p.click('[data-testid="add-feed"]');
+    await p.waitForTimeout(400);
+    await shot('12-add-feed');
+    await p.click('[data-testid="save-feed"]');
+    await p.waitForTimeout(300);
+    await shot('13-add-feed-problem');
+
+    await load([]);
+    await p.click('[data-testid="open-history"]');
+    await p.waitForTimeout(400);
+    await shot('14-history-empty');
+
+    await load(sampleFeeds(now), { babyName: 'Daphne' });
+    await p.click('[data-testid="open-settings"]');
+    await p.waitForTimeout(400);
+    await shot('15-settings');
+    await ctx.close();
+  }
+  await b.close();
+  console.log(errors.length ? errors.join('\n') : 'no page errors');
+}
+main();
