@@ -157,9 +157,13 @@ describe('editing', () => {
     expect(checkDraft(d, moved, [paused, other], T0 + 200 * MIN)).toEqual({ overlaps: other });
   });
 
+  it('refuses a feed that would end later than now', () => {
+    expect(check({ start: T0, leftMin: 300, rightMin: 0, endedOn: 'L' }, [], T0 + 30 * MIN)).toBe('ends-later');
+  });
+
   it('counts the feed being timed right now', () => {
     const running = tapSide(null, 'L', T0 + 50 * MIN, id);
-    expect(check({ start: T0 + 40 * MIN, leftMin: 15, rightMin: 0, endedOn: 'L' }, [running], T0 + 60 * MIN)).toEqual({ overlaps: running });
+    expect(check({ start: T0 + 40 * MIN, leftMin: 15, rightMin: 0, endedOn: 'L' }, [running], T0 + 70 * MIN)).toEqual({ overlaps: running });
   });
 });
 

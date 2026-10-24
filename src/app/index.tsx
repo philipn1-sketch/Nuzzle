@@ -28,7 +28,7 @@ export default function Home() {
 
   const sideState = (side: Side): SideState => {
     if (active) {
-      if (active.status === 'paused') return 'paused';
+      if (active.status === 'paused') return endSide(active) === side ? 'paused' : 'switch';
       return runningSide(active) === side ? 'running' : 'switch';
     }
     return suggested === side ? 'suggested' : 'rest';
@@ -49,11 +49,14 @@ export default function Home() {
         <View style={styles.top}>
           {active ? (
             <Card style={styles.answer}>
-              <T tone="muted" style={type.label}>{active.status === 'paused' ? 'Paused' : `Feeding on the ${sideWord(endSide(active))}`}</T>
+              <T tone="muted" style={type.label}>{active.status === 'paused' ? `Paused on the ${sideWord(endSide(active))}` : `Feeding on the ${sideWord(endSide(active))}`}</T>
               <T testID="timer" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]} accessibilityLabel={`Fed for ${span(totalMs(active, now))}`}>
                 {clock(totalMs(active, now))}
               </T>
-              <T tone="muted" style={type.label}>Started at {timeOf(feedStart(active))}</T>
+              <View style={styles.cardFoot}>
+                <T tone="muted" style={[type.label, { flex: 1 }]}>Started at {timeOf(feedStart(active))}</T>
+                <QuietButton label="Discard" onPress={app.discard} testID="discard" style={{ marginRight: -space.m }} />
+              </View>
             </Card>
           ) : last ? (
             <Card style={styles.answer}>
@@ -115,7 +118,6 @@ export default function Home() {
             <SideButton key={s} side={s} state={sideState(s)} ms={active ? sideMs(active, s, now) : null} onPress={() => app.tap(s)} />
           ))}
         </View>
-        {active && <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" style={{ alignSelf: 'center' }} />}
       </View>
     </Screen>
   );
@@ -125,6 +127,7 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: space.side, paddingBottom: space.l },
   top: { gap: space.m, paddingTop: space.s },
   answer: { gap: space.xs, minHeight: 168, justifyContent: 'center' },
+  cardFoot: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   cardButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s, marginTop: space.l },
   bottom: { gap: space.m, paddingHorizontal: space.side, paddingTop: space.s },
   sides: { flexDirection: 'row', gap: space.m },

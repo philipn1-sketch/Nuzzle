@@ -58,7 +58,7 @@ const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slic
 function runningText(f: Feed): string {
   const now = Date.now();
   if (f.status === 'paused') {
-    return `Feed paused. Left ${mins(sideMs(f, 'L', now))}m, right ${mins(sideMs(f, 'R', now))}m.`;
+    return `Paused on the ${sideWord(endSide(f))}. Left ${mins(sideMs(f, 'L', now))}m, right ${mins(sideMs(f, 'R', now))}m.`;
   }
   return `Feeding on the ${sideWord(endSide(f))} since ${timeOf(f.segments[f.segments.length - 1].start)}.`;
 }
@@ -114,8 +114,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     notify.showRunningNotice(a ? runningText(a) : null).catch(() => {});
   }, [feeds, settings, permission, foreground]);
 
+  const lastTap = useRef({ side: 'L' as Side, at: 0 });
+
   const tap = useCallback(
     (side: Side) => {
+      // half asleep, a double tap is one tap: ignore a second tap on the same side within 0.6 s
+      if (lastTap.current.side === side && Date.now() - lastTap.current.at < 600) return;
+      lastTap.current = { side, at: Date.now() };
       const before = activeFeed(feedsRef.current);
       const next = tapSide(before, side, Date.now(), newId);
       commit([next]);

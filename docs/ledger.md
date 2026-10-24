@@ -65,3 +65,12 @@ Verdict: one more pass. Passed the 3 am test from a cold start; every round 1 to
 6. The ring on the suggested side could be read as "last side" by a Huckleberry user. **Fixed:** "Start here" is title sized in honey, and the card says "Ended on the right" in large type.
 7. Lock screen time was the feed's start after a switch; editor capped at 180; the Day step moved an hour on daylight saving weekends; flow.md had the old notification text. **Fixed:** time of the current side; cap 300; calendar day steps; doc updated.
 8. Complexity: `expo-constants` only shows a version. **Kept:** Expo Router requires it anyway, so it costs nothing extra. CSV export uses no extra library, so it stays.
+
+## Round 5: full recheck (critic E, fresh, drove the preview and read the code)
+
+Verdict: one more pass. Confirmed: kill mid feed loses nothing (running or paused), Done then Undo is exact, overlaps are caught, delete then Undo works, every round 1 to 4 item is built, no dashes, no bright white, nothing like Huckleberry, no clutter.
+
+1. A double tap on "Start here" could hit "Discard this feed", which appeared where the buttons had been. **Fixed:** the side buttons never move (Discard now sits inside the timer card, and Done and the snackbar grow upward above the buttons), and a second tap on the same side within 0.6 s is ignored.
+2. Typing a number in the editor added to the old value ("121 min"). **Fixed:** the number is selected when the field opens, so typing replaces it.
+3. Paused didn't say which side. **Fixed:** "Paused on the left", "Carry on here" on that side, and the lock screen notice says the side too.
+4. A typed in feed could end later than now. **Fixed:** refused with "With those minutes it would end later than now."; new unit test.

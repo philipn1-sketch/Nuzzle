@@ -157,7 +157,7 @@ export function applyDraft(original: Feed, d: FeedDraft, now: number): Feed {
   return { ...feedFromDraft(d, original.id), deletedAt: original.deletedAt };
 }
 
-export type DraftProblem = 'empty' | 'future' | { overlaps: Feed };
+export type DraftProblem = 'empty' | 'future' | 'ends-later' | { overlaps: Feed };
 
 /**
  * Checks a feed before it is saved from the editor. `candidate` is the feed as it would be stored,
@@ -168,6 +168,7 @@ export function checkDraft(d: FeedDraft, candidate: Feed, feeds: Feed[], now: nu
   if (d.start > now) return 'future';
   const start = feedStart(candidate);
   const end = feedEnd(candidate, now);
+  if (end > now) return 'ends-later';
   const clash = live(feeds).find((f) => f.id !== candidate.id && feedStart(f) < end && feedEnd(f, now) > start);
   return clash ? { overlaps: clash } : null;
 }

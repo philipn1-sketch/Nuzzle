@@ -75,6 +75,7 @@ export function Stepper({
         {onType && typing !== null ? (
           <TextInput
             autoFocus
+            selectTextOnFocus
             keyboardType="number-pad"
             value={typing}
             onChangeText={(t) => setTyping(t.replace(/[^0-9]/g, '').slice(0, 3))}

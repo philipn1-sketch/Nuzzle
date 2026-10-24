@@ -21,26 +21,31 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Feeding on the right"
 - assertVisible: "Tap to pause"
 - assertNotVisible: "Started on the left."
+- extendedWaitUntil:
+    visible:
+      id: "side-R"
+      text: ".*0:0[1-9].*"
+    timeout: 5000
 - takeScreenshot: night-03-home-running
 - tapOn:
     id: "side-R"
-- assertVisible: "Paused"
-- assertVisible: "Tap to carry on"
+- assertVisible: "Paused on the right"
+- assertVisible: "Carry on here"
 - takeScreenshot: night-04-home-paused
 - tapOn:
-    id: "side-R"
-- assertVisible: "Feeding on the right"
+    id: "side-L"
+- assertVisible: "Feeding on the left"
 - tapOn:
     id: "done"
 - assertVisible:
-    text: "Saved.*ended on the right."
+    text: "Saved.*ended on the left."
 - takeScreenshot: night-05-home-just-saved
 - tapOn:
     id: "snack-undo"
-- assertVisible: "Feeding on the right"
+- assertVisible: "Feeding on the left"
 - tapOn:
     id: "done"
-- assertVisible: "Ended on the right"
+- assertVisible: "Ended on the left"
 - assertVisible: "Start here"
 - extendedWaitUntil:
     visible:

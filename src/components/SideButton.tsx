@@ -7,13 +7,14 @@ import { radius, space, type } from '../theme';
 import { T } from './ui';
 
 export type SideState = 'rest' | 'suggested' | 'running' | 'switch' | 'paused';
+// paused: the side she paused on; the other side shows 'switch'
 
 const STATUS: Record<SideState, string> = {
   rest: ' ',
   suggested: 'Start here',
   running: 'Tap to pause',
   switch: 'Tap to switch',
-  paused: 'Tap to carry on',
+  paused: 'Carry on here',
 };
 
 /** One of the two big start buttons: a tall rounded block with a large letter. */

@@ -42,6 +42,7 @@ export default function FeedEditor() {
     }
     if (result === 'empty') setProblem('Add some minutes on at least one side.');
     else if (result === 'future') setProblem('The start time is later than now.');
+    else if (result === 'ends-later') setProblem('With those minutes it would end later than now.');
     else setProblem(`That overlaps the feed at ${timeOf(feedStart(result.overlaps))}.`);
   };
 
