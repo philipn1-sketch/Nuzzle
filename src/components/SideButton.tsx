@@ -39,10 +39,11 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
       ]}
     >
       <T tone={fg} style={styles.letter} allowFontScaling={false}>{side}</T>
-      <T tone={fg} style={type.title}>{sideName(side)}</T>
+      <T tone={fg} style={type.title} maxFontSizeMultiplier={1.6}>{sideName(side)}</T>
       <View style={styles.meta}>
-        {ms !== null && <T tone={fg} style={[type.title, { fontVariant: ['tabular-nums'] }]}>{clock(ms)}</T>}
-        <T tone={running ? 'onAccent' : state === 'suggested' ? 'accent' : 'muted'} style={[type.label, { textAlign: 'center' }]}>{status}</T>
+        {ms !== null && <T tone={fg} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.6} style={[type.title, { fontVariant: ['tabular-nums'] }]}>{clock(ms)}</T>}
+        <T tone={running ? 'onAccent' : state === 'suggested' ? 'accent' : 'muted'} maxFontSizeMultiplier={1.6}
+          style={[state === 'suggested' ? type.title : type.label, { textAlign: 'center' }]}>{status}</T>
       </View>
     </Pressable>
   );

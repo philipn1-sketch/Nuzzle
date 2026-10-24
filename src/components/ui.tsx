@@ -70,7 +70,7 @@ export function PillButton({ label, onPress, testID, a11yLabel }: { label: strin
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11yLabel ?? label}
       style={({ pressed }) => [styles.pill, { backgroundColor: p.surface, opacity: pressed ? 0.75 : 1 }]}>
-      <T>{label}</T>
+      <T maxFontSizeMultiplier={1.5} numberOfLines={1}>{label}</T>
     </Pressable>
   );
 }

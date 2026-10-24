@@ -8,7 +8,7 @@ describe('formatting', () => {
     expect(clock(3_725_000)).toBe('1:02:05');
     expect(span(100 * 60_000)).toBe('1h 40m');
     expect(span(120 * 60_000)).toBe('2h');
-    expect(span(30_000)).toBe('under a minute');
+    expect(span(30_000)).toBe('just now');
   });
 
   it('exports saved feeds oldest first as CSV', () => {

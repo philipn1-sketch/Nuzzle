@@ -2,6 +2,7 @@ import {
   activeFeed, applyDraft, checkDraft, draftFrom, endSide, feedFromDraft, finishFeed, groupByDay, isDue,
   lastSaved, looksForgotten, sideMs, sideRuns, sinceLastStartMs, suggestedSide, tapSide, totalMs,
 } from '../feeds';
+import type { FeedDraft } from '../feeds';
 import type { Feed, Settings } from '../types';
 
 const MIN = 60_000;
@@ -134,13 +135,31 @@ describe('editing', () => {
     expect(f.segments).toHaveLength(1);
   });
 
+  const check = (d: FeedDraft, feeds: Feed[], now: number, id = 'new') => checkDraft(d, feedFromDraft(d, id), feeds, now);
+
   it('refuses empty, future and overlapping feeds', () => {
     const a = saved(0, 10, 10, 'R');
-    expect(checkDraft({ start: T0, leftMin: 0, rightMin: 0, endedOn: 'L' }, [a], null, T0 + MIN)).toBe('empty');
-    expect(checkDraft({ start: T0 + 5 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], null, T0)).toBe('future');
-    expect(checkDraft({ start: T0 + 15 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], null, T0 + 99 * MIN)).toEqual({ overlaps: a });
-    expect(checkDraft({ start: T0 + 15 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], a.id, T0 + 99 * MIN)).toBeNull();
-    expect(checkDraft({ start: T0 + 20 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], null, T0 + 99 * MIN)).toBeNull();
+    expect(check({ start: T0, leftMin: 0, rightMin: 0, endedOn: 'L' }, [a], T0 + MIN)).toBe('empty');
+    expect(check({ start: T0 + 5 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], T0)).toBe('future');
+    expect(check({ start: T0 + 15 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], T0 + 99 * MIN)).toEqual({ overlaps: a });
+    expect(check({ start: T0 + 15 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], T0 + 99 * MIN, a.id)).toBeNull();
+    expect(check({ start: T0 + 20 * MIN, leftMin: 5, rightMin: 0, endedOn: 'L' }, [a], T0 + 99 * MIN)).toBeNull();
+  });
+
+  it('counts the pauses inside a moved feed when checking for overlaps', () => {
+    let f = tapSide(null, 'L', T0, id);
+    f = tapSide(f, 'L', T0 + 10 * MIN, id); // pause 30 min
+    f = tapSide(f, 'R', T0 + 40 * MIN, id);
+    const paused = finishFeed(f, T0 + 50 * MIN)!;
+    const other = saved(100, 10, 0, 'L'); // 4:40 to 4:50
+    const d = { ...draftFrom(paused, T0), start: T0 + 60 * MIN }; // moved an hour later: R now runs 4:40 to 4:50
+    const moved = applyDraft(paused, d, T0 + 200 * MIN);
+    expect(checkDraft(d, moved, [paused, other], T0 + 200 * MIN)).toEqual({ overlaps: other });
+  });
+
+  it('counts the feed being timed right now', () => {
+    const running = tapSide(null, 'L', T0 + 50 * MIN, id);
+    expect(check({ start: T0 + 40 * MIN, leftMin: 15, rightMin: 0, endedOn: 'L' }, [running], T0 + 60 * MIN)).toEqual({ overlaps: running });
   });
 });
 

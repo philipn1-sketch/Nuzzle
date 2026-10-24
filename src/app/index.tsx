@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SideButton, type SideState } from '../components/SideButton';
 import { Card, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import {
-  activeFeed, dayKey, endSide, feedStart, groupByDay, isDue, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
+  activeFeed, endSide, feedStart, isDue, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
 import { clock, mins, sideWord, span, timeOf } from '../core/format';
 import { babyName, planReminder } from '../core/reminder';
@@ -12,6 +12,8 @@ import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { space, type } from '../theme';
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 /** Home answers "which side was last" and "how long since the last feed", and starts a feed in one tap. */
 export default function Home() {
@@ -36,7 +38,6 @@ export default function Home() {
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
   const reminder = permission === 'granted' ? planReminder(feeds, settings, now) : null;
   const due = isDue(feeds, settings, now);
-  const today = groupByDay(feeds, now).find((g) => g.key === dayKey(now)) ?? null;
 
   return (
     <Screen>
@@ -49,7 +50,7 @@ export default function Home() {
           {active ? (
             <Card style={styles.answer}>
               <T tone="muted" style={type.label}>{active.status === 'paused' ? 'Paused' : `Feeding on the ${sideWord(endSide(active))}`}</T>
-              <T testID="timer" style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]} accessibilityLabel={`Fed for ${span(totalMs(active, now))}`}>
+              <T testID="timer" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]} accessibilityLabel={`Fed for ${span(totalMs(active, now))}`}>
                 {clock(totalMs(active, now))}
               </T>
               <T tone="muted" style={type.label}>Started at {timeOf(feedStart(active))}</T>
@@ -57,14 +58,16 @@ export default function Home() {
           ) : last ? (
             <Card style={styles.answer}>
               <T tone="muted" style={type.label}>Since {name}&apos;s last feed started</T>
-              <T testID="since" style={[type.answer, { color: due ? p.accent : p.ink }]}>{span(now - feedStart(last))}</T>
+              <T testID="since" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.answer, { color: due ? p.accent : p.ink }]}>{cap(span(now - feedStart(last)))}</T>
               <T testID="last-side" style={type.title}>Ended on the {sideWord(endSide(last))}</T>
               <T tone="muted" style={[type.label, { marginTop: space.s }]}>
                 Last feed at {timeOf(feedStart(last))}: {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
               </T>
-              {today && <T tone="muted" style={type.label}>Today so far: {today.count} {today.count === 1 ? 'feed' : 'feeds'}, L {mins(today.leftMs)}m, R {mins(today.rightMs)}m</T>}
-              {reminder && <T tone="muted" style={type.label}>Reminder at {timeOf(reminder.at)}</T>}
-              {due && <T tone="accent" style={type.label}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>}
+              {due ? (
+                <T tone="accent" style={type.label}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
+              ) : (
+                reminder && <T tone="muted" style={type.label}>Reminder at {timeOf(reminder.at)}</T>
+              )}
             </Card>
           ) : (
             <Card style={styles.answer}>
@@ -97,7 +100,7 @@ export default function Home() {
               <T tone="muted" style={[type.label, { marginTop: space.xs }]}>You choose how long in Settings. It starts at {span(settings.intervalMin * 60_000)}.</T>
               <View style={styles.cardButtons}>
                 <SecondaryButton label="Turn on" strong onPress={app.askReminders} testID="reminders-on" />
-                <SecondaryButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true })} testID="reminders-not-now" />
+                <SecondaryButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true, remindersOn: false })} testID="reminders-not-now" />
               </View>
             </Card>
           )}

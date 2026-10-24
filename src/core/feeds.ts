@@ -159,14 +159,16 @@ export function applyDraft(original: Feed, d: FeedDraft, now: number): Feed {
 
 export type DraftProblem = 'empty' | 'future' | { overlaps: Feed };
 
-/** Checks a draft before saving. Returns null when it is fine. */
-export function checkDraft(d: FeedDraft, feeds: Feed[], editingId: string | null, now: number): DraftProblem | null {
+/**
+ * Checks a feed before it is saved from the editor. `candidate` is the feed as it would be stored,
+ * so pauses inside it count. The feed being timed right now counts as running until now.
+ */
+export function checkDraft(d: FeedDraft, candidate: Feed, feeds: Feed[], now: number): DraftProblem | null {
   if (d.leftMin <= 0 && d.rightMin <= 0) return 'empty';
   if (d.start > now) return 'future';
-  const end = d.start + (d.leftMin + d.rightMin) * 60_000;
-  const clash = live(feeds).find(
-    (f) => f.id !== editingId && f.status === 'saved' && feedStart(f) < end && feedEnd(f, now) > d.start,
-  );
+  const start = feedStart(candidate);
+  const end = feedEnd(candidate, now);
+  const clash = live(feeds).find((f) => f.id !== candidate.id && feedStart(f) < end && feedEnd(f, now) > start);
   return clash ? { overlaps: clash } : null;
 }
 

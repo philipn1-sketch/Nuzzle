@@ -52,3 +52,16 @@ Verdict: one more pass. Confirmed every round 1 and 2 item is built, except one 
 11. At the largest text size the side buttons could be pushed off screen. **Fixed:** only the top part scrolls; the buttons are pinned.
 12. "Last side:" in the notification echoed Huckleberry, and the ask read like a suggested interval. **Fixed:** "Ended on the right."; "Want a reminder after each feed starts? You choose how long in Settings."
 13. Two near identical reminder labels. **Fixed:** the stepper is labelled "After".
+
+## Round 4: full recheck (critic D, fresh, drove the preview with Playwright and read the code)
+
+Verdict: one more pass. Passed the 3 am test from a cold start; every round 1 to 3 item built, with one regression. Kill, restart, Done then Undo all sound. Nothing looks like Huckleberry.
+
+1. Overlap check missed pauses inside a moved feed and ignored the feed being timed. **Fixed:** the check uses the feed's real segments and includes the running feed; two new unit tests.
+2. At the largest text size the timer clipped to a wrong number and top bar pills cut off. **Fixed:** big numbers shrink to fit on one line; pills and side button labels have a size ceiling.
+3. Short feeds showed "0 min" and "under a minute". **Fixed:** any time on a side shows at least 1 minute everywhere; "Just now".
+4. "Not now" left reminders on. **Fixed:** it turns them off; Settings can turn them back on.
+5. Home card too busy. **Fixed:** "Today so far" removed (History has it); the reminder and due lines share one line.
+6. The ring on the suggested side could be read as "last side" by a Huckleberry user. **Fixed:** "Start here" is title sized in honey, and the card says "Ended on the right" in large type.
+7. Lock screen time was the feed's start after a switch; editor capped at 180; the Day step moved an hour on daylight saving weekends; flow.md had the old notification text. **Fixed:** time of the current side; cap 300; calendar day steps; doc updated.
+8. Complexity: `expo-constants` only shows a version. **Kept:** Expo Router requires it anyway, so it costs nothing extra. CSV export uses no extra library, so it stays.

@@ -12,7 +12,6 @@ import { line, space, type } from '../../theme';
 import { usePalette } from '../../state/theme';
 
 const MIN = 60_000;
-const DAY = 86_400_000;
 
 /** Edit a saved feed, or add one she forgot to time. */
 export default function FeedEditor() {
@@ -33,7 +32,7 @@ export default function FeedEditor() {
     setProblem(null);
     setDraft((d) => ({ ...d, ...patch }));
   };
-  const clampMin = (n: number) => Math.max(0, Math.min(180, n));
+  const clampMin = (n: number) => Math.max(0, Math.min(300, n));
 
   const save = () => {
     const result = saveDraft(draft, existing?.id ?? null);
@@ -61,8 +60,9 @@ export default function FeedEditor() {
             testID="day"
             display={dayLabel(day0, now)}
             onStep={(dir) => {
-              const next = draft.start + dir * DAY;
-              if (next <= now + MIN) set({ start: next });
+              const d = new Date(draft.start);
+              d.setDate(d.getDate() + dir); // a calendar day, so daylight saving changes don't move the time
+              if (d.getTime() <= now + MIN) set({ start: d.getTime() });
             }}
           />
         </Row>

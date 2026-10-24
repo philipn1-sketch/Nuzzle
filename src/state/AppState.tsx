@@ -4,7 +4,7 @@ import { AppState as RNAppState } from 'react-native';
 
 import { REMINDER_DEFAULT_MIN } from '../config';
 import {
-  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, feedStart, finishFeed, sideMs, tapSide, totalMs,
+  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
 import { mins, sideName, sideWord, timeOf } from '../core/format';
@@ -60,7 +60,7 @@ function runningText(f: Feed): string {
   if (f.status === 'paused') {
     return `Feed paused. Left ${mins(sideMs(f, 'L', now))}m, right ${mins(sideMs(f, 'R', now))}m.`;
   }
-  return `Feeding on the ${sideWord(endSide(f))} since ${timeOf(feedStart(f))}.`;
+  return `Feeding on the ${sideWord(endSide(f))} since ${timeOf(f.segments[f.segments.length - 1].start)}.`;
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
@@ -172,10 +172,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const saveDraft = useCallback(
     (draft: FeedDraft, editingId: string | null): DraftProblem | null => {
       const now = Date.now();
-      const problem = checkDraft(draft, feedsRef.current, editingId, now);
-      if (problem) return problem;
       const original = editingId ? feedsRef.current.find((f) => f.id === editingId) : undefined;
       const feed = original ? applyDraft(original, draft, now) : feedFromDraft(draft, newId());
+      const problem = checkDraft(draft, feed, feedsRef.current, now);
+      if (problem) return problem;
       commit([feed]);
       showSnack(original ? 'Feed updated.' : `Feed added. ${sideName(endSide(feed))} side last.`);
       return null;
