@@ -6,7 +6,7 @@ import { Card, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, 
 import {
   activeFeed, endSide, feedStart, isDue, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
-import { clock, mins, sideWord, span, timeOf } from '../core/format';
+import { clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
 import { babyName, planReminder } from '../core/reminder';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
@@ -37,7 +37,7 @@ export default function Home() {
   const showAsk = !active && last !== null && !settings.reminderAsked && permission === 'undetermined' && app.snack === null;
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
   const reminder = permission === 'granted' ? planReminder(feeds, settings, now) : null;
-  const due = isDue(feeds, settings, now);
+  const due = settings.remindersOn && isDue(feeds, settings, now);
 
   return (
     <Screen>
@@ -50,7 +50,7 @@ export default function Home() {
           {active ? (
             <Card style={styles.answer}>
               <T tone="muted" style={type.label}>{active.status === 'paused' ? `Paused on the ${sideWord(endSide(active))}` : `Feeding on the ${sideWord(endSide(active))}`}</T>
-              <T testID="timer" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]} accessibilityLabel={`Fed for ${span(totalMs(active, now))}`}>
+              <T testID="timer" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]} accessibilityLabel={`Fed for ${spanWords(totalMs(active, now))}`}>
                 {clock(totalMs(active, now))}
               </T>
               <View style={styles.cardFoot}>
@@ -61,9 +61,10 @@ export default function Home() {
           ) : last ? (
             <Card style={styles.answer}>
               <T tone="muted" style={type.label}>Since {name}&apos;s last feed started</T>
-              <T testID="since" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.answer, { color: due ? p.accent : p.ink }]}>{cap(span(now - feedStart(last)))}</T>
+              <T testID="since" accessibilityLabel={spanWords(now - feedStart(last))} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.4} style={[type.answer, { color: due ? p.accent : p.ink }]}>{cap(span(now - feedStart(last)))}</T>
               <T testID="last-side" style={type.title}>Ended on the {sideWord(endSide(last))}</T>
-              <T tone="muted" style={[type.label, { marginTop: space.s }]}>
+              <T tone="muted" style={[type.label, { marginTop: space.s }]}
+                accessibilityLabel={`Last feed at ${timeOf(feedStart(last))}: ${sideRuns(last, now).map((r) => `${sideWord(r.side)} ${mins(r.ms)} minutes`).join(', then ')}`}>
                 Last feed at {timeOf(feedStart(last))}: {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
               </T>
               {due ? (

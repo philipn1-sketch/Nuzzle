@@ -24,6 +24,8 @@ appId: com.philipnader.nuzzle
     id: "delete-feed"
 - assertVisible: "Feed deleted."
 - takeScreenshot: night-11-history-just-deleted
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: "snack-undo"
 - tapOn:

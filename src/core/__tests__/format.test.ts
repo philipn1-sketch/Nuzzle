@@ -1,6 +1,6 @@
 import { feedFromDraft } from '../feeds';
 import { feedsToCsv } from '../csv';
-import { clock, span } from '../format';
+import { clock, span, spanWords } from '../format';
 
 describe('formatting', () => {
   it('shows timers and spans without dashes', () => {
@@ -9,6 +9,8 @@ describe('formatting', () => {
     expect(span(100 * 60_000)).toBe('1h 40m');
     expect(span(120 * 60_000)).toBe('2h');
     expect(span(30_000)).toBe('just now');
+    expect(spanWords(100 * 60_000)).toBe('1 hour 40 minutes');
+    expect(spanWords(61 * 60_000)).toBe('1 hour 1 minute');
   });
 
   it('exports saved feeds oldest first as CSV', () => {

@@ -82,3 +82,13 @@ Verdict: one more pass. Confirmed: kill mid feed loses nothing (running or pause
 | Daily summary | One line per day header in History, computed from the feeds already loaded. No new screen, setting or library. | Kept |
 | Timer on the lock screen | One extra notification through expo-notifications, which the reminder already needs. A true live counting Live Activity would need a native iPhone extension; the notice states the side and start time instead. | Kept, as a notice |
 | Export to CSV | React Native's built in Share sheet with the CSV as text. No file or sharing library. One button in Settings. | Kept |
+
+## Round 6: full recheck (critic F, fresh)
+
+Verdict: one more pass. Confirmed: 30 unit tests pass, running and paused feeds survive a reload, a fast L then R switches inside one feed, every round 1 to 5 fix is built, warm dark palette, no dashes, nothing like Huckleberry.
+
+1. A double tap on Done could land on the snackbar's Undo, which appears where Done was, and silently reopen the feed. **Fixed:** snackbar buttons ignore taps in their first 0.6 seconds.
+2. Typed minutes could be lost on a real phone (no return key on the iPhone number pad; Save doesn't blur the field), and the keyboard could cover Save. **Fixed:** the value is saved as she types, and the editor moves up with the keyboard.
+3. "Past your 2h reminder time" showed with reminders off. **Fixed:** the due line and its honey colour only appear when reminders are on.
+4. Screen readers would read "1h 40m" oddly. **Fixed:** big numbers, side buttons and the last feed line have spoken labels in full words ("1 hour 40 minutes", "left 10 minutes").
+5. "Left side last" echoed Huckleberry. **Fixed:** "Feed added. Ended on the left."

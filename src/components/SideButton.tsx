@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { clock, sideName } from '../core/format';
+import { clock, sideName, spanWords } from '../core/format';
 import type { Side } from '../core/types';
 import { usePalette } from '../state/theme';
 import { radius, space, type } from '../theme';
@@ -28,7 +28,7 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
       testID={`side-${side}`}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${sideName(side)} side${ms !== null ? `, ${clock(ms)}` : ''}`}
+      accessibilityLabel={`${sideName(side)} side${ms !== null ? `, ${spanWords(ms)}` : ''}`}
       accessibilityHint={status.trim() || 'Starts a feed on this side'}
       style={({ pressed }) => [
         styles.button,

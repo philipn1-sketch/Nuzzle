@@ -116,9 +116,11 @@ export function SnackbarSlot() {
   const p = usePalette();
   const { snack, hideSnack } = useApp();
   const y = useRef(new Animated.Value(0)).current;
+  const shownAt = useRef(0);
 
   useEffect(() => {
     if (!snack) return;
+    shownAt.current = Date.now();
     let reduce = false;
     AccessibilityInfo.isReduceMotionEnabled().then((r) => (reduce = r)).catch(() => {});
     y.setValue(reduce ? 1 : 0);
@@ -138,7 +140,12 @@ export function SnackbarSlot() {
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {snack.actions.map((a) => (
           <Pressable key={a.label} testID={`snack-${a.label.toLowerCase()}`} accessibilityRole="button" hitSlop={6}
-            onPress={() => { hideSnack(); a.onPress(); }} style={styles.snackAction}>
+            onPress={() => {
+              // a double tap on Done would otherwise land here and undo the save unseen
+              if (Date.now() - shownAt.current < 600) return;
+              hideSnack();
+              a.onPress();
+            }} style={styles.snackAction}>
             <Text style={[type.body, { color: p.accent, textDecorationLine: 'underline' }]}>{a.label}</Text>
           </Pressable>
         ))}

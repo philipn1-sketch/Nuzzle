@@ -20,6 +20,18 @@ export function span(ms: number): string {
   return r === 0 ? `${h}h` : `${h}h ${r}m`;
 }
 
+/** The same as span, in full words for screen readers: "1 hour 40 minutes". */
+export function spanWords(ms: number): string {
+  const m = Math.floor(Math.abs(ms) / 60_000);
+  if (m < 1) return 'just now';
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  const hours = h === 1 ? '1 hour' : `${h} hours`;
+  const minutes = r === 1 ? '1 minute' : `${r} minutes`;
+  if (h === 0) return minutes;
+  return r === 0 ? hours : `${hours} ${minutes}`;
+}
+
 /** Whole minutes, rounded, for feed lengths. */
 export const mins = (ms: number): number => (ms <= 0 ? 0 : Math.max(1, Math.round(ms / 60_000)));
 

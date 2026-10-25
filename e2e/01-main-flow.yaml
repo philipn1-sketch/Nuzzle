@@ -40,6 +40,8 @@ appId: com.philipnader.nuzzle
 - assertVisible:
     text: "Saved.*ended on the left."
 - takeScreenshot: night-05-home-just-saved
+- waitForAnimationToEnd:
+    timeout: 2000
 - tapOn:
     id: "snack-undo"
 - assertVisible: "Feeding on the left"

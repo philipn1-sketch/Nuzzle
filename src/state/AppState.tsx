@@ -7,7 +7,7 @@ import {
   activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
-import { mins, sideName, sideWord, timeOf } from '../core/format';
+import { mins, sideWord, timeOf } from '../core/format';
 import { planReminder } from '../core/reminder';
 import type { Feed, Settings, Side } from '../core/types';
 import * as db from '../data/db';
@@ -182,7 +182,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const problem = checkDraft(draft, feed, feedsRef.current, now);
       if (problem) return problem;
       commit([feed]);
-      showSnack(original ? 'Feed updated.' : `Feed added. ${sideName(endSide(feed))} side last.`);
+      showSnack(original ? 'Feed updated.' : `Feed added. Ended on the ${sideWord(endSide(feed))}.`);
       return null;
     },
     [commit, showSnack],

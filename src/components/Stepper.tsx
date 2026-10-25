@@ -78,15 +78,14 @@ export function Stepper({
             selectTextOnFocus
             keyboardType="number-pad"
             value={typing}
-            onChangeText={(t) => setTyping(t.replace(/[^0-9]/g, '').slice(0, 3))}
-            onBlur={() => {
-              if (typing !== '') onType(Number(typing));
-              setTyping(null);
+            onChangeText={(t) => {
+              const digits = t.replace(/[^0-9]/g, '').slice(0, 3);
+              setTyping(digits);
+              // saved as she types: the iPhone number pad has no return key, and Save doesn't blur the field
+              onType(digits === '' ? 0 : Number(digits));
             }}
-            onSubmitEditing={() => {
-              if (typing !== '') onType(Number(typing));
-              setTyping(null);
-            }}
+            onBlur={() => setTyping(null)}
+            onSubmitEditing={() => setTyping(null)}
             style={[type.title, styles.input, { color: p.ink, borderColor: p.accent }]}
             accessibilityLabel={`Type ${label.toLowerCase()}`}
           />
