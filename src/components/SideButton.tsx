@@ -29,8 +29,9 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
       testID={`side-${side}`}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${sideName(side)} side${ms !== null ? `, ${spanWords(ms)}` : ''}`}
-      accessibilityHint={state === 'rest' ? 'Starts a feed on this side' : STATUS[state]}
+      // VoiceOver reads the button as one item, so its status goes in the label: "Right side, Tap to pause, 2 minutes"
+      accessibilityLabel={`${sideName(side)} side, ${STATUS[state]}${ms !== null ? `, ${spanWords(ms)}` : ''}`}
+      accessibilityHint={state === 'rest' ? 'Starts a feed on this side' : undefined}
       style={({ pressed }) => [
         styles.button,
         {

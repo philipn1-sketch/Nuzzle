@@ -5,7 +5,7 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "open-history"
 - assertVisible: "History"
-- assertVisible: "Today"
+- assertVisible: "Today.*"
 - takeScreenshot: night-09-history
 - tapOn:
     id: "feed-row-.*"
@@ -19,7 +19,7 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "save-feed"
 - assertVisible: "Feed updated."
-- assertVisible: "15m"
+- assertVisible: ".*left 15 minutes.*"
 - tapOn:
     id: "feed-row-.*"
     index: 0

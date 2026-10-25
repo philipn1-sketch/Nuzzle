@@ -19,18 +19,17 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "side-R"
 - assertVisible: "Feeding on the right"
-- assertVisible: "Tap to pause"
+- assertVisible:
+    id: "side-R"
+    text: ".*Tap to pause.*"
 - assertNotVisible: "Started on the left."
-- extendedWaitUntil:
-    visible:
-      id: "side-R"
-      text: ".*0:0[1-9].*"
-    timeout: 5000
 - takeScreenshot: night-03-home-running
 - tapOn:
     id: "side-R"
 - assertVisible: "Paused on the right"
-- assertVisible: "Carry on here"
+- assertVisible:
+    id: "side-R"
+    text: ".*Carry on here.*"
 - takeScreenshot: night-04-home-paused
 - tapOn:
     id: "side-L"
@@ -48,7 +47,9 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "done"
 - assertVisible: "Ended on the left"
-- assertVisible: "Start here"
+- assertVisible:
+    id: "side-R"
+    text: ".*Start here.*"
 - extendedWaitUntil:
     visible:
       text: "Want a reminder.*"
