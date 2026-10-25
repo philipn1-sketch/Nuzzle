@@ -95,12 +95,26 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Feed discarded."
 # Siri and the Shortcuts app open these links
 - openLink: "nuzzle://action?do=R"
+- tapOn:
+    text: "Open"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "timer"
     timeout: 10000
 - assertVisible: "Feeding on the right"
 - openLink: "nuzzle://action?do=R"
+- tapOn:
+    text: "Open"
+    optional: true
 - assertVisible: "Feeding on the right"
+# a feed under five seconds is treated as a mistap, so let it run a little
+- extendedWaitUntil:
+    visible: "this text never appears"
+    timeout: 6000
+    optional: true
 - openLink: "nuzzle://action?do=done"
+- tapOn:
+    text: "Open"
+    optional: true
 - assertVisible: "Saved.*"
