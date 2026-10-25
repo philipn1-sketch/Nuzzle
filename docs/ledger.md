@@ -74,3 +74,11 @@ Verdict: one more pass. Confirmed: kill mid feed loses nothing (running or pause
 2. Typing a number in the editor added to the old value ("121 min"). **Fixed:** the number is selected when the field opens, so typing replaces it.
 3. Paused didn't say which side. **Fixed:** "Paused on the left", "Carry on here" on that side, and the lock screen notice says the side too.
 4. A typed in feed could end later than now. **Fixed:** refused with "With those minutes it would end later than now."; new unit test.
+
+## Nice to haves: complexity check
+
+| Feature | Cost | Verdict |
+|---|---|---|
+| Daily summary | One line per day header in History, computed from the feeds already loaded. No new screen, setting or library. | Kept |
+| Timer on the lock screen | One extra notification through expo-notifications, which the reminder already needs. A true live counting Live Activity would need a native iPhone extension; the notice states the side and start time instead. | Kept, as a notice |
+| Export to CSV | React Native's built in Share sheet with the CSV as text. No file or sharing library. One button in Settings. | Kept |
