@@ -104,9 +104,6 @@ appId: com.philipnader.nuzzle
     timeout: 10000
 - assertVisible: "Feeding on the right"
 - openLink: "nuzzle://action?do=R"
-- tapOn:
-    text: "Open"
-    optional: true
 - assertVisible: "Feeding on the right"
 # a feed under five seconds is treated as a mistap, so let it run a little
 - extendedWaitUntil:
@@ -114,7 +111,6 @@ appId: com.philipnader.nuzzle
     timeout: 6000
     optional: true
 - openLink: "nuzzle://action?do=done"
-- tapOn:
-    text: "Open"
-    optional: true
-- assertVisible: "Saved.*"
+- extendedWaitUntil:
+    visible: "Ended on the right"
+    timeout: 10000
