@@ -193,9 +193,13 @@ export default function EntryEditor() {
               />
             </Row>
           )}
-          {problem && <T accessibilityLiveRegion="polite" style={[type.body, { textDecorationLine: 'underline' }]}>{problem}</T>}
         </ScrollView>
         <View style={styles.bottom}>
+          {problem && (
+            <View style={[styles.problem, { backgroundColor: p.surface, borderColor: line(p) }]}>
+              <T accessibilityLiveRegion="polite" style={type.body}>{problem}</T>
+            </View>
+          )}
           {!quickNappy && <PrimaryButton label="Save" onPress={save} testID="save-entry" />}
           {existing && (
             <QuietButton
@@ -227,6 +231,7 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.side, paddingBottom: space.xl, gap: space.s },
   row: { gap: space.s, paddingVertical: space.m, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
   bottom: { paddingHorizontal: space.side, gap: space.xs },
+  problem: { borderRadius: radius.row, borderWidth: 1.5, paddingHorizontal: space.l, paddingVertical: space.m },
   big: { minHeight: 72, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center' },
   note: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l, paddingVertical: space.m, textAlignVertical: 'top' },
   left: { alignSelf: 'flex-start', paddingHorizontal: 0 },

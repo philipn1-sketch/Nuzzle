@@ -1,6 +1,6 @@
 import { feedsToCsv } from '../csv';
 import {
-  applyDraft, checkDraft, draftFrom, feedFromDraft, lastBreast, lastSaved, suggestedSide, tapSide, weekDays,
+  applyDraft, checkDraft, draftFrom, feedFromDraft, fitToNow, lastBreast, lastSaved, suggestedSide, tapSide, weekDays,
 } from '../feeds';
 import { ageText, amount, fromOz, toOz } from '../format';
 import { activeBaby, feedsOf, planReminder } from '../reminder';
@@ -49,6 +49,18 @@ describe('bottle feeds', () => {
     expect(amount(90, 'ml')).toBe('90 ml');
     expect(amount(90, 'oz')).toBe('3 oz');
     expect(toOz(fromOz(4.5))).toBe(4.5);
+  });
+});
+
+describe('typed minutes that run past now', () => {
+  it('move the start back so the feed ends now, and leave a feed that fits alone', () => {
+    const now = T0 + 5 * MIN;
+    const d = { start: T0, leftMin: 15, rightMin: 0, endedOn: 'L' as const };
+    expect(fitToNow(d, now)).toEqual({ ...d, start: T0 - 10 * MIN });
+    expect(fitToNow({ ...d, leftMin: 5 }, now)).toBeNull();
+    expect(fitToNow({ ...d, kind: 'bottle', amountMl: 90 }, now)).toBeNull();
+    const fitted = fitToNow(d, now)!;
+    expect(checkDraft(fitted, feedFromDraft(fitted, 'x'), [], now)).toBeNull();
   });
 });
 

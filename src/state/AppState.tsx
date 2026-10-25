@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState as RNAppState } from 'react-native';
 
 import {
-  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, runningSide, sideMs, tapSide, totalMs,
+  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
@@ -310,13 +310,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     (draft: FeedDraft, editingId: string | null): DraftProblem | null => {
       const now = Date.now();
       const original = editingId ? feedsRef.current.find((f) => f.id === editingId) : undefined;
-      const feed = original ? applyDraft(original, draft, now) : feedFromDraft(draft, newId());
-      const problem = checkDraft(draft, feed, feedsRef.current, now);
+      const build = (d: FeedDraft) => (original ? applyDraft(original, d, now) : feedFromDraft(d, newId()));
+      let feed = build(draft);
+      let problem = checkDraft(draft, feed, feedsRef.current, now);
+      let moved = '';
+      if (problem === 'ends-later') {
+        // she typed how long it lasted: it started earlier than shown, so it ends now
+        const fitted = fitToNow(draft, now);
+        if (fitted) {
+          feed = build(fitted);
+          problem = checkDraft(fitted, feed, feedsRef.current, now);
+          moved = ` Start moved to ${timeOf(fitted.start)} so it ends now.`;
+        }
+      }
       if (problem) return problem;
       commit([feed]);
-      if (original) showSnack(feed.bottle ? 'Bottle updated.' : 'Feed updated.');
+      if (original) showSnack(`${feed.bottle ? 'Bottle updated.' : 'Feed updated.'}${moved}`);
       else if (feed.bottle) showSnack(`Bottle added. ${amount(feed.bottle.amountMl, settings.units)}.`);
-      else showSnack(`Feed added. Ended on the ${sideWord(endSide(feed))}.`);
+      else showSnack(`Feed added. Ended on the ${sideWord(endSide(feed))}.${moved}`);
       return null;
     },
     [commit, showSnack, settings.units],

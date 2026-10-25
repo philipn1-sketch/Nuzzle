@@ -189,6 +189,17 @@ export function applyDraft(original: Feed, d: FeedDraft, now: number): Feed {
   return { ...feedFromDraft(d, original.id), ...keep };
 }
 
+/**
+ * Typed in minutes that would run past now almost always mean the feed really started earlier,
+ * so the start moves back until it ends now. Returns null when the draft already fits.
+ */
+export function fitToNow(d: FeedDraft, now: number): FeedDraft | null {
+  if (d.kind === 'bottle') return null;
+  const total = (d.leftMin + d.rightMin) * 60_000;
+  if (total <= 0 || d.start + total <= now) return null;
+  return { ...d, start: Math.floor((now - total) / 60_000) * 60_000 };
+}
+
 export type DraftProblem = 'empty' | 'future' | 'ends-later' | { overlaps: Feed };
 
 /**

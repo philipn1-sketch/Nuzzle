@@ -164,3 +164,8 @@ Verdict: one more pass. Two must fix, five should fix, all done:
 6. A Watch tap made while the iPhone app was closed was lost. **Fixed:** taps queue until the app listens, and the app listens before reading the queue.
 7. No size limits on the sync function. **Fixed:** limits on payload, babies list and rows per family; bad ids and change times are ignored.
 Nits fixed: reminders are scheduled one call at a time; the CSV can't run formulas and handles line breaks.
+
+## Found on her iPhone (Philip, testing)
+
+1. Typing 15 minutes into a recent feed wouldn't save. The feed would have ended later than now, so it was refused, and the message sat under the keyboard, so nothing seemed to happen. **Fixed:** typed minutes that run past now move the start back so the feed ends now, saved with "Start moved to 2:31 PM so it ends now."; any other problem shows right above Save; Save closes the keyboard first. Unit test added.
+2. Holding plus kept counting by itself. The repeat only stopped on a normal finger lift, and iPhone can take the touch away without one (the keyboard closing or the list moving under the finger). **Fixed:** the repeat stops on lift, cancel or a lost touch, checks it is still held before every step, never runs past 6 seconds, and pressing a button ends typing first so the number shown is the one saved.

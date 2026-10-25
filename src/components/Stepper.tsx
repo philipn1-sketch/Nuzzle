@@ -23,18 +23,27 @@ export function Stepper({
   const [typing, setTyping] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const started = useRef(0);
+  // true only while a finger is on + or −; the repeat checks it every step
+  const held = useRef(false);
   const stepRef = useRef(onStep);
   stepRef.current = onStep;
 
   const stop = () => {
+    held.current = false;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   };
   useEffect(() => stop, []);
 
+  // Holding repeats, speeding up after a second. It stops the moment the finger lifts or the touch is
+  // taken away (the keyboard closing or the list moving can do that without a normal lift on iPhone),
+  // and after 6 seconds at most, so it can never run on by itself.
   const hold = (dir: 1 | -1) => {
+    stop();
+    held.current = true;
     started.current = Date.now();
     const loop = () => {
+      if (!held.current || Date.now() - started.current > 6000) return stop();
       stepRef.current(dir, Date.now() - started.current > 1200);
       timer.current = setTimeout(loop, 110);
     };
@@ -49,8 +58,15 @@ export function Stepper({
       onPress={() => stepRef.current(dir, false)}
       onLongPress={() => {}}
       delayLongPress={350}
-      onPressIn={() => hold(dir)}
+      onPressIn={() => {
+        // a typed number gives way to the buttons, so what shows is what is saved
+        setTyping(null);
+        hold(dir);
+      }}
       onPressOut={stop}
+      onTouchEnd={stop}
+      onTouchCancel={stop}
+      onResponderTerminate={stop}
       style={({ pressed }) => [styles.btn, { backgroundColor: p.surface, opacity: pressed ? 0.7 : 1 }]}
     >
       <T style={styles.sign}>{dir > 0 ? '+' : '−'}</T>

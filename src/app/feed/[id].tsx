@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { Stepper } from '../../components/Stepper';
 import { Choice, PillButton, PrimaryButton, QuietButton, Screen, T, TopBar } from '../../components/ui';
@@ -46,6 +46,7 @@ export default function FeedEditor() {
     set({ amountMl: clampMl(oz ? fromOz(toOz(ml) + dir * (fast ? 1 : 0.5)) : Math.round(ml / 10) * 10 + dir * (fast ? 30 : 10)) });
 
   const save = () => {
+    Keyboard.dismiss();
     const result = saveDraft(draft, existing?.id ?? null);
     if (!result) {
       router.back();
@@ -151,9 +152,13 @@ export default function FeedEditor() {
             style={[type.body, styles.note, { color: p.ink, backgroundColor: p.surface }]}
           />
         </Row>
-        {problem && <T accessibilityLiveRegion="polite" style={[type.body, { textDecorationLine: 'underline' }]}>{problem}</T>}
       </ScrollView>
       <View style={styles.bottom}>
+        {problem && (
+          <View style={[styles.problem, { backgroundColor: p.surface, borderColor: line(p) }]}>
+            <T accessibilityLiveRegion="polite" style={type.body}>{problem}</T>
+          </View>
+        )}
         <PrimaryButton label="Save" onPress={save} testID="save-feed" />
         {existing && (
           <QuietButton
@@ -185,5 +190,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.side, paddingBottom: space.xl, gap: space.s },
   row: { gap: space.s, paddingVertical: space.m, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
   bottom: { paddingHorizontal: space.side, gap: space.xs },
+  problem: { borderRadius: radius.row, borderWidth: 1.5, paddingHorizontal: space.l, paddingVertical: space.m },
   note: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l, paddingVertical: space.m, textAlignVertical: 'top' },
 });
