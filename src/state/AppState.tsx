@@ -9,7 +9,9 @@ import {
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
-import type { Baby, Feed, Settings, Side } from '../core/types';
+import type { Baby, Entry, Feed, Nappy, Settings, Side } from '../core/types';
+import { checkEntry, entriesOf, inQuiet, nappyWord, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
+import { span } from '../core/format';
 import { activityProps, glanceProps } from '../core/glance';
 import * as db from '../data/db';
 import * as glance from '../services/glance';
@@ -36,6 +38,16 @@ interface AppStateValue {
   allFeeds: Feed[];
   settings: Settings;
   baby: Baby;
+  /** Nappies, pumping, growth and sleep for the baby being shown (pumping for every baby). */
+  entries: Entry[];
+  allEntries: Entry[];
+  /** Saves a new or edited entry; returns a problem to show instead when it can't be saved. */
+  saveEntry: (e: Entry) => EntryProblem | null;
+  removeEntry: (id: string) => void;
+  /** One tap from Home. */
+  logNappy: (n: Nappy, at?: number) => void;
+  /** Starts a sleep, or wakes her when one is running. */
+  toggleSleep: () => void;
   permission: notify.Permission;
   /** When the phone actually has the next reminder queued, read back after scheduling. */
   scheduledAt: number | null;
@@ -113,6 +125,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => migrateSettings(db.loadSettings()));
   const baby = activeBaby(settings);
   const feeds = useMemo(() => feedsOf(allFeeds, settings, baby.id), [allFeeds, settings, baby.id]);
+  const [allEntries, setAllEntries] = useState<Entry[]>(() => db.loadEntries());
+  const entries = useMemo(() => entriesOf(allEntries, settings, baby.id), [allEntries, settings, baby.id]);
   const [permission, setPermission] = useState<notify.Permission>('undetermined');
   const [snack, setSnack] = useState<Snack | null>(null);
   const [scheduledAt, setScheduledAt] = useState<number | null>(null);
@@ -127,6 +141,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   allRef.current = allFeeds;
   const babyRef = useRef(baby);
   babyRef.current = baby;
+  const allEntriesRef = useRef(allEntries);
+  allEntriesRef.current = allEntries;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   /** Writes the changed feeds to the phone first, then shows them. A new feed belongs to the baby on screen. */
   const commit = useCallback((changed: Feed[], removedIds: string[] = []) => {
@@ -176,13 +194,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     for (const b of settings.babies) {
       const mine = feedsOf(allFeeds, settings, b.id);
       const plan = planReminder(mine, settings, now, babyName(b));
-      if (plan) plans.push({ babyId: b.id, ...plan });
+      if (plan) plans.push({ babyId: b.id, ...plan, silent: inQuiet(plan.at, settings.quiet) });
       const a = activeFeed(mine);
       notices.push({ babyId: b.id, text: a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null });
     }
     // the home screen widget follows the baby on screen; the lock screen timer follows a running feed
     const shown = glanceProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), settings.units, now);
-    glance.updateWidget(shown);
+    const others = settings.babies
+      .filter((b) => b.id !== baby.id)
+      .map((b) => ({ ...glanceProps(feedsOf(allFeeds, settings, b.id), babyName(b), settings.units, now), babyId: b.id }));
+    glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others] });
+    glance.offerBabies(settings.babies);
     // the same numbers go to the Watch and to Siri
     nuzzleNative.setGlance(JSON.stringify(shown));
     const timing = [baby, ...settings.babies]
@@ -197,7 +219,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-    const clock = settings.clockReminders.map((c) => ({ ...c, body: `Your ${clockTime(c.hour, c.minute)} reminder.` }));
+    const clock = settings.clockReminders.map((c) => ({
+      ...c,
+      body: `Your ${clockTime(c.hour, c.minute)} reminder.`,
+      silent: inQuiet(new Date(2000, 0, 1, c.hour, c.minute).getTime(), settings.quiet),
+    }));
     notify
       .syncReminders(plans, clock)
       .then(() => notify.pendingReminderAt(baby.id))
@@ -354,14 +380,84 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // ---------- nappies, pumping, growth, sleep ----------
+
+  /** Writes changed entries to the phone first, then shows them. A new entry belongs to the baby on screen. */
+  const commitEntries = useCallback((changed: Entry[], removedIds: string[] = []) => {
+    const now = Date.now();
+    const stamped = changed.map((e) => {
+      const before = allEntriesRef.current.find((x) => x.id === e.id);
+      const babyId = e.kind === 'pump' ? undefined : (e.babyId ?? before?.babyId ?? babyRef.current.id);
+      return { ...e, ...(babyId ? { babyId } : {}), updatedAt: now };
+    });
+    for (const e of stamped) db.putEntry(e);
+    for (const id of removedIds) db.removeEntry(id);
+    const ids = new Set([...stamped.map((e) => e.id), ...removedIds]);
+    const next = [...allEntriesRef.current.filter((e) => !ids.has(e.id)), ...stamped];
+    allEntriesRef.current = next;
+    setAllEntries(next);
+  }, []);
+
+  const saveEntry = useCallback(
+    (e: Entry): EntryProblem | null => {
+      const problem = checkEntry(e, Date.now());
+      if (problem) return problem;
+      const existed = allEntriesRef.current.some((x) => x.id === e.id);
+      commitEntries([e]);
+      const words = { nappy: 'Nappy', pump: 'Pumping', growth: 'Measurement', sleep: 'Sleep' }[e.kind];
+      showSnack(`${words} ${existed ? 'updated' : 'saved'}.`);
+      return null;
+    },
+    [commitEntries, showSnack],
+  );
+
+  const removeEntry = useCallback(
+    (id: string) => {
+      const e = allEntriesRef.current.find((x) => x.id === id);
+      if (!e) return;
+      commitEntries([{ ...e, deletedAt: Date.now() }]);
+      showSnack('Deleted.', [{ label: 'Undo', onPress: () => commitEntries([{ ...e, deletedAt: null }]) }]);
+    },
+    [commitEntries, showSnack],
+  );
+
+  const logNappy = useCallback(
+    (n: Nappy, at?: number) => {
+      const e: Entry = { id: newId(), type: 'entry', kind: 'nappy', nappy: n, at: Math.min(at ?? Date.now(), Date.now()), deletedAt: null };
+      commitEntries([e]);
+      tick();
+      showSnack(`${nappyWord(n)} nappy at ${timeOf(e.at)}.`, [
+        { label: 'Undo', onPress: () => commitEntries([{ ...e, deletedAt: Date.now() }]) },
+        { label: 'Edit', onPress: () => router.push(`/entry/${e.id}`) },
+      ]);
+    },
+    [commitEntries, showSnack],
+  );
+
+  const toggleSleep = useCallback(() => {
+    const now = Date.now();
+    const running = runningSleep(entriesOf(allEntriesRef.current, settingsRef.current, babyRef.current.id));
+    tick();
+    if (running) {
+      const woke = wakeUp(running, now);
+      commitEntries([woke]);
+      showSnack(`Awake. Slept ${span(sleepMs(woke, now))}.`, [
+        { label: 'Undo', onPress: () => commitEntries([running]) },
+        { label: 'Edit', onPress: () => router.push(`/entry/${woke.id}`) },
+      ]);
+    } else {
+      const s = newSleep(now, newId());
+      commitEntries([s]);
+      showSnack('Sleep started.', [{ label: 'Undo', onPress: () => commitEntries([{ ...s, deletedAt: Date.now() }]) }]);
+    }
+  }, [commitEntries, showSnack]);
+
   // ---------- sync ----------
 
   const [progress, setProgress] = useState<SyncProgress | null>(() => db.getValue<SyncProgress>('sync'));
   const progressRef = useRef(progress);
   progressRef.current = progress;
   const [syncState, setSyncState] = useState<SyncStatus['state']>(progress ? 'syncing' : 'off');
-  const settingsRef = useRef(settings);
-  settingsRef.current = settings;
   const busy = useRef(false);
   const again = useRef(false);
 
@@ -371,15 +467,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setProgress(p);
   };
 
-  /** Feeds from the other phone go straight in, keeping their own change times. */
-  const takeIn = useCallback((remote: Feed[]) => {
-    const changed = mergeFeeds(allRef.current, remote);
-    if (changed.length === 0) return;
-    for (const f of changed) db.putFeed(f);
-    const ids = new Set(changed.map((f) => f.id));
-    const next = [...allRef.current.filter((f) => !ids.has(f.id)), ...changed];
-    allRef.current = next;
-    setAllFeeds(next);
+  /** Changes from the other phone go straight in, keeping their own change times. */
+  const takeIn = useCallback((remote: (Feed | Entry)[]) => {
+    const isEntry = (x: Feed | Entry): x is Entry => (x as Entry).type === 'entry';
+    const changed = mergeFeeds(allRef.current, remote.filter((x): x is Feed => !isEntry(x)));
+    if (changed.length > 0) {
+      for (const f of changed) db.putFeed(f);
+      const ids = new Set(changed.map((f) => f.id));
+      const next = [...allRef.current.filter((f) => !ids.has(f.id)), ...changed];
+      allRef.current = next;
+      setAllFeeds(next);
+    }
+    const changedEntries = mergeFeeds(allEntriesRef.current, remote.filter(isEntry));
+    if (changedEntries.length > 0) {
+      for (const e of changedEntries) db.putEntry(e);
+      const ids = new Set(changedEntries.map((e) => e.id));
+      const next = [...allEntriesRef.current.filter((e) => !ids.has(e.id)), ...changedEntries];
+      allEntriesRef.current = next;
+      setAllEntries(next);
+    }
   }, []);
 
   const runSync = useCallback(async () => {
@@ -395,7 +501,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const s = settingsRef.current;
     try {
       // a little overlap, so a change saved by the other phone at the same moment is never skipped
-      const reply = await syncWithServer(p.code, unsent(allRef.current, p.sentAt), s.babies, s.babiesUpdatedAt ?? 0, Math.max(0, p.since - 100));
+      const outgoing = [...unsent(allRef.current, p.sentAt), ...unsent(allEntriesRef.current, p.sentAt)];
+      const reply = await syncWithServer(p.code, outgoing, s.babies, s.babiesUpdatedAt ?? 0, Math.max(0, p.since - 100));
       if (progressRef.current?.code !== p.code) return; // stopped or changed while this was running
       takeIn(reply.feeds);
       const babies = mergeBabies(settingsRef.current.babiesUpdatedAt ?? 0, reply.babies, reply.babiesUpdated);
@@ -427,7 +534,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!progress) return;
     const t = setTimeout(runSync, 1500);
     return () => clearTimeout(t);
-  }, [allFeeds, settings.babies, progress?.code, runSync]);
+  }, [allFeeds, allEntries, settings.babies, progress?.code, runSync]);
   useEffect(() => {
     if (!progress) return;
     runSync();
@@ -470,9 +577,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
       tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
       sync, startSync, stopSync, syncNow: runSync,
+      entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep,
     }),
     [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
-      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack, sync, startSync, stopSync, runSync],
+      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack, sync, startSync, stopSync, runSync,
+      entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

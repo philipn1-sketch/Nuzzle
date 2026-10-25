@@ -1,4 +1,4 @@
-import type { Baby, Feed } from '../core/types';
+import type { Baby, Entry, Feed } from '../core/types';
 
 /**
  * The online copy, through one database function (see supabase/migrations). The address and the
@@ -11,14 +11,15 @@ export const syncAvailable = URL !== '' && KEY !== '';
 
 export interface SyncReply {
   seq: number;
-  feeds: Feed[];
+  /** Feeds and entries travel together; entries carry type 'entry'. */
+  feeds: (Feed | Entry)[];
   babies: Baby[] | null;
   babiesUpdated: number;
 }
 
 export async function syncWithServer(
   code: string,
-  feeds: Feed[],
+  feeds: (Feed | Entry)[],
   babies: Baby[] | null,
   babiesUpdated: number,
   since: number,

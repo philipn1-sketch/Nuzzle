@@ -62,7 +62,25 @@
                   "accessoryRectangular",
                   "accessoryInline"
                 ],
-                "initialLayout": "./src/widgets/NuzzleWidget.tsx"
+                "initialLayout": "./src/widgets/NuzzleWidget.tsx",
+                "configuration": {
+                  "title": "Choose a baby",
+                  "description": "Which baby this widget shows.",
+                  "parameters": {
+                    "baby": {
+                      "title": "Baby",
+                      "type": "enum",
+                      "dynamic": true,
+                      "default": "active",
+                      "values": [
+                        {
+                          "name": "Baby on screen",
+                          "value": "active"
+                        }
+                      ]
+                    }
+                  }
+                }
               }
             }
           ],

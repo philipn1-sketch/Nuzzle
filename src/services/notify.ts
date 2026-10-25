@@ -48,13 +48,15 @@ export interface Planned {
   babyId: string;
   at: number;
   body: string;
+  /** In her quiet hours: arrives without sound. */
+  silent?: boolean;
 }
 
 /**
  * Makes the phone's queue match exactly: one reminder per baby that has one planned, and one repeating
  * reminder for each clock time. Anything else of ours that is queued is cancelled.
  */
-export async function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string }[]): Promise<void> {
+export async function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
   const queued = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
   const granted = (await permission()) === 'granted';
   const keep = new Set<string>();
@@ -64,7 +66,7 @@ export async function syncReminders(plans: Planned[], clock: { hour: number; min
     keep.add(identifier);
     await Notifications.scheduleNotificationAsync({
       identifier,
-      content: { title: APP_NAME, body: p.body, sound: 'default' },
+      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
     });
   }
@@ -72,10 +74,11 @@ export async function syncReminders(plans: Planned[], clock: { hour: number; min
     if (!granted) continue;
     const identifier = `${CLOCK}:${c.hour}:${c.minute}`;
     keep.add(identifier);
-    if (queued.some((n) => n.identifier === identifier && n.content.body === c.body)) continue;
+    const sound = c.silent ? false : 'default';
+    if (queued.some((n) => n.identifier === identifier && n.content.body === c.body && Boolean(n.content.sound) === !c.silent)) continue;
     await Notifications.scheduleNotificationAsync({
       identifier,
-      content: { title: APP_NAME, body: c.body, sound: 'default' },
+      content: { title: APP_NAME, body: c.body, sound },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: c.hour, minute: c.minute, channelId: 'reminders' },
     });
   }

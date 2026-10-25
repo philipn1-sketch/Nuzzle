@@ -1,4 +1,4 @@
-import type { Baby, Feed } from './types';
+import type { Baby } from './types';
 
 /** Letters and digits that can't be misread for each other: no O and 0, no I and 1. */
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -23,9 +23,9 @@ export const showCode = (c: string): string => c.replace(/(.{4})(?=.)/g, '$1 ');
  * Takes in feeds from the other phone. A feed is replaced only by a newer change of itself, so the
  * latest edit wins whichever phone made it. Returns just the feeds that changed here.
  */
-export function mergeFeeds(local: Feed[], remote: Feed[]): Feed[] {
+export function mergeFeeds<T extends { id: string; updatedAt?: number }>(local: T[], remote: T[]): T[] {
   const mine = new Map(local.map((f) => [f.id, f]));
-  const changed: Feed[] = [];
+  const changed: T[] = [];
   for (const r of remote) {
     const l = mine.get(r.id);
     if (!l || (r.updatedAt ?? 0) > (l.updatedAt ?? 0)) changed.push(r);
@@ -34,7 +34,7 @@ export function mergeFeeds(local: Feed[], remote: Feed[]): Feed[] {
 }
 
 /** Feeds changed on this phone since the last successful send. The first send is everything, including feeds saved before sync existed. */
-export const unsent = (feeds: Feed[], sentAt: number): Feed[] =>
+export const unsent = <T extends { updatedAt?: number }>(feeds: T[], sentAt: number): T[] =>
   sentAt <= 0 ? feeds : feeds.filter((f) => (f.updatedAt ?? 0) > sentAt);
 
 /** The babies list from the other phone, when it is newer. */

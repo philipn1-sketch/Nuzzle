@@ -136,6 +136,49 @@ async function main() {
     await p.mouse.wheel(0, 900);
     await p.waitForTimeout(300);
     await shot('22-settings-more');
+
+    // nappies, pumping, growth, sleep, summary, quiet hours
+    const ent = (x) => ({ type: 'entry', deletedAt: null, ...x });
+    const extras = [
+      ent({ id: 'n1', kind: 'nappy', nappy: 'wet', at: now - 30 * MIN }),
+      ent({ id: 'n2', kind: 'nappy', nappy: 'both', at: now - 200 * MIN }),
+      ent({ id: 'n3', kind: 'nappy', nappy: 'dirty', at: now - 26 * 60 * MIN }),
+      ent({ id: 'p1', kind: 'pump', leftMl: 60, rightMl: 50, minutes: 15, at: now - 120 * MIN }),
+      ent({ id: 'g1', kind: 'growth', weightG: 4210, lengthMm: 545, at: now - 28 * 60 * MIN, note: 'Health visitor' }),
+      ent({ id: 's1', kind: 'sleep', at: now - 42 * MIN, end: null }),
+    ];
+    await p.goto(URL);
+    await p.evaluate((x) => localStorage.setItem('nuzzle.entries', JSON.stringify(x)), extras);
+    await load(withBottle, daphne);
+    await shot('23-home-asleep-nappies');
+    await p.click('[data-testid="log-nappy"]');
+    await p.waitForTimeout(400);
+    await shot('24-nappy');
+    await p.click('[data-testid="cancel"]');
+    await p.waitForTimeout(300);
+    await p.click('[data-testid="log-pump"]');
+    await p.waitForTimeout(400);
+    await shot('25-pump');
+    await p.click('[data-testid="cancel"]');
+    await p.waitForTimeout(300);
+    await p.click('[data-testid="open-history"]');
+    await p.waitForTimeout(400);
+    await shot('26-history-everything');
+    await p.click('[data-testid="add-growth"]');
+    await p.waitForTimeout(400);
+    await shot('27-growth');
+    await p.click('[data-testid="cancel"]');
+    await p.waitForTimeout(300);
+    await p.click('[data-testid="open-summary"]');
+    await p.waitForTimeout(400);
+    await shot('28-summary');
+    await load(withBottle, { ...daphne, quiet: { on: true, fromMin: 1320, toMin: 360 }, clockReminders: [{ hour: 21, minute: 0 }] });
+    await p.click('[data-testid="open-settings"]');
+    await p.waitForTimeout(400);
+    await p.mouse.move(195, 500);
+    await p.mouse.wheel(0, 700);
+    await p.waitForTimeout(300);
+    await shot('29-settings-quiet-hours');
     await ctx.close();
   }
   await b.close();

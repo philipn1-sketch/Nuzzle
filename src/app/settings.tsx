@@ -15,15 +15,17 @@ import { useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { line, radius, space, TAP, type } from '../theme';
 
+const wrapMin = (m: number) => ((m % 1440) + 1440) % 1440;
+
 export default function SettingsScreen() {
-  const { settings, updateSettings, permission, askReminders, allFeeds, addBaby, updateBaby, removeBaby, sync } = useApp();
+  const { settings, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync } = useApp();
   const p = usePalette();
   const now = Date.now();
 
   const exportCsv = () => {
     const first = settings.babies[0];
     const nameOf = (f: { babyId?: string }) => babyName(settings.babies.find((b) => b.id === (f.babyId ?? first.id)));
-    Share.share({ title: `${APP_NAME} feeds`, message: feedsToCsv(allFeeds, Date.now(), nameOf) }).catch(() => {});
+    Share.share({ title: `${APP_NAME} feeds`, message: feedsToCsv(allFeeds, Date.now(), nameOf, allEntries, settings.units) }).catch(() => {});
   };
 
   const setClock = (i: number, c: ClockReminder | null) => {
@@ -123,6 +125,32 @@ export default function SettingsScreen() {
           {settings.clockReminders.length < 4 && (
             <QuietButton label="Add a time ›" tone="ink" onPress={addClock} style={styles.left} testID="add-clock" />
           )}
+          <T style={{ marginTop: space.s }}>Quiet hours</T>
+          <T tone="muted" style={type.label}>Reminders in these hours still arrive, but without a sound.</T>
+          <Choice<'on' | 'off'>
+            label="Quiet hours"
+            value={settings.quiet.on ? 'on' : 'off'}
+            onChange={(v) => updateSettings({ quiet: { ...settings.quiet, on: v === 'on' } })}
+            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+          />
+          {settings.quiet.on && (
+            <View style={{ gap: space.s }}>
+              <T tone="muted" style={type.label}>From</T>
+              <Stepper
+                label="Quiet hours start"
+                testID="quiet-from"
+                display={clockTime(Math.floor(settings.quiet.fromMin / 60), settings.quiet.fromMin % 60)}
+                onStep={(dir, fast) => updateSettings({ quiet: { ...settings.quiet, fromMin: wrapMin(settings.quiet.fromMin + dir * (fast ? 60 : 15)) } })}
+              />
+              <T tone="muted" style={type.label}>Until</T>
+              <Stepper
+                label="Quiet hours end"
+                testID="quiet-to"
+                display={clockTime(Math.floor(settings.quiet.toMin / 60), settings.quiet.toMin % 60)}
+                onStep={(dir, fast) => updateSettings({ quiet: { ...settings.quiet, toMin: wrapMin(settings.quiet.toMin + dir * (fast ? 60 : 15)) } })}
+              />
+            </View>
+          )}
           {(settings.remindersOn || settings.clockReminders.length > 0) && permission === 'denied' && (
             <View style={{ gap: space.xs }}>
               <T tone="muted" style={type.label}>Notifications are off for {APP_NAME} in your phone settings.</T>
@@ -134,12 +162,12 @@ export default function SettingsScreen() {
           )}
         </Section>
 
-        <Section label="Bottles in">
+        <Section label="Units">
           <Choice<Units>
-            label="Bottles in"
+            label="Units"
             value={settings.units}
             onChange={(v) => updateSettings({ units: v })}
-            options={[{ value: 'ml', label: 'ml' }, { value: 'oz', label: 'oz' }]}
+            options={[{ value: 'ml', label: 'ml, kg, cm' }, { value: 'oz', label: 'oz, lb, in' }]}
           />
         </Section>
 

@@ -6,12 +6,23 @@ import { createWidget, type WidgetEnvironment } from 'expo-widgets';
 
 import type { GlanceProps } from '../core/glance';
 
+/** Every baby's numbers, the baby on screen first; each widget shows the baby picked when it was set up. */
+export interface WidgetProps {
+  babies: (GlanceProps & { babyId: string })[];
+}
+type WidgetConfig = { baby: string };
+
 /**
  * The home screen and lock screen widget. It runs on its own inside iOS, so everything it needs comes in
  * through its props, and the live times are drawn by iOS from timestamps: they keep counting with the app closed.
  */
-const NuzzleWidget = (props: GlanceProps, env: WidgetEnvironment) => {
+const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) => {
   'widget';
+  const list = all.babies ?? [];
+  const chosen = env.configuration?.baby;
+  const props = list.find((b) => b.babyId === chosen) ?? list[0] ?? {
+    babyId: '', name: 'Baby', lastStart: 0, lastLine: '', next: '', letter: '', feeding: '', timerFrom: 0, pausedAt: 0,
+  };
   // the app's palette; declared in here because a widget can't see anything outside this function
   const dark = env.colorScheme !== 'light';
   const c = dark
@@ -97,6 +108,4 @@ const NuzzleWidget = (props: GlanceProps, env: WidgetEnvironment) => {
   );
 };
 
-export default createWidget<GlanceProps>('NuzzleWidget', NuzzleWidget, {
-  name: 'Baby', lastStart: 0, lastLine: '', next: '', letter: '', feeding: '', timerFrom: 0, pausedAt: 0,
-});
+export default createWidget<WidgetProps, WidgetConfig>('NuzzleWidget', NuzzleWidget, { babies: [] });

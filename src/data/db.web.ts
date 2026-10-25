@@ -1,5 +1,5 @@
 // Stand in for the web preview used to design and screenshot the screens. Phone builds use db.ts.
-import type { Feed, Settings } from '../core/types';
+import type { Entry, Feed, Settings } from '../core/types';
 
 const read = <T,>(key: string, fallback: T): T => {
   try {
@@ -25,3 +25,6 @@ export const setValue = (key: string, value: unknown): void => {
   if (value === null) globalThis.localStorage?.removeItem(`nuzzle.${key}`);
   else write(`nuzzle.${key}`, value);
 };
+export const loadEntries = (): Entry[] => read<Entry[]>('nuzzle.entries', []);
+export const putEntry = (e: Entry): void => write('nuzzle.entries', [...loadEntries().filter((x) => x.id !== e.id), e]);
+export const removeEntry = (id: string): void => write('nuzzle.entries', loadEntries().filter((x) => x.id !== id));

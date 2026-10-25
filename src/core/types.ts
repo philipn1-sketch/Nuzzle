@@ -41,6 +41,43 @@ export interface Bottle {
   milk: Milk;
 }
 
+export type EntryKind = 'nappy' | 'pump' | 'growth' | 'sleep';
+export type Nappy = 'wet' | 'dirty' | 'both';
+
+/**
+ * Everything logged that isn't a feed. Stored and synced the same way as feeds: by timestamp,
+ * never lost, deleted softly so Undo works.
+ */
+export interface Entry {
+  id: string;
+  /** Marks an entry apart from a feed when both travel through sync together. */
+  type: 'entry';
+  kind: EntryKind;
+  /** Missing for pumping, which is hers, not the baby's. */
+  babyId?: string;
+  at: number;
+  /** Sleep only: when she woke; null while asleep. */
+  end?: number | null;
+  nappy?: Nappy;
+  /** Pumping, in millilitres per side, and how long it took. */
+  leftMl?: number;
+  rightMl?: number;
+  minutes?: number;
+  /** Growth, in grams and millimetres. */
+  weightG?: number;
+  lengthMm?: number;
+  note?: string;
+  deletedAt: number | null;
+  updatedAt?: number;
+}
+
+/** Reminders arrive without sound between these clock times, for example 22:00 to 06:00. */
+export interface QuietHours {
+  on: boolean;
+  fromMin: number;
+  toMin: number;
+}
+
 export interface Baby {
   id: string;
   name: string;
@@ -65,6 +102,7 @@ export interface Settings {
   /** When the babies list last changed, so the newer list wins between two phones. */
   babiesUpdatedAt?: number;
   clockReminders: ClockReminder[];
+  quiet: QuietHours;
   remindersOn: boolean;
   intervalMin: number;
   theme: ThemeChoice;

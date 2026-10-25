@@ -1,6 +1,6 @@
 import { openDatabaseSync } from 'expo-sqlite';
 
-import type { Feed, Settings } from '../core/types';
+import type { Entry, Feed, Settings } from '../core/types';
 
 /**
  * Everything lives in one SQLite file on the phone. Writes happen the moment something changes,
@@ -17,6 +17,14 @@ db.execSync(`
     deleted_at INTEGER
   );
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
+`);
+
+db.execSync(`
+  CREATE TABLE IF NOT EXISTS entries (
+    id TEXT PRIMARY KEY NOT NULL,
+    data TEXT NOT NULL,
+    deleted_at INTEGER
+  );
 `);
 
 // Bottles, notes and babies came later. Their fields live in one JSON column added to older files.
@@ -68,4 +76,18 @@ export function getValue<T>(key: string): T | null {
 export function setValue(key: string, value: unknown): void {
   if (value === null) db.runSync('DELETE FROM settings WHERE key = ?', key);
   else db.runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, JSON.stringify(value));
+}
+
+/** Nappies, pumping, growth and sleep: one JSON row each. */
+export function loadEntries(): Entry[] {
+  db.runSync('DELETE FROM entries WHERE deleted_at IS NOT NULL AND deleted_at < ?', Date.now() - 30 * 86_400_000);
+  return db.getAllSync<{ data: string }>('SELECT data FROM entries').map((r) => JSON.parse(r.data) as Entry);
+}
+
+export function putEntry(e: Entry): void {
+  db.runSync('INSERT OR REPLACE INTO entries (id, data, deleted_at) VALUES (?, ?, ?)', e.id, JSON.stringify(e), e.deletedAt);
+}
+
+export function removeEntry(id: string): void {
+  db.runSync('DELETE FROM entries WHERE id = ?', id);
 }

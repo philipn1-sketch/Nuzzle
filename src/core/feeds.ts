@@ -41,6 +41,7 @@ export const sideRuns = (f: Feed, now: number): { side: Side; ms: number }[] => 
 };
 
 const live = (feeds: Feed[]) => feeds.filter((f) => f.deletedAt === null);
+export const liveFeedsOnly = live;
 
 /** The feed being timed right now, if any. */
 export const activeFeed = (feeds: Feed[]): Feed | null =>

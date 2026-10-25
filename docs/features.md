@@ -45,7 +45,11 @@ Sources: the eight screenshots Philip took of Huckleberry on his wife's phone (O
 | Baby's age | Phase 1: birthday in Settings; Home shows "2 weeks 3 days old". | Added |
 | More than one baby | Phase 1: each baby has their own feeds, suggestion and reminder. Old feeds belong to the first baby. | Added |
 | Theme follows the phone | Phase 1: Night, Day or Phone. | Added |
-| Solids, nappies, sleep, pumping, growth | Not built. | Out of scope |
+| Nappies, pumping, sleep, weight and length | Added after Phase 4: one tap nappies with a daily count, pumping per side, a sleep timer, and growth from check ups. All in History and the export. | Added |
+| Summary for appointments | A 7 or 14 day PDF of what was logged, through the share sheet. No targets or ranges. | Added |
+| Quiet hours | Reminders inside them arrive without sound. | Added |
+| Widget per baby | Each widget can show a chosen baby. | Added |
+| Solids | Not built. | Out of scope |
 | Sync between two phones, cloud backup | Phase 2: a family code instead of accounts; both phones send and take in changes, the newer edit wins, and the online copy is the backup. | Added |
 | Home screen widget, lock screen timer | Phase 3: a widget for the home and lock screens, and a Live Activity timer on the lock screen and Dynamic Island. | Added |
 | Apple Watch, Siri | Phase 4: a Watch app with Left, Right and Done; Siri and Shortcuts to start, stop and ask about the last feed. | Added |

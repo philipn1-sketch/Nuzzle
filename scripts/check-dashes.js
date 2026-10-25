@@ -15,7 +15,12 @@ const walk = (dir) => {
 walk(path.join(__dirname, '..', 'src'));
 
 // text only: anything with a space in it (ids, keys and styles have none)
-const bad = (s) => /\s/.test(s) && (/[–—]/.test(s) || /\s-\s/.test(s) || /[A-Za-z]-[A-Za-z]/.test(s));
+// markup built for the PDF summary: only the words in it are app text, not its styles or tags
+const visible = (s) => s.replace(/<style>[\s\S]*?<\/style>/g, ' ').replace(/<[^>]*>/g, ' ');
+const bad = (raw) => {
+  const s = visible(raw);
+  return /\s/.test(s) && (/[–—]/.test(s) || /\s-\s/.test(s) || /[A-Za-z]-[A-Za-z]/.test(s));
+};
 const problems = [];
 for (const file of files) {
   const src = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);

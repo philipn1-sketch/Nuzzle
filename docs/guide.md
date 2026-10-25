@@ -40,6 +40,13 @@ TestFlight builds last 90 days. To renew, run steps 4 and 5 again; her feeds sta
 * **Lock screen:** while a feed runs, a quiet notice shows which side and since when.
 * **History:** every feed by day, with the minutes on each side. Tap a feed to edit or delete it. **Add a feed** logs one she forgot.
 * **Bottles:** tap **Log a bottle** on Home. Choose the amount (ml or oz, set in Settings) and breast milk or formula. A bottle counts as the last feed for the timer and the reminder; the Left or Right suggestion still follows the last breast feed.
+* **Nappies:** tap **Nappy** on Home, then Wet, Dirty or Wet and dirty. That one tap saves it (change the time first if it was earlier). Home shows today's count.
+* **Pumping:** tap **Pump** on Home, set the amount for each side and how long it took.
+* **Sleep:** tap **Sleep** on Home when she falls asleep and **Woke up** when she wakes. A bar at the top shows how long she has been asleep.
+* **Weight and length:** in History, **Add a weight and length**, for the numbers from a check up.
+* **Summary for appointments:** History, **Summary**. Pick 7 or 14 days and **Share as a PDF**: feeds, sides, bottles, nappies, sleep and weights, day by day. Just what was logged, no targets.
+* **Quiet hours:** Settings, Reminder, Quiet hours. Reminders inside those hours still arrive, but silently.
+* **Widget per baby:** with two babies, touch and hold a Nuzzle widget, **Edit Widget**, and choose which baby it shows.
 * **Notes:** every feed and bottle has a Note box in its editor. Notes show in History and under the last feed on Home.
 * **Week view:** in History, tap **Week** for a bar per day of time on the breast (tap a bar for that day's numbers) and a 24 hour strip per day showing when each feed happened. Left is the tall rose block, Right the shorter peach block, a bottle a thin line.
 * **Age:** set the birthday in Settings and Home shows how old she is under her name.

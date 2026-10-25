@@ -88,6 +88,21 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Bottle, 100 ml"
 - takeScreenshot: day-15-home-after-bottle
 - tapOn:
+    id: "log-nappy"
+- tapOn:
+    id: "nappy-both"
+- assertVisible: "Wet and dirty nappy at.*"
+- assertVisible:
+    id: "nappies-today"
+- tapOn:
+    id: "log-sleep"
+- assertVisible:
+    id: "asleep"
+- takeScreenshot: day-16-home-asleep
+- tapOn:
+    id: "woke-up"
+- assertVisible: "Awake.*"
+- tapOn:
     id: "side-L"
 - takeScreenshot: day-03-home-running
 - tapOn:

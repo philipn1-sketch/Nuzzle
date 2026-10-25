@@ -5,14 +5,15 @@ import { Ring } from '../components/Ring';
 import { SideButton, type SideState } from '../components/SideButton';
 import { Card, Choice, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import {
-  activeFeed, endSide, feedStart, isDue, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
+  activeFeed, dayStartOf, endSide, feedStart, isDue, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
 import { ageText, amount, clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
 import { babyName } from '../core/reminder';
+import { nappyCount, runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { sideColor, space, type, wash } from '../theme';
+import { radius, sideColor, space, type, wash } from '../theme';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -33,6 +34,8 @@ export default function Home() {
   const suggested = suggestedSide(feeds);
   const name = babyName(app.baby);
   const age = app.baby.birthday !== null ? ageText(app.baby.birthday, now) : '';
+  const sleeping = runningSleep(app.entries);
+  const nappies = nappyCount(app.entries, dayStartOf(now), dayStartOf(now, -1));
 
   const sideState = (side: Side): SideState => {
     if (active) {
@@ -65,6 +68,15 @@ export default function Home() {
         right={<PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />}
       />
       {age !== '' && <T testID="age" tone="muted" style={[type.label, styles.centreText, styles.age]}>{age}</T>}
+      {sleeping && (
+        <View style={[styles.sleepBar, { backgroundColor: p.surface }]} accessibilityLiveRegion="polite">
+          <View style={{ flex: 1 }}>
+            <T style={type.body} testID="asleep">Asleep for {span(now - sleeping.at)}</T>
+            <T tone="muted" style={type.label}>Since {timeOf(sleeping.at)}</T>
+          </View>
+          <PillButton label="Woke up" onPress={app.toggleSleep} testID="woke-up" a11yLabel="She woke up" />
+        </View>
+      )}
       {settings.babies.length > 1 && (
         <View style={styles.babies}>
           <Choice<string>
@@ -140,8 +152,18 @@ export default function Home() {
             </View>
           ) : null}
 
-          {!active && !compact && (
-            <QuietButton label="Log a bottle ›" tone="ink" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" />
+          {!compact && (
+            <View style={styles.quick} accessibilityLabel="Log something else">
+              {!active && <PillButton label="Bottle" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" a11yLabel="Log a bottle" />}
+              <PillButton label="Nappy" onPress={() => router.push('/entry/new?kind=nappy')} testID="log-nappy" a11yLabel="Log a nappy" />
+              <PillButton label="Pump" onPress={() => router.push('/entry/new?kind=pump')} testID="log-pump" a11yLabel="Log pumping" />
+              <PillButton label={sleeping ? 'Woke up' : 'Sleep'} onPress={app.toggleSleep} testID="log-sleep" a11yLabel={sleeping ? 'She woke up' : 'Start a sleep'} />
+            </View>
+          )}
+          {nappies.total > 0 && !compact && (
+            <T tone="muted" style={[type.label, styles.centreText]} testID="nappies-today">
+              Today: {nappies.total} {nappies.total === 1 ? 'nappy' : 'nappies'}, {nappies.wet} wet, {nappies.dirty} dirty
+            </T>
           )}
 
           {showStill && active && (
@@ -194,6 +216,8 @@ const styles = StyleSheet.create({
   centreText: { textAlign: 'center' },
   age: { marginTop: -space.s },
   babies: { paddingHorizontal: space.side, paddingTop: space.s },
+  quick: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.s },
+  sleepBar: { flexDirection: 'row', alignItems: 'center', gap: space.m, marginHorizontal: space.side, marginTop: space.s, paddingLeft: space.l, paddingRight: space.xs, paddingVertical: space.xs, borderRadius: radius.row },
   sideChip: { borderRadius: 999, paddingHorizontal: space.l, paddingVertical: 6, marginTop: space.xs },
   under: { gap: 2, alignItems: 'center' },
   wide: { alignSelf: 'stretch' },

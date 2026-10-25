@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   activeBabyId: FIRST_BABY,
   units: 'ml',
   clockReminders: [],
+  quiet: { on: false, fromMin: 22 * 60, toMin: 6 * 60 },
   remindersOn: true,
   intervalMin: REMINDER_DEFAULT_MIN,
   theme: 'night',

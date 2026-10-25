@@ -1,13 +1,14 @@
 import { Platform } from 'react-native';
 
-import type { ActivityProps, GlanceProps } from '../core/glance';
+import type { ActivityProps } from '../core/glance';
+import type { Baby } from '../core/types';
 import FeedActivity from '../widgets/FeedActivity';
-import NuzzleWidget from '../widgets/NuzzleWidget';
+import NuzzleWidget, { type WidgetProps } from '../widgets/NuzzleWidget';
 
 let lastWidget = '';
 
 /** Sends the latest numbers to the home screen widget, only when they changed. */
-export function updateWidget(props: GlanceProps): void {
+export function updateWidget(props: WidgetProps): void {
   const key = JSON.stringify(props);
   if (key === lastWidget || Platform.OS !== 'ios') return;
   lastWidget = key;
@@ -55,4 +56,19 @@ export async function syncActivity(props: ActivityProps | null): Promise<boolean
 export function resend(): void {
   lastWidget = '';
   lastActivity = '';
+}
+
+let lastBabies = '';
+
+/** The choice of baby offered when she sets up a widget: the baby on screen, or a named baby. */
+export function offerBabies(babies: Baby[]): void {
+  const options = [{ name: 'Baby on screen', value: 'active' }, ...babies.map((b, i) => ({ name: b.name.trim() || `Baby ${i + 1}`, value: b.id }))];
+  const key = JSON.stringify(options);
+  if (key === lastBabies || Platform.OS !== 'ios') return;
+  lastBabies = key;
+  try {
+    NuzzleWidget.setConfigurationParameterEnum('baby', options);
+  } catch {
+    lastBabies = '';
+  }
 }

@@ -63,7 +63,7 @@ describe('notes', () => {
 
   it('go in the CSV, quoted when they hold a comma', () => {
     const f = { ...bottle(5), note: 'fussy, then fine' };
-    expect(feedsToCsv([f], T0).split('\n')[1]).toBe('Baby,2026/10/24,03:05,03:05,bottle,0.0,0.0,0.0,,90,formula,"fussy, then fine"');
+    expect(feedsToCsv([f], T0).split('\n')[1]).toBe('Baby,2026/10/24,03:05,03:05,bottle,0.0,0.0,0.0,,90,formula,"fussy, then fine",');
   });
 });
 
