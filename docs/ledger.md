@@ -127,3 +127,8 @@ Verdict: one more pass ("clearly better than brown and honey ... not premium yet
 7. Polish: titles truly centred; History list sits above a divider; snackbar actions are bold text, not web links; top bar pills lighter.
 
 Not changed: the ring stepping aside for question cards (kept on purpose so card buttons always fit), and Done above the side buttons (moving it below would make the side buttons jump when a feed starts, which round 5 fixed).
+
+## iPhone simulator run (found by the real iOS end to end check)
+
+* Typing in the minutes box added to the old number on iPhone ("1" then typing 15 gave "115"), because iOS doesn't select the existing text when the field opens. **Fixed:** the box opens empty with the old value as a hint, so typing replaces it.
+* Confirmed on iPhone 17, iOS 26.5: first launch, start, switch, pause, carry on, Done, Undo, the reminder question, the reminder actually queued by iOS, closing the app for over a minute with the timer still right on reopening, History, and editing by typing.

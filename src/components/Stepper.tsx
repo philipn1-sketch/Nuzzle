@@ -75,8 +75,9 @@ export function Stepper({
         {onType && typing !== null ? (
           <TextInput
             autoFocus
-            selectTextOnFocus
             keyboardType="number-pad"
+            placeholder={display}
+            placeholderTextColor={p.muted}
             value={typing}
             onChangeText={(t) => {
               const digits = t.replace(/[^0-9]/g, '').slice(0, 3);
@@ -90,7 +91,8 @@ export function Stepper({
             accessibilityLabel={`Type ${label.toLowerCase()}`}
           />
         ) : (
-          <Pressable disabled={!onType} onPress={() => setTyping(String(numeric ?? ''))} testID={testID ? `${testID}-value` : undefined}>
+          // opens empty (the old value shows as a hint), so what she types replaces it; iPhone won't select the old number
+          <Pressable disabled={!onType} onPress={() => setTyping('')} testID={testID ? `${testID}-value` : undefined}>
             <T style={[type.title, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}>{display}</T>
           </Pressable>
         )}
