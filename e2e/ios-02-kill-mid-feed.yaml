@@ -1,24 +1,26 @@
-# iPhone: close the app mid feed and reopen it; the timer must have kept counting from the stored start.
-# (The simulator uses the Mac's clock, so the "an hour later" check runs in the unit tests instead.)
+# iPhone: close the app mid feed for over a minute and reopen it. The timer must have kept counting
+# from the stored start time. (The simulator uses the Mac's clock, so the "an hour later" check runs
+# in the unit tests instead.) The timer is read by VoiceOver as "Fed for 1 minute", which is what is checked.
 appId: com.philipnader.nuzzle
 ---
 - launchApp
 - tapOn:
     id: "side-L"
 - assertVisible: "Feeding on the left"
-- extendedWaitUntil:
-    visible:
-      id: "timer"
-      text: "0:0[4-9]"
-    timeout: 15000
+- assertVisible:
+    id: "timer"
+    text: "Fed for just now"
 - stopApp
+# about 70 seconds with the app closed
+- extendedWaitUntil:
+    visible: "this text never appears"
+    timeout: 70000
+  optional: true
 - launchApp
 - assertVisible: "Feeding on the left"
-- extendedWaitUntil:
-    visible:
-      id: "timer"
-      text: "0:(0[6-9]|[1-5][0-9])"
-    timeout: 15000
+- assertVisible:
+    id: "timer"
+    text: "Fed for 1 minute"
 - takeScreenshot: night-08-home-running-after-reopening
 - tapOn:
     id: "done"
