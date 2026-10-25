@@ -58,7 +58,12 @@ appId: com.philipnader.nuzzle
     id: "open-settings"
 - assertVisible: "Settings"
 - takeScreenshot: night-13-settings
-- tapOn: "Day"
+- scrollUntilVisible:
+    element:
+      id: "choice-day"
+    direction: DOWN
+- tapOn:
+    id: "choice-day"
 - takeScreenshot: day-13-settings
 - tapOn:
     id: "back"
@@ -67,7 +72,21 @@ appId: com.philipnader.nuzzle
     id: "open-history"
 - takeScreenshot: day-09-history
 - tapOn:
+    id: "choice-week"
+- assertVisible: "Time on the breast"
+- takeScreenshot: day-14-week
+- tapOn:
     id: "back"
+- tapOn:
+    id: "log-bottle"
+- assertVisible: "Log a bottle"
+- tapOn:
+    id: "amount-more"
+- tapOn:
+    id: "save-feed"
+- assertVisible: "Bottle added.*"
+- assertVisible: "Bottle, 100 ml"
+- takeScreenshot: day-15-home-after-bottle
 - tapOn:
     id: "side-L"
 - takeScreenshot: day-03-home-running
