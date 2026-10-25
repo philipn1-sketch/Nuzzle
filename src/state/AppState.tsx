@@ -103,6 +103,11 @@ const Ctx = createContext<AppStateValue | null>(null);
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 /** The lock screen notice for a feed in progress. */
+/** Whether a baby has anything logged: such a baby is never removed or dropped. */
+export function hasData(feeds: Feed[], entries: Entry[], s: Settings, babyId: string): boolean {
+  return feedsOf(feeds, s, babyId).some((f) => f.deletedAt === null) || entriesOf(entries, s, babyId).some((e) => e.kind !== 'pump' && e.deletedAt === null);
+}
+
 /** A time passed on from the Watch, kept between the start of the current stretch and now. */
 function clampAt(active: Feed | null, at: number | undefined): number {
   const now = Date.now();
@@ -152,7 +157,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const stamped = changed.map((f) => {
       const before = allRef.current.find((x) => x.id === f.id);
       const babyId = f.babyId ?? (before ? before.babyId : babyRef.current.id);
-      return { ...f, ...(babyId ? { babyId } : {}), updatedAt: now };
+      return { ...f, ...(babyId ? { babyId } : {}), updatedAt: Math.max(now, (before?.updatedAt ?? 0) + 1) };
     });
     for (const f of stamped) db.putFeed(f);
     for (const id of removedIds) db.removeFeed(id);
@@ -248,8 +253,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             label: 'Undo',
             onPress: () => {
               const current = feedsRef.current.find((f) => f.id === next.id) ?? next;
-              commit([], [next.id]);
-              showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([current]) }]);
+              // kept as deleted, not erased, so the other phone hears it was thrown away
+              commit([{ ...current, deletedAt: Date.now() }]);
+              showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([{ ...current, deletedAt: null }]) }]);
             },
           },
         ]);
@@ -277,7 +283,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const saved = finishFeed(before, now);
     tick();
     if (!saved) {
-      commit([], [before.id]);
+      commit([{ ...before, deletedAt: Date.now() }]);
       showSnack('That was under five seconds, so it was not saved.');
       return null;
     }
@@ -293,7 +299,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const discard = useCallback(() => {
     const before = activeFeed(feedsRef.current);
     if (!before) return;
-    commit([], [before.id]);
+    commit([{ ...before, deletedAt: Date.now() }]);
     tick();
     showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([before]) }]);
   }, [commit, showSnack]);
@@ -342,8 +348,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (a.action === 'L' || a.action === 'R') watchRef.current.tap(a.action, a.at);
       else if (a.action === 'done') watchRef.current.done(a.at);
     };
-    nuzzleNative.takePendingActions().forEach(apply);
     const sub = nuzzleNative.onWatchAction(apply);
+    nuzzleNative.takePendingActions().forEach(apply);
     return () => sub.remove();
   }, [foreground]);
 
@@ -372,7 +378,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const removeBaby = useCallback((id: string) => {
     setSettings((s) => {
-      if (s.babies.length < 2 || feedsOf(allRef.current, s, id).length > 0) return s;
+      if (s.babies.length < 2 || hasData(allRef.current, allEntriesRef.current, s, id)) return s;
       const babies = s.babies.filter((b) => b.id !== id);
       const next = { ...s, babies, activeBabyId: s.activeBabyId === id ? babies[0].id : s.activeBabyId, babiesUpdatedAt: Date.now() };
       db.putSettings(next);
@@ -388,7 +394,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const stamped = changed.map((e) => {
       const before = allEntriesRef.current.find((x) => x.id === e.id);
       const babyId = e.kind === 'pump' ? undefined : (e.babyId ?? before?.babyId ?? babyRef.current.id);
-      return { ...e, ...(babyId ? { babyId } : {}), updatedAt: now };
+      return { ...e, ...(babyId ? { babyId } : {}), updatedAt: Math.max(now, (before?.updatedAt ?? 0) + 1) };
     });
     for (const e of stamped) db.putEntry(e);
     for (const id of removedIds) db.removeEntry(id);
@@ -508,9 +514,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const babies = mergeBabies(settingsRef.current.babiesUpdatedAt ?? 0, reply.babies, reply.babiesUpdated);
       if (babies) {
         setSettings((cur) => {
+          const kept = cur.babies.filter((b) => !babies.some((r) => r.id === b.id) && hasData(allRef.current, allEntriesRef.current, cur, b.id));
+          const list = [...babies, ...kept];
           const next = {
-            ...cur, babies, babiesUpdatedAt: reply.babiesUpdated,
-            activeBabyId: babies.some((b) => b.id === cur.activeBabyId) ? cur.activeBabyId : babies[0].id,
+            ...cur, babies: list, babiesUpdatedAt: kept.length ? Date.now() : reply.babiesUpdated,
+            activeBabyId: list.some((b) => b.id === cur.activeBabyId) ? cur.activeBabyId : list[0].id,
           };
           db.putSettings(next);
           return next;

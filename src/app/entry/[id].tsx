@@ -15,7 +15,7 @@ const MIN = 60_000;
 const TITLES: Record<EntryKind, [string, string]> = {
   nappy: ['Nappy', 'Edit nappy'],
   pump: ['Pumping', 'Edit pumping'],
-  growth: ['Growth', 'Edit growth'],
+  growth: ['Weight', 'Edit weight'],
   sleep: ['Sleep', 'Edit sleep'],
 };
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
@@ -81,7 +81,7 @@ export default function EntryEditor() {
     <Screen>
       <TopBar left={<PillButton label="Cancel" onPress={() => router.back()} testID="cancel" />} title={TITLES[k][existing ? 1 : 0]} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-        <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
           <Row label="Day">
             <Stepper label="Day" testID="day" display={dayLabel(day0, now)} onStep={moveDay} />
           </Row>

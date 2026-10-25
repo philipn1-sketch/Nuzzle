@@ -56,7 +56,15 @@ export interface Planned {
  * Makes the phone's queue match exactly: one reminder per baby that has one planned, and one repeating
  * reminder for each clock time. Anything else of ours that is queued is cancelled.
  */
-export async function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
+let queue: Promise<void> = Promise.resolve();
+
+/** One at a time, so an older call can never finish after a newer one and leave a stale reminder. */
+export function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
+  queue = queue.catch(() => {}).then(() => applyReminders(plans, clock));
+  return queue;
+}
+
+async function applyReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
   const queued = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
   const granted = (await permission()) === 'granted';
   const keep = new Set<string>();

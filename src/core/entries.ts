@@ -68,21 +68,36 @@ export function entryDetail(e: Entry, units: Units): string {
 }
 
 export interface NappyCount {
+  /** Wet ones, counting wet and dirty ones too. */
   wet: number;
+  /** Dirty ones, counting wet and dirty ones too. */
   dirty: number;
   total: number;
+  /** Just wet, just dirty, and both. */
+  wetOnly: number;
+  dirtyOnly: number;
+  both: number;
 }
 
 /** Nappies changed between two times. A wet and dirty one counts as both. */
 export function nappyCount(entries: Entry[], from: number, to: number): NappyCount {
-  const c = { wet: 0, dirty: 0, total: 0 };
+  const c = { wet: 0, dirty: 0, total: 0, wetOnly: 0, dirtyOnly: 0, both: 0 };
   for (const e of liveEntries(entries)) {
     if (e.kind !== 'nappy' || e.at < from || e.at >= to) continue;
     c.total += 1;
     if (e.nappy !== 'dirty') c.wet += 1;
     if (e.nappy !== 'wet') c.dirty += 1;
+    if (e.nappy === 'both') c.both += 1;
+    else if (e.nappy === 'dirty') c.dirtyOnly += 1;
+    else c.wetOnly += 1;
   }
   return c;
+}
+
+/** "3 nappies today: 2 wet, 1 wet and dirty". Each nappy is counted once. */
+export function nappyLine(c: NappyCount, when = 'today'): string {
+  const parts = [c.wetOnly ? `${c.wetOnly} wet` : '', c.dirtyOnly ? `${c.dirtyOnly} dirty` : '', c.both ? `${c.both} wet and dirty` : ''].filter(Boolean);
+  return `${c.total} ${c.total === 1 ? 'nappy' : 'nappies'}${when ? ` ${when}` : ''}: ${parts.join(', ')}`;
 }
 
 /** Sleep between two times, counting only the part inside the window. */

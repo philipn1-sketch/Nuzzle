@@ -53,3 +53,12 @@ export const type = {
   label: { fontFamily: rounded, fontSize: 15, fontWeight: '500' },
   small: { fontFamily: rounded, fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
 } as const;
+
+/**
+ * A side chip that stays readable in both themes: a soft fill at night; in the day a plain fill with a
+ * coloured outline, because the tinted fill takes the coloured text under 4.5:1.
+ */
+export const chipStyle = (p: Palette, color: string) =>
+  p.bg === palettes.day.bg
+    ? { backgroundColor: p.surface, borderWidth: 1.5, borderColor: color }
+    : { backgroundColor: wash(color) };

@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   primary: { minHeight: 64, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
   secondary: { alignSelf: 'stretch', minHeight: TAP, borderRadius: radius.row, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m, paddingVertical: space.s },
   quiet: { minHeight: TAP, minWidth: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
-  pill: { minHeight: 48, minWidth: TAP, borderRadius: 24, paddingHorizontal: space.l, alignItems: 'center', justifyContent: 'center' },
+  pill: { minHeight: TAP, minWidth: TAP, borderRadius: TAP / 2, paddingHorizontal: space.l, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.side, paddingVertical: space.s, gap: space.m, minHeight: TAP + space.l },
   topSide: { minWidth: TAP },
   topTitleBox: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 120 },

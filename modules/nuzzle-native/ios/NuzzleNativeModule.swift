@@ -19,10 +19,19 @@ public class NuzzleNativeModule: Module {
     Events("onWatchAction")
 
     OnCreate {
-      bridge.onAction = { [weak self] action in
+      bridge.start()
+    }
+
+    // Taps are passed on only while the app is listening; before that they wait in the queue,
+    // so one made while the iPhone app was closed is not lost.
+    OnStartObserving {
+      self.bridge.listen { [weak self] action in
         self?.sendEvent("onWatchAction", action)
       }
-      bridge.start()
+    }
+
+    OnStopObserving {
+      self.bridge.listen(nil)
     }
 
     /// Saves the latest feed for Siri and sends it to the Watch.
@@ -39,7 +48,12 @@ public class NuzzleNativeModule: Module {
 }
 
 final class WatchBridge: NSObject, WCSessionDelegate {
-  var onAction: (([String: Any]) -> Void)?
+  private var onAction: (([String: Any]) -> Void)?
+
+  func listen(_ handler: (([String: Any]) -> Void)?) {
+    lock.lock(); defer { lock.unlock() }
+    onAction = handler
+  }
   private var pending: [[String: Any]] = []
   private var lastSent = ""
   private let lock = NSLock()
@@ -69,11 +83,11 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     guard let action = message["action"] as? String else { return }
     let at = (message["at"] as? Double) ?? Date().timeIntervalSince1970 * 1000
     let event: [String: Any] = ["action": action, "at": at]
-    if let onAction {
-      onAction(event)
-    } else {
-      lock.lock(); pending.append(event); lock.unlock()
-    }
+    lock.lock()
+    let handler = onAction
+    if handler == nil { pending.append(event) }
+    lock.unlock()
+    handler?(event)
   }
 
   // MARK: WCSessionDelegate

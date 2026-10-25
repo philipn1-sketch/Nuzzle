@@ -5,14 +5,14 @@ import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native'
 import { Week } from '../components/Week';
 import { Choice, PillButton, PrimaryButton, QuietButton, Screen, SnackbarSlot, T, TopBar } from '../components/ui';
 import { dayKey, dayStartOf, feedStart, groupByDay, sideRuns, totalMs, type DayGroup } from '../core/feeds';
-import { entryDetail, entryTitle, nappyCount, sortedEntries } from '../core/entries';
+import { entryDetail, entryTitle, nappyCount, nappyLine, sortedEntries, type NappyCount } from '../core/entries';
 import { amount, dayLabel, milkWord, mins, timeOf } from '../core/format';
 import type { Entry, Feed } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { radius, space, type, wash } from '../theme';
+import { chipStyle, radius, space, type, wash } from '../theme';
 
-type Day = { key: string; dayStart: number; feeds: DayGroup | null; nappies: { wet: number; dirty: number; total: number } };
+type Day = { key: string; dayStart: number; feeds: DayGroup | null; nappies: NappyCount };
 type Row = { kind: 'day'; day: Day } | { kind: 'feed'; feed: Feed } | { kind: 'entry'; entry: Entry };
 
 /** Every saved feed, grouped by the day it started, newest first. */
@@ -83,7 +83,7 @@ export default function History() {
                   </T>
                 )}
                 {n.total > 0 && (
-                  <T tone="muted" style={type.label}>{n.total} {n.total === 1 ? 'nappy' : 'nappies'} · {n.wet} wet · {n.dirty} dirty</T>
+                  <T tone="muted" style={type.label}>{nappyLine(n, '')}</T>
                 )}
               </View>
             );
@@ -151,7 +151,7 @@ export default function History() {
               <T style={[type.body, styles.time]}>{timeOf(feedStart(f))}</T>
               <View style={styles.chips}>
                 {sideList.map((r, i) => (
-                  <View key={i} style={[styles.chip, { backgroundColor: wash(r.side === 'L' ? p.accent : p.peach, '2E') }]}>
+                  <View key={i} style={[styles.chip, chipStyle(p, r.side === 'L' ? p.accent : p.peach)]}>
                     <T tone={r.side === 'L' ? 'accent' : 'peach'} style={type.small}>{r.side === 'L' ? 'Left' : 'Right'} {mins(r.ms)}m</T>
                   </View>
                 ))}
@@ -166,7 +166,10 @@ export default function History() {
       <View style={[styles.bottom, { borderTopColor: wash(p.muted, '33') }]}>
         <SnackbarSlot />
         <PrimaryButton label="Add a feed" onPress={() => router.push('/feed/new')} testID="add-feed" />
-        <QuietButton label="Add a weight and length ›" tone="ink" onPress={() => router.push('/entry/new?kind=growth')} testID="add-growth" />
+        <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <QuietButton label="Add pumping ›" tone="ink" onPress={() => router.push('/entry/new?kind=pump')} testID="log-pump" />
+          <QuietButton label="Add a weight ›" tone="ink" onPress={() => router.push('/entry/new?kind=growth')} testID="add-growth" />
+        </View>
       </View>
     </Screen>
   );

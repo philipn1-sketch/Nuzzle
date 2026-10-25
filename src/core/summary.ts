@@ -13,6 +13,8 @@ export interface SummaryDay {
   wet: number;
   dirty: number;
   sleepMs: number;
+  /** Nothing at all was logged that day. */
+  empty: boolean;
 }
 
 /** One row per day for the last `days` days, oldest first. */
@@ -34,6 +36,7 @@ export function summaryDays(feeds: Feed[], entries: Entry[], days: number, now: 
       wet: n.wet,
       dirty: n.dirty,
       sleepMs: sleepWithin(entries, d0, d1, now),
+      empty: today.length === 0 && n.total === 0 && liveEntries(entries).every((e) => e.at < d0 || e.at >= d1),
     });
   }
   return out;
@@ -58,6 +61,7 @@ export function summaryHtml(o: { name: string; age: string; feeds: Feed[]; entri
   const head = ['Day', 'Feeds', 'Left', 'Right', ...(showBottles ? ['Bottles'] : []), ...(showNappies ? ['Wet', 'Dirty'] : []), ...(showSleep ? ['Sleep'] : [])];
   const body = rows
     .map((r) =>
+      r.empty ? `<tr>${cell(date(r.dayStart))}<td colspan="${head.length - 1}">Nothing logged</td></tr>` :
       `<tr>${[
         date(r.dayStart),
         String(r.feeds),
@@ -83,6 +87,6 @@ th{color:#6B5872;font-weight:600}h2{font-size:13pt;margin:16px 0 6px}
 <p>${o.age ? `${esc(o.age)} · ` : ''}${date(first)} to ${date(o.now)} · from Nuzzle</p>
 <table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
 ${growthRows ? `<h2>Weight and length</h2><table><thead><tr><th>Day</th><th>Weight</th><th>Length</th><th>Note</th></tr></thead><tbody>${growthRows}</tbody></table>` : ''}
-<p>Left and Right are minutes on each side. Times are from the phone, as logged.</p>
+<p>Feeds include bottles. Left and Right are minutes on each side. Days with nothing logged may just not have been recorded.</p>
 </body></html>`;
 }

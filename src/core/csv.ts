@@ -13,7 +13,11 @@ const time = (t: number) => {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 const minutes = (ms: number) => (ms / 60_000).toFixed(1);
-const quote = (s: string) => (/[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+// a note starting with = + or @ would run as a formula in a spreadsheet, so it gets a leading quote mark
+const quote = (raw: string) => {
+  const s = /^[=+@]/.test(raw) ? `'${raw}` : raw;
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
 
 /** Every saved feed, oldest first, as a spreadsheet friendly CSV. `nameOf` gives the baby's name for a feed. */
 export function feedsToCsv(

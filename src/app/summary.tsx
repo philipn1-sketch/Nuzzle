@@ -35,7 +35,7 @@ export default function Summary() {
       <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Summary" />
       <ScrollView contentContainerStyle={styles.body}>
         <T tone="muted" style={type.label}>
-          A one page summary of what you logged for {name}, to show at a check up. It has feeds, sides, bottles, nappies, sleep and any weights.
+          A one page summary of what you logged for {name}, to show at a check up. It has feeds (bottles included), sides, nappies, sleep and any weights.
         </T>
         <Choice<'7' | '14'>
           label="How many days"
@@ -48,12 +48,12 @@ export default function Summary() {
             <View key={r.dayStart} style={[styles.row, { borderBottomColor: line(p) }]}
               accessible accessibilityLabel={`${dayName(r.dayStart)}: ${r.feeds} feeds, left ${mins(r.leftMs)} minutes, right ${mins(r.rightMs)} minutes, ${r.wet} wet and ${r.dirty} dirty nappies`}>
               <T style={[type.body, { width: 112 }]}>{dayName(r.dayStart)}</T>
-              <View style={{ flex: 1, gap: 2 }}>
+              {r.empty ? <T tone="muted" style={[type.label, { flex: 1 }]}>Nothing logged</T> : <View style={{ flex: 1, gap: 2 }}>
                 <T style={type.label}>{r.feeds} {r.feeds === 1 ? 'feed' : 'feeds'} · L {mins(r.leftMs)}m · R {mins(r.rightMs)}m{r.bottleMl ? ` · ${amount(r.bottleMl, settings.units)}` : ''}</T>
                 <T tone="muted" style={type.label}>
                   {r.wet} wet · {r.dirty} dirty{r.sleepMs ? ` · slept ${span(r.sleepMs)}` : ''}
                 </T>
-              </View>
+              </View>}
             </View>
           ))}
         </View>

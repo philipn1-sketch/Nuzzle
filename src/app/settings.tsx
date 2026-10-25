@@ -7,11 +7,11 @@ import { SyncSection } from '../components/SyncSection';
 import { Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from '../config';
 import { feedsToCsv } from '../core/csv';
-import { dayStartOf, savedFeeds } from '../core/feeds';
+import { dayStartOf } from '../core/feeds';
 import { ageText, clockTime, span } from '../core/format';
-import { babyName, feedsOf } from '../core/reminder';
+import { babyName } from '../core/reminder';
 import type { ClockReminder, ThemeChoice, Units } from '../core/types';
-import { useApp } from '../state/AppState';
+import { hasData, useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { line, radius, space, TAP, type } from '../theme';
 
@@ -50,7 +50,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {settings.babies.map((b, i) => {
           const many = settings.babies.length > 1;
-          const canRemove = many && feedsOf(allFeeds, settings, b.id).length === 0;
+          const canRemove = many && !hasData(allFeeds, allEntries, settings, b.id);
           return (
             <Section key={b.id} label={many ? `Baby ${i + 1}` : 'Baby'}>
               <TextInput
@@ -190,7 +190,7 @@ export default function SettingsScreen() {
             {sync.code ? 'Your feeds are on this phone and in the backup. Nothing else is sent anywhere.' : 'Everything stays on this phone. Nothing is sent anywhere.'}
           </T>
           <QuietButton
-            label={`Export ${savedFeeds(allFeeds).length} feeds as a spreadsheet ›`}
+            label="Export everything as a spreadsheet ›"
             tone="ink"
             onPress={exportCsv}
             style={styles.left}

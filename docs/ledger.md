@@ -132,3 +132,35 @@ Not changed: the ring stepping aside for question cards (kept on purpose so card
 
 * Typing in the minutes box added to the old number on iPhone ("1" then typing 15 gave "115"), because iOS doesn't select the existing text when the field opens. **Fixed:** the box opens empty with the old value as a hint, so typing replaces it.
 * Confirmed on iPhone 17, iOS 26.5: first launch, start, switch, pause, carry on, Done, Undo, the reminder question, the reminder actually queued by iOS, closing the app for over a minute with the timer still right on reopening, History, and editing by typing.
+
+## Round 9: design and the 3 am test on everything new (critic J, fresh, drove the preview in Night and Day)
+
+Verdict: one more pass. The 3 am basics still pass; the new features had crowded Home.
+
+1. Starting a feed with the baby switch and sleep bar showing cut the ring off behind the snackbar. **Fixed:** the sleep bar and quick buttons step aside while a feed runs, and when the ring has too little room Home shows the same answer as plain text.
+2. After a bottle, "which side next" left the ring. **Fixed:** "Ended on the right" always stays in the ring; the bottle is the small line below.
+3. Day theme side chip measured 3.7:1. **Fixed:** in the day the chips have a plain fill and a coloured outline (Home and History).
+4. "Asleep for just now". **Fixed:** "Just fell asleep".
+5. Not clear which baby was asleep. **Fixed:** the bar sits under the baby switch and names the baby when there are two.
+6. Woke up showed twice. **Fixed:** only the bar has it.
+7. Quick and top pills were 48 tall. **Fixed:** 56.
+8. "2 nappies, 2 wet, 1 dirty" was confusing. **Fixed:** each nappy counted once: "2 nappies today: 1 wet, 1 wet and dirty".
+9. The summary showed empty days as zeros a health visitor could misread. **Fixed:** "Nothing logged", and it says feeds include bottles.
+10. Large text broke the ring. **Fixed:** the label and chip are capped and centred, like the side buttons.
+11. Rose used for the selected day in the week chart, and a white bottle tick. **Fixed:** ink and lilac.
+12. Wording mismatches. **Fixed:** "Add a weight" opens "Weight"; "Export everything as a spreadsheet".
+13. Save overlapping the note on Pumping, a clipped italic note, kinks in the icon's heart. **Fixed.**
+Cuts taken: Pump moved off Home into History; the age line hides when the baby switch shows. Kept: quiet hours (Philip asked for it).
+
+## Round 10: code and data safety on everything new (critic I, fresh, ran the SQL in Postgres)
+
+Verdict: one more pass. Two must fix, five should fix, all done:
+
+1. A discarded feed was erased locally but stayed running on the server, so the other phone showed it running forever and the first phone got it back. **Fixed:** discard, Undo on start and under five seconds are soft deletes; tested with two phones in the preview.
+2. Changes saved at the same moment could be skipped for good by the sync cursor. **Fixed:** the database function handles one sync per family at a time; reproduced and rechecked in Postgres.
+3. A phone with a fast clock could make the other phone's later edit lose. **Fixed:** every change stamps later than the version it replaces.
+4. Merging the babies list could hide a baby that has feeds. **Fixed:** a baby with anything logged is kept and the list goes back up.
+5. Remove this baby ignored nappies, sleep and growth. **Fixed.**
+6. A Watch tap made while the iPhone app was closed was lost. **Fixed:** taps queue until the app listens, and the app listens before reading the queue.
+7. No size limits on the sync function. **Fixed:** limits on payload, babies list and rows per family; bad ids and change times are ignored.
+Nits fixed: reminders are scheduled one call at a time; the CSV can't run formulas and handles line breaks.

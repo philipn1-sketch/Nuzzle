@@ -9,11 +9,11 @@ import {
 } from '../core/feeds';
 import { ageText, amount, clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
 import { babyName } from '../core/reminder';
-import { nappyCount, runningSleep } from '../core/entries';
+import { nappyCount, nappyLine, runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { radius, sideColor, space, type, wash } from '../theme';
+import { chipStyle, radius, sideColor, space, type, wash } from '../theme';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -35,6 +35,9 @@ export default function Home() {
   const name = babyName(app.baby);
   const age = app.baby.birthday !== null ? ageText(app.baby.birthday, now) : '';
   const sleeping = runningSleep(app.entries);
+  const many = settings.babies.length > 1;
+  // while a feed runs the sleep bar steps aside for the ring; the Woke up button moves to the row below
+  const sleepBar = sleeping !== null && !active;
   const nappies = nappyCount(app.entries, dayStartOf(now), dayStartOf(now, -1));
 
   const sideState = (side: Side): SideState => {
@@ -52,9 +55,10 @@ export default function Home() {
 
   const { width, height } = useWindowDimensions();
   // the ring makes room when a question card is showing
-  const ring = Math.min(width - 2 * space.side - 40, height * 0.36, 300);
+  const ring = Math.min(width - 2 * space.side - 40, height * 0.36 - (many ? 56 : 0) - (sleepBar ? 64 : 0), 300);
   // when a question card needs the room, the same answer shows without the ring
-  const compact = showStill || showAsk;
+  // the ring needs room; with the baby switch and sleep bar showing on a small phone, the answer shows as plain text
+  const compact = showStill || showAsk || ring < 240;
   const ringProgress = active ? 1 : last ? (now - feedStart(last)) / (settings.intervalMin * 60_000) : 0;
   // While feeding the ring is a calm full circle in the feeding side's colour. At rest it is neutral
   // and fills as time passes towards her reminder time.
@@ -67,16 +71,7 @@ export default function Home() {
         left={<PillButton label="History" onPress={() => router.push('/history')} testID="open-history" />}
         right={<PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />}
       />
-      {age !== '' && <T testID="age" tone="muted" style={[type.label, styles.centreText, styles.age]}>{age}</T>}
-      {sleeping && (
-        <View style={[styles.sleepBar, { backgroundColor: p.surface }]} accessibilityLiveRegion="polite">
-          <View style={{ flex: 1 }}>
-            <T style={type.body} testID="asleep">Asleep for {span(now - sleeping.at)}</T>
-            <T tone="muted" style={type.label}>Since {timeOf(sleeping.at)}</T>
-          </View>
-          <PillButton label="Woke up" onPress={app.toggleSleep} testID="woke-up" a11yLabel="She woke up" />
-        </View>
-      )}
+      {age !== '' && !many && <T testID="age" tone="muted" style={[type.label, styles.centreText, styles.age]}>{age}</T>}
       {settings.babies.length > 1 && (
         <View style={styles.babies}>
           <Choice<string>
@@ -85,6 +80,17 @@ export default function Home() {
             onChange={app.switchBaby}
             options={settings.babies.map((b) => ({ value: b.id, label: babyName(b) }))}
           />
+        </View>
+      )}
+      {sleepBar && sleeping && (
+        <View style={[styles.sleepBar, { backgroundColor: p.surface }]} accessibilityLiveRegion="polite">
+          <View style={{ flex: 1 }}>
+            <T style={type.body} testID="asleep">
+              {many ? `${name} ` : ''}{now - sleeping.at < 60_000 ? (many ? 'just fell asleep' : 'Just fell asleep') : `${many ? 'asleep' : 'Asleep'} for ${span(now - sleeping.at)}`}
+            </T>
+            <T tone="muted" style={type.label}>Since {timeOf(sleeping.at)}</T>
+          </View>
+          <PillButton label="Woke up" onPress={app.toggleSleep} testID="woke-up" a11yLabel="She woke up" />
         </View>
       )}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
@@ -104,20 +110,23 @@ export default function Home() {
               </>
             ) : last ? (
               <>
-                <T tone="muted" style={[type.label, styles.centreText]} numberOfLines={2}>Since {name}&apos;s last feed started</T>
+                <T tone="muted" style={[type.label, styles.centreText]} numberOfLines={2} maxFontSizeMultiplier={1.2}>Since {name}&apos;s last feed started</T>
                 <T testID="since" accessibilityLabel={`${spanWords(now - feedStart(last))} since the last feed started`} numberOfLines={1}
                   adjustsFontSizeToFit maxFontSizeMultiplier={1.3} style={[type.answer, { color: p.ink }]}>
                   {cap(span(now - feedStart(last)))}
                 </T>
-                {last.bottle ? (
+                {lastSide ? (
+                  // the side answer stays in the ring even after a bottle
+                  <View style={[styles.sideChip, chipStyle(p, sideColor(p, endSide(lastSide)))]}>
+                    <T testID="last-side" tone={endSide(lastSide) === 'L' ? 'accent' : 'peach'} style={[type.body, styles.centreText]} maxFontSizeMultiplier={1.2}>
+                      Ended on the {sideWord(endSide(lastSide))}
+                    </T>
+                  </View>
+                ) : last.bottle ? (
                   <View style={[styles.sideChip, { backgroundColor: wash(p.muted) }]}>
-                    <T testID="last-side" style={type.body} maxFontSizeMultiplier={1.4}>Bottle, {amount(last.bottle.amountMl, settings.units)}</T>
+                    <T testID="last-side" style={[type.body, styles.centreText]} maxFontSizeMultiplier={1.2}>Bottle, {amount(last.bottle.amountMl, settings.units)}</T>
                   </View>
-                ) : (
-                  <View style={[styles.sideChip, { backgroundColor: wash(sideColor(p, endSide(last))) }]}>
-                    <T testID="last-side" tone={endSide(last) === 'L' ? 'accent' : 'peach'} style={type.body} maxFontSizeMultiplier={1.4}>Ended on the {sideWord(endSide(last))}</T>
-                  </View>
-                )}
+                ) : null}
               </>
             ) : (
               <>
@@ -132,18 +141,16 @@ export default function Home() {
           ) : last ? (
             <View style={styles.under}>
               {last.bottle ? (
-                lastSide && (
-                  <T tone="muted" style={[type.label, styles.centreText]}>
-                    Last breast feed ended on the {sideWord(endSide(lastSide))}
-                  </T>
-                )
+                <T tone="muted" style={[type.label, styles.centreText]}>
+                  Last feed at {timeOf(feedStart(last))} · Bottle {amount(last.bottle.amountMl, settings.units)}
+                </T>
               ) : (
                 <T tone="muted" style={[type.label, styles.centreText]}
                   accessibilityLabel={`Last feed at ${timeOf(feedStart(last))}: ${sideRuns(last, now).map((r) => `${sideWord(r.side)} ${mins(r.ms)} minutes`).join(', then ')}`}>
                   Last feed at {timeOf(feedStart(last))} · {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
                 </T>
               )}
-              {last.note ? <T tone="muted" style={[type.label, styles.centreText, { fontStyle: 'italic' }]} numberOfLines={2}>{last.note}</T> : null}
+              {last.note ? <T tone="muted" style={[type.label, styles.centreText, { fontStyle: 'italic', paddingRight: 2 }]} numberOfLines={2}>{last.note}</T> : null}
               {due ? (
                 <T style={[type.body, styles.centreText]}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
               ) : (
@@ -152,17 +159,16 @@ export default function Home() {
             </View>
           ) : null}
 
-          {!compact && (
+          {!compact && !active && (
             <View style={styles.quick} accessibilityLabel="Log something else">
-              {!active && <PillButton label="Bottle" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" a11yLabel="Log a bottle" />}
+              {<PillButton label="Bottle" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" a11yLabel="Log a bottle" />}
               <PillButton label="Nappy" onPress={() => router.push('/entry/new?kind=nappy')} testID="log-nappy" a11yLabel="Log a nappy" />
-              <PillButton label="Pump" onPress={() => router.push('/entry/new?kind=pump')} testID="log-pump" a11yLabel="Log pumping" />
-              <PillButton label={sleeping ? 'Woke up' : 'Sleep'} onPress={app.toggleSleep} testID="log-sleep" a11yLabel={sleeping ? 'She woke up' : 'Start a sleep'} />
+              {!sleeping && <PillButton label="Sleep" onPress={app.toggleSleep} testID="log-sleep" a11yLabel="Start a sleep" />}
             </View>
           )}
           {nappies.total > 0 && !compact && (
             <T tone="muted" style={[type.label, styles.centreText]} testID="nappies-today">
-              Today: {nappies.total} {nappies.total === 1 ? 'nappy' : 'nappies'}, {nappies.wet} wet, {nappies.dirty} dirty
+              {nappyLine(nappies)}
             </T>
           )}
 

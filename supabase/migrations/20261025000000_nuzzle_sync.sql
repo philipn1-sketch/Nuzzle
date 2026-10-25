@@ -49,17 +49,30 @@ begin
   if length(clean) <> 12 then
     raise exception 'family code must be 12 characters';
   end if;
-  if jsonb_typeof(coalesce(feeds, '[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(feeds, '[]'::jsonb)) > 2000 then
-    raise exception 'too many feeds in one go';
+  if jsonb_typeof(coalesce(feeds, '[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(feeds, '[]'::jsonb)) > 2000
+     or octet_length(coalesce(feeds, '[]'::jsonb)::text) > 1000000 then
+    raise exception 'too much in one go';
+  end if;
+  if babies is not null and octet_length(babies::text) > 20000 then
+    raise exception 'babies list too large';
   end if;
   fam := encode(sha256(convert_to(clean, 'UTF8')), 'hex');
 
   insert into public.nuzzle_families (family) values (fam) on conflict (family) do nothing;
+  -- one sync at a time per family, so change numbers are handed out in the order changes are saved
+  -- and a phone reading "everything after n" can never skip a change still being written
+  perform 1 from public.nuzzle_families as nf where nf.family = fam for update;
+
+  if (select count(*) from public.nuzzle_feeds as f where f.family = fam) > 100000 then
+    raise exception 'this family is full';
+  end if;
 
   insert into public.nuzzle_feeds (family, id, data, updated_at, seq)
-  select fam, f->>'id', f, coalesce((f->>'updatedAt')::bigint, 0), nextval('public.nuzzle_seq')
+  select fam, f->>'id', f,
+    case when jsonb_typeof(f->'updatedAt') = 'number' then floor((f->>'updatedAt')::numeric)::bigint else 0 end,
+    nextval('public.nuzzle_seq')
   from jsonb_array_elements(coalesce(feeds, '[]'::jsonb)) as f
-  where f ? 'id'
+  where jsonb_typeof(f) = 'object' and jsonb_typeof(f->'id') = 'string' and length(f->>'id') <= 64
   on conflict (family, id) do update
     set data = excluded.data, updated_at = excluded.updated_at, seq = excluded.seq
     where public.nuzzle_feeds.updated_at < excluded.updated_at;

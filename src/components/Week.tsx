@@ -34,7 +34,7 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
   const blockStyle = (b: Block) => {
     const left = `${b.from * 100}%` as const;
     const width = `${Math.max(b.to - b.from, 0.004) * 100}%` as const;
-    if (b.what === 'bottle') return [styles.block, { left, width: 3, top: 0, bottom: 0, backgroundColor: p.ink }];
+    if (b.what === 'bottle') return [styles.block, { left, width: 3, top: 0, bottom: 0, backgroundColor: p.muted }];
     if (b.what === 'L') return [styles.block, { left, width, top: 0, bottom: 0, backgroundColor: p.accent }];
     return [styles.block, { left, width, top: STRIP_H * 0.4, bottom: 0, backgroundColor: p.peach }];
   };
@@ -63,7 +63,7 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
                   styles.bar,
                   {
                     height: Math.max((d.breastMs / most) * BAR_H, d.breastMs > 0 ? 4 : 0),
-                    backgroundColor: i === picked ? p.accent : wash(p.muted, 'A6'),
+                    backgroundColor: i === picked ? p.ink : wash(p.muted, '80'),
                   },
                 ]}
               />
@@ -84,7 +84,7 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
         <View style={styles.legend}>
           <Key color={p.accent} label="Left" />
           <Key color={p.peach} label="Right" short />
-          <Key color={p.ink} label="Bottle" thin />
+          <Key color={p.muted} label="Bottle" thin />
         </View>
         <View style={styles.hours}>
           <View style={styles.dayCol} />

@@ -1,5 +1,5 @@
 import {
-  checkEntry, entriesOf, entryDetail, entryTitle, inQuiet, lengthText, nappyCount, runningSleep, sleepWithin, startSleep, wakeUp, weightText,
+  checkEntry, entriesOf, entryDetail, entryTitle, inQuiet, lengthText, nappyCount, nappyLine, runningSleep, sleepWithin, startSleep, wakeUp, weightText,
 } from '../entries';
 import { feedFromDraft } from '../feeds';
 import { DEFAULT_SETTINGS } from '../settings';
@@ -13,7 +13,8 @@ const e = (x: Partial<Entry>): Entry => ({ id: `e${Math.random()}`, type: 'entry
 describe('nappies', () => {
   it('counts a wet and dirty nappy as both', () => {
     const list = [e({ nappy: 'wet' }), e({ nappy: 'dirty' }), e({ nappy: 'both' }), e({ nappy: 'wet', deletedAt: T0 })];
-    expect(nappyCount(list, T0 - MIN, T0 + MIN)).toEqual({ wet: 2, dirty: 2, total: 3 });
+    expect(nappyCount(list, T0 - MIN, T0 + MIN)).toMatchObject({ wet: 2, dirty: 2, total: 3 });
+    expect(nappyLine(nappyCount(list, T0 - MIN, T0 + MIN))).toBe('3 nappies today: 1 wet, 1 dirty, 1 wet and dirty');
     expect(entryTitle(list[2], 'ml', T0)).toBe('Wet and dirty nappy');
   });
 });
