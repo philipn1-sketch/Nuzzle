@@ -51,3 +51,37 @@ export function dayLabel(dayStart: number, now: number): string {
   if (dayStart === y0) return 'Yesterday';
   return new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 }
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** "Born today", "12 days old", "3 weeks 2 days old", "2 months 1 week old", "2 years old". Counted in calendar days. */
+export function ageText(birthday: number, now: number): string {
+  const b = new Date(birthday);
+  const n = new Date(now);
+  const b0 = new Date(b.getFullYear(), b.getMonth(), b.getDate());
+  const n0 = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const days = Math.round((n0.getTime() - b0.getTime()) / 86_400_000);
+  if (days < 0) return '';
+  if (days === 0) return 'Born today';
+  if (days < 14) return `${plural(days, 'day')} old`;
+  if (days < 56) {
+    const d = days % 7;
+    return `${plural(Math.floor(days / 7), 'week')}${d ? ` ${plural(d, 'day')}` : ''} old`;
+  }
+  let months = (n0.getFullYear() - b0.getFullYear()) * 12 + n0.getMonth() - b0.getMonth();
+  if (n0.getDate() < b0.getDate()) months -= 1;
+  if (months >= 24) return `${plural(Math.floor(months / 12), 'year')} old`;
+  const monthDay = new Date(b0.getFullYear(), b0.getMonth() + months, b0.getDate());
+  const weeks = Math.floor(Math.round((n0.getTime() - monthDay.getTime()) / 86_400_000) / 7);
+  return `${plural(months, 'month')}${weeks ? ` ${plural(weeks, 'week')}` : ''} old`;
+}
+
+const ML_PER_OZ = 29.5735;
+/** Amounts are stored in millilitres; ounces show to the nearest half. */
+export const toOz = (ml: number): number => Math.round((ml / ML_PER_OZ) * 2) / 2;
+export const fromOz = (oz: number): number => Math.round(oz * ML_PER_OZ);
+export const amount = (ml: number, units: 'ml' | 'oz'): string => (units === 'oz' ? `${toOz(ml)} oz` : `${ml} ml`);
+export const milkWord = (m: 'breast' | 'formula'): string => (m === 'formula' ? 'formula' : 'breast milk');
+
+/** A clock time of day, such as 9:00 PM, in her phone's own format. */
+export const clockTime = (hour: number, minute: number): string => timeOf(new Date(2000, 0, 1, hour, minute).getTime());

@@ -18,5 +18,5 @@ const write = (key: string, value: unknown) => {
 export const loadFeeds = (): Feed[] => read<Feed[]>('nuzzle.feeds', []);
 export const putFeed = (f: Feed): void => write('nuzzle.feeds', [...loadFeeds().filter((x) => x.id !== f.id), f]);
 export const removeFeed = (id: string): void => write('nuzzle.feeds', loadFeeds().filter((x) => x.id !== id));
-export const loadSettings = (): Partial<Settings> => read('nuzzle.settings', {});
+export const loadSettings = (): Record<string, unknown> => read('nuzzle.settings', {});
 export const putSettings = (s: Settings): void => write('nuzzle.settings', s);

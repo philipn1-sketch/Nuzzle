@@ -1,10 +1,11 @@
 import { applyDraft, feedFromDraft, tapSide } from '../feeds';
 import { planReminder } from '../reminder';
+import { DEFAULT_SETTINGS } from '../settings';
 import type { Feed, Settings } from '../types';
 
 const MIN = 60_000;
 const T0 = new Date(2026, 9, 24, 3, 0, 0).getTime();
-const settings: Settings = { babyName: '', remindersOn: true, intervalMin: 120, theme: 'night', reminderAsked: true };
+const settings: Settings = { ...DEFAULT_SETTINGS, reminderAsked: true };
 const saved = (startMin: number, endedOn: 'L' | 'R', id = `s${startMin}`): Feed =>
   feedFromDraft({ start: T0 + startMin * MIN, leftMin: 10, rightMin: 8, endedOn }, id);
 
@@ -16,7 +17,7 @@ describe('reminder scheduling', () => {
   });
 
   it('uses her own interval and the baby name', () => {
-    const plan = planReminder([saved(0, 'L')], { ...settings, intervalMin: 165, babyName: 'Daphne' }, T0)!;
+    const plan = planReminder([saved(0, 'L')], { ...settings, intervalMin: 165 }, T0, 'Daphne')!;
     expect(plan.at).toBe(T0 + 165 * MIN);
     expect(plan.body).toBe("It has been 2h 45m since Daphne's last feed started. Ended on the left.");
   });

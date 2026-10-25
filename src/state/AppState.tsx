@@ -2,14 +2,14 @@ import { router } from 'expo-router';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState as RNAppState } from 'react-native';
 
-import { REMINDER_DEFAULT_MIN } from '../config';
 import {
   activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
-import { mins, sideWord, timeOf } from '../core/format';
-import { planReminder } from '../core/reminder';
-import type { Feed, Settings, Side } from '../core/types';
+import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
+import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
+import { migrateSettings } from '../core/settings';
+import type { Baby, Feed, Settings, Side } from '../core/types';
 import * as db from '../data/db';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
@@ -24,17 +24,13 @@ export interface Snack {
   actions: SnackAction[];
 }
 
-const DEFAULT_SETTINGS: Settings = {
-  babyName: '',
-  remindersOn: true,
-  intervalMin: REMINDER_DEFAULT_MIN,
-  theme: 'night',
-  reminderAsked: false,
-};
-
 interface AppStateValue {
+  /** The feeds of the baby being shown. */
   feeds: Feed[];
+  /** Every baby's feeds, for the export. */
+  allFeeds: Feed[];
   settings: Settings;
+  baby: Baby;
   permission: notify.Permission;
   /** When the phone actually has the next reminder queued, read back after scheduling. */
   scheduledAt: number | null;
@@ -48,6 +44,11 @@ interface AppStateValue {
   saveDraft: (draft: FeedDraft, editingId: string | null) => DraftProblem | null;
   remove: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
+  switchBaby: (id: string) => void;
+  addBaby: () => void;
+  updateBaby: (id: string, patch: Partial<Omit<Baby, 'id'>>) => void;
+  /** Only a baby with no feeds can be removed, so nothing is ever lost. */
+  removeBaby: (id: string) => void;
   askReminders: () => Promise<void>;
   hideSnack: () => void;
 }
@@ -66,8 +67,10 @@ function runningText(f: Feed): string {
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [feeds, setFeeds] = useState<Feed[]>(() => db.loadFeeds());
-  const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...db.loadSettings() }));
+  const [allFeeds, setAllFeeds] = useState<Feed[]>(() => db.loadFeeds());
+  const [settings, setSettings] = useState<Settings>(() => migrateSettings(db.loadSettings()));
+  const baby = activeBaby(settings);
+  const feeds = useMemo(() => feedsOf(allFeeds, settings, baby.id), [allFeeds, settings, baby.id]);
   const [permission, setPermission] = useState<notify.Permission>('undetermined');
   const [snack, setSnack] = useState<Snack | null>(null);
   const [scheduledAt, setScheduledAt] = useState<number | null>(null);
@@ -78,13 +81,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // the latest feeds, for undo actions that run after later renders
   const feedsRef = useRef(feeds);
   feedsRef.current = feeds;
+  const allRef = useRef(allFeeds);
+  allRef.current = allFeeds;
+  const babyRef = useRef(baby);
+  babyRef.current = baby;
 
-  /** Writes the changed feeds to the phone first, then shows them. */
+  /** Writes the changed feeds to the phone first, then shows them. A new feed belongs to the baby on screen. */
   const commit = useCallback((changed: Feed[], removedIds: string[] = []) => {
-    for (const f of changed) db.putFeed(f);
+    const now = Date.now();
+    const stamped = changed.map((f) => {
+      const before = allRef.current.find((x) => x.id === f.id);
+      const babyId = f.babyId ?? (before ? before.babyId : babyRef.current.id);
+      return { ...f, ...(babyId ? { babyId } : {}), updatedAt: now };
+    });
+    for (const f of stamped) db.putFeed(f);
     for (const id of removedIds) db.removeFeed(id);
-    const ids = new Set([...changed.map((f) => f.id), ...removedIds]);
-    setFeeds([...feedsRef.current.filter((f) => !ids.has(f.id)), ...changed]);
+    const ids = new Set([...stamped.map((f) => f.id), ...removedIds]);
+    const next = [...allRef.current.filter((f) => !ids.has(f.id)), ...stamped];
+    allRef.current = next;
+    setAllFeeds(next);
   }, []);
 
   const showSnack = useCallback((message: string, actions: SnackAction[] = []) => {
@@ -111,15 +126,24 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // The reminder and the lock screen notice always follow the stored feeds. Running this whenever the
   // feeds, settings or permission change, and whenever the app comes back, means a restart can't lose them.
   useEffect(() => {
-    const plan = planReminder(feeds, settings, Date.now());
+    const now = Date.now();
+    const many = settings.babies.length > 1;
+    const plans: notify.Planned[] = [];
+    for (const b of settings.babies) {
+      const mine = feedsOf(allFeeds, settings, b.id);
+      const plan = planReminder(mine, settings, now, babyName(b));
+      if (plan) plans.push({ babyId: b.id, ...plan });
+      const a = activeFeed(mine);
+      const text = a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null;
+      notify.showRunningNotice(b.id, text).catch(() => {});
+    }
+    const clock = settings.clockReminders.map((c) => ({ ...c, body: `Your ${clockTime(c.hour, c.minute)} reminder.` }));
     notify
-      .scheduleReminder(plan?.at ?? null, plan?.body ?? '')
-      .then(() => notify.pendingReminderAt())
+      .syncReminders(plans, clock)
+      .then(() => notify.pendingReminderAt(baby.id))
       .then(setScheduledAt)
       .catch(() => setScheduledAt(null));
-    const a = activeFeed(feeds);
-    notify.showRunningNotice(a ? runningText(a) : null).catch(() => {});
-  }, [feeds, settings, permission, foreground]);
+  }, [allFeeds, settings, baby.id, permission, foreground]);
 
   const lastTap = useRef({ side: 'L' as Side, at: 0 });
 
@@ -189,10 +213,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const problem = checkDraft(draft, feed, feedsRef.current, now);
       if (problem) return problem;
       commit([feed]);
-      showSnack(original ? 'Feed updated.' : `Feed added. Ended on the ${sideWord(endSide(feed))}.`);
+      if (original) showSnack(feed.bottle ? 'Bottle updated.' : 'Feed updated.');
+      else if (feed.bottle) showSnack(`Bottle added. ${amount(feed.bottle.amountMl, settings.units)}.`);
+      else showSnack(`Feed added. Ended on the ${sideWord(endSide(feed))}.`);
       return null;
     },
-    [commit, showSnack],
+    [commit, showSnack, settings.units],
   );
 
   const remove = useCallback(
@@ -213,6 +239,39 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const switchBaby = useCallback((id: string) => {
+    setStillFeedingAnswered(false);
+    setSnack(null);
+    updateSettings({ activeBabyId: id });
+  }, [updateSettings]);
+
+  const addBaby = useCallback(() => {
+    setSettings((s) => {
+      const id = `b${Date.now().toString(36)}`;
+      const next = { ...s, babies: [...s.babies, { id, name: '', birthday: null }], activeBabyId: id };
+      db.putSettings(next);
+      return next;
+    });
+  }, []);
+
+  const updateBaby = useCallback((id: string, patch: Partial<Omit<Baby, 'id'>>) => {
+    setSettings((s) => {
+      const next = { ...s, babies: s.babies.map((b) => (b.id === id ? { ...b, ...patch } : b)) };
+      db.putSettings(next);
+      return next;
+    });
+  }, []);
+
+  const removeBaby = useCallback((id: string) => {
+    setSettings((s) => {
+      if (s.babies.length < 2 || feedsOf(allRef.current, s, id).length > 0) return s;
+      const babies = s.babies.filter((b) => b.id !== id);
+      const next = { ...s, babies, activeBabyId: s.activeBabyId === id ? babies[0].id : s.activeBabyId };
+      db.putSettings(next);
+      return next;
+    });
+  }, []);
+
   const askReminders = useCallback(async () => {
     const p = await notify.askPermission().catch(() => 'denied' as const);
     setPermission(p);
@@ -221,10 +280,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppStateValue>(
     () => ({
-      feeds, settings, permission, scheduledAt, snack, stillFeedingAnswered,
-      tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, askReminders, hideSnack,
+      feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
+      tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
     }),
-    [feeds, settings, permission, scheduledAt, snack, stillFeedingAnswered, tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, askReminders, hideSnack],
+    [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, done, discard, keepFeeding, saveDraft, remove,
+      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

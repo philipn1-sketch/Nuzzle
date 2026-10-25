@@ -3,11 +3,11 @@ import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 
 import { Ring } from '../components/Ring';
 import { SideButton, type SideState } from '../components/SideButton';
-import { Card, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
+import { Card, Choice, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import {
-  activeFeed, endSide, feedStart, isDue, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
+  activeFeed, endSide, feedStart, isDue, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
-import { clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
+import { ageText, amount, clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
 import { babyName } from '../core/reminder';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
@@ -29,8 +29,10 @@ export default function Home() {
   const p = usePalette();
   const active = activeFeed(feeds);
   const last = lastSaved(feeds);
+  const lastSide = lastBreast(feeds);
   const suggested = suggestedSide(feeds);
-  const name = babyName(settings);
+  const name = babyName(app.baby);
+  const age = app.baby.birthday !== null ? ageText(app.baby.birthday, now) : '';
 
   const sideState = (side: Side): SideState => {
     if (active) {
@@ -62,6 +64,17 @@ export default function Home() {
         left={<PillButton label="History" onPress={() => router.push('/history')} testID="open-history" />}
         right={<PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />}
       />
+      {age !== '' && <T testID="age" tone="muted" style={[type.label, styles.centreText, styles.age]}>{age}</T>}
+      {settings.babies.length > 1 && (
+        <View style={styles.babies}>
+          <Choice<string>
+            label="Baby"
+            value={app.baby.id}
+            onChange={app.switchBaby}
+            options={settings.babies.map((b) => ({ value: b.id, label: babyName(b) }))}
+          />
+        </View>
+      )}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
         <View style={styles.top}>
           <RingOrPlain compact={compact} size={ring} width={14} progress={ringProgress} color={ringColor} track={wash(p.muted, '2E')}>
@@ -84,9 +97,15 @@ export default function Home() {
                   adjustsFontSizeToFit maxFontSizeMultiplier={1.3} style={[type.answer, { color: p.ink }]}>
                   {cap(span(now - feedStart(last)))}
                 </T>
-                <View style={[styles.sideChip, { backgroundColor: wash(sideColor(p, endSide(last))) }]}>
-                  <T testID="last-side" tone={endSide(last) === 'L' ? 'accent' : 'peach'} style={type.body} maxFontSizeMultiplier={1.4}>Ended on the {sideWord(endSide(last))}</T>
-                </View>
+                {last.bottle ? (
+                  <View style={[styles.sideChip, { backgroundColor: wash(p.muted) }]}>
+                    <T testID="last-side" style={type.body} maxFontSizeMultiplier={1.4}>Bottle, {amount(last.bottle.amountMl, settings.units)}</T>
+                  </View>
+                ) : (
+                  <View style={[styles.sideChip, { backgroundColor: wash(sideColor(p, endSide(last))) }]}>
+                    <T testID="last-side" tone={endSide(last) === 'L' ? 'accent' : 'peach'} style={type.body} maxFontSizeMultiplier={1.4}>Ended on the {sideWord(endSide(last))}</T>
+                  </View>
+                )}
               </>
             ) : (
               <>
@@ -100,10 +119,18 @@ export default function Home() {
             <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" />
           ) : last ? (
             <View style={styles.under}>
-              <T tone="muted" style={[type.label, styles.centreText]}
-                accessibilityLabel={`Last feed at ${timeOf(feedStart(last))}: ${sideRuns(last, now).map((r) => `${sideWord(r.side)} ${mins(r.ms)} minutes`).join(', then ')}`}>
-                Last feed at {timeOf(feedStart(last))} · {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
-              </T>
+              {last.bottle ? (
+                <T tone="muted" style={[type.label, styles.centreText]}>
+                  Last feed at {timeOf(feedStart(last))} · Bottle {amount(last.bottle.amountMl, settings.units)}
+                  {lastSide ? ` · Last side ${sideWord(endSide(lastSide))}` : ''}
+                </T>
+              ) : (
+                <T tone="muted" style={[type.label, styles.centreText]}
+                  accessibilityLabel={`Last feed at ${timeOf(feedStart(last))}: ${sideRuns(last, now).map((r) => `${sideWord(r.side)} ${mins(r.ms)} minutes`).join(', then ')}`}>
+                  Last feed at {timeOf(feedStart(last))} · {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
+                </T>
+              )}
+              {last.note ? <T tone="muted" style={[type.label, styles.centreText, { fontStyle: 'italic' }]} numberOfLines={2}>{last.note}</T> : null}
               {due ? (
                 <T style={[type.body, styles.centreText]}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
               ) : (
@@ -111,6 +138,10 @@ export default function Home() {
               )}
             </View>
           ) : null}
+
+          {!active && !compact && (
+            <QuietButton label="Log a bottle ›" tone="ink" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" />
+          )}
 
           {showStill && active && (
             <Card style={styles.wide}>
@@ -160,6 +191,8 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: space.side, paddingVertical: space.l },
   top: { gap: space.l, alignItems: 'center' },
   centreText: { textAlign: 'center' },
+  age: { marginTop: -space.s },
+  babies: { paddingHorizontal: space.side, paddingTop: space.s },
   sideChip: { borderRadius: 999, paddingHorizontal: space.l, paddingVertical: 6, marginTop: space.xs },
   under: { gap: 2, alignItems: 'center' },
   wide: { alignSelf: 'stretch' },

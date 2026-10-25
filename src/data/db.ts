@@ -19,20 +19,30 @@ db.execSync(`
   CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
 `);
 
-type FeedRow = { id: string; status: Feed['status']; segments: string; deleted_at: number | null };
+// Bottles, notes and babies came later. Their fields live in one JSON column added to older files.
+if (!db.getAllSync<{ name: string }>('PRAGMA table_info(feeds)').some((c) => c.name === 'extra')) {
+  db.execSync('ALTER TABLE feeds ADD COLUMN extra TEXT');
+}
+
+type FeedRow = { id: string; status: Feed['status']; segments: string; deleted_at: number | null; extra: string | null };
+type Extra = Pick<Feed, 'kind' | 'babyId' | 'note' | 'bottle' | 'updatedAt'>;
 
 export function loadFeeds(): Feed[] {
   // deleted feeds are kept a day so Undo works, then cleared out
   db.runSync('DELETE FROM feeds WHERE deleted_at IS NOT NULL AND deleted_at < ?', Date.now() - 86_400_000);
   return db
-    .getAllSync<FeedRow>('SELECT id, status, segments, deleted_at FROM feeds')
-    .map((r) => ({ id: r.id, status: r.status, segments: JSON.parse(r.segments), deletedAt: r.deleted_at }));
+    .getAllSync<FeedRow>('SELECT id, status, segments, deleted_at, extra FROM feeds')
+    .map((r) => ({
+      ...(r.extra ? (JSON.parse(r.extra) as Extra) : {}),
+      id: r.id, status: r.status, segments: JSON.parse(r.segments), deletedAt: r.deleted_at,
+    }));
 }
 
 export function putFeed(f: Feed): void {
+  const { id, status, segments, deletedAt, ...extra } = f;
   db.runSync(
-    'INSERT OR REPLACE INTO feeds (id, status, segments, deleted_at) VALUES (?, ?, ?, ?)',
-    f.id, f.status, JSON.stringify(f.segments), f.deletedAt,
+    'INSERT OR REPLACE INTO feeds (id, status, segments, deleted_at, extra) VALUES (?, ?, ?, ?, ?)',
+    id, status, JSON.stringify(segments), deletedAt, JSON.stringify(extra),
   );
 }
 
@@ -40,7 +50,7 @@ export function removeFeed(id: string): void {
   db.runSync('DELETE FROM feeds WHERE id = ?', id);
 }
 
-export function loadSettings(): Partial<Settings> {
+export function loadSettings(): Record<string, unknown> {
   const row = db.getFirstSync<{ value: string }>("SELECT value FROM settings WHERE key = 'settings'");
   return row ? JSON.parse(row.value) : {};
 }

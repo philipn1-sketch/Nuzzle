@@ -16,6 +16,6 @@ describe('formatting', () => {
   it('exports saved feeds oldest first as CSV', () => {
     const t = new Date(2026, 9, 24, 3, 5).getTime();
     const csv = feedsToCsv([feedFromDraft({ start: t, leftMin: 10, rightMin: 5, endedOn: 'R' }, 'a')], t);
-    expect(csv).toBe('date,start,end,left minutes,right minutes,total minutes,ended on\n2026/10/24,03:05,03:20,10.0,5.0,15.0,right\n');
+    expect(csv).toBe('baby,date,start,end,type,left minutes,right minutes,total minutes,ended on,bottle ml,milk,note\nBaby,2026/10/24,03:05,03:20,breast,10.0,5.0,15.0,right,,,\n');
   });
 });

@@ -5,14 +5,16 @@ import { APP_NAME } from '../config';
 
 export type Permission = 'granted' | 'denied' | 'undetermined';
 
-const REMINDER_ID = 'feed-reminder';
-const RUNNING_ID = 'feed-running';
+// one of each per baby: `feed-reminder:b1`, `feed-running:b1`
+const REMINDER = 'feed-reminder';
+const RUNNING = 'feed-running';
+const CLOCK = 'clock-reminder';
 
 /** Reminders ring and show as a banner; the running feed notice sits quietly on the lock screen. */
 export async function setUpNotifications(): Promise<void> {
   Notifications.setNotificationHandler({
     handleNotification: async (n) => {
-      const quiet = n.request.identifier === RUNNING_ID;
+      const quiet = n.request.identifier.startsWith(RUNNING);
       return { shouldShowBanner: !quiet, shouldShowList: true, shouldPlaySound: !quiet, shouldSetBadge: false };
     },
   });
@@ -42,35 +44,68 @@ export async function askPermission(): Promise<Permission> {
   return p.granted ? 'granted' : 'denied';
 }
 
-/** Replaces any pending reminder with this one, or clears it when `at` is null. */
-export async function scheduleReminder(at: number | null, body: string): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
-  if (at === null || at <= Date.now() || (await permission()) !== 'granted') return;
-  await Notifications.scheduleNotificationAsync({
-    identifier: REMINDER_ID,
-    content: { title: APP_NAME, body, sound: 'default' },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: 'reminders' },
-  });
+export interface Planned {
+  babyId: string;
+  at: number;
+  body: string;
 }
 
-/** Shows or clears the notice for a feed in progress, which also sits on the lock screen. */
-export async function showRunningNotice(body: string | null): Promise<void> {
+/**
+ * Makes the phone's queue match exactly: one reminder per baby that has one planned, and one repeating
+ * reminder for each clock time. Anything else of ours that is queued is cancelled.
+ */
+export async function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string }[]): Promise<void> {
+  const queued = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  const granted = (await permission()) === 'granted';
+  const keep = new Set<string>();
+  for (const p of plans) {
+    if (!granted || p.at <= Date.now()) continue;
+    const identifier = `${REMINDER}:${p.babyId}`;
+    keep.add(identifier);
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title: APP_NAME, body: p.body, sound: 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
+    });
+  }
+  for (const c of clock) {
+    if (!granted) continue;
+    const identifier = `${CLOCK}:${c.hour}:${c.minute}`;
+    keep.add(identifier);
+    if (queued.some((n) => n.identifier === identifier && n.content.body === c.body)) continue;
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title: APP_NAME, body: c.body, sound: 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: c.hour, minute: c.minute, channelId: 'reminders' },
+    });
+  }
+  for (const n of queued) {
+    const ours = n.identifier.startsWith(REMINDER) || n.identifier.startsWith(CLOCK);
+    if (ours && !keep.has(n.identifier)) await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {});
+  }
+}
+
+/** Shows or clears the notice for one baby's feed in progress, which also sits on the lock screen. */
+export async function showRunningNotice(babyId: string, body: string | null): Promise<void> {
+  const identifier = `${RUNNING}:${babyId}`;
   if (body === null) {
-    await Notifications.dismissNotificationAsync(RUNNING_ID).catch(() => {});
+    await Notifications.dismissNotificationAsync(identifier).catch(() => {});
+    // the notice from before there were babies
+    await Notifications.dismissNotificationAsync(RUNNING).catch(() => {});
     return;
   }
   if ((await permission()) !== 'granted') return;
   await Notifications.scheduleNotificationAsync({
-    identifier: RUNNING_ID,
+    identifier,
     content: { title: APP_NAME, body, sound: false, sticky: true, autoDismiss: false },
     trigger: Platform.OS === 'android' ? { channelId: 'feeding' } : null,
   });
 }
 
 /** The time the pending reminder is set for, used by the end to end test and Settings. */
-export async function pendingReminderAt(): Promise<number | null> {
+export async function pendingReminderAt(babyId: string): Promise<number | null> {
   const all = await Notifications.getAllScheduledNotificationsAsync();
-  const r = all.find((n) => n.identifier === REMINDER_ID);
+  const r = all.find((n) => n.identifier === `${REMINDER}:${babyId}`);
   if (!r) return null;
   const next = await Notifications.getNextTriggerDateAsync(r.trigger as Notifications.SchedulableNotificationTriggerInput).catch(() => null);
   return next ?? null;

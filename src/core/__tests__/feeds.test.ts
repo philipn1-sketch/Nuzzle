@@ -3,13 +3,14 @@ import {
   lastSaved, looksForgotten, sideMs, sideRuns, sinceLastStartMs, suggestedSide, tapSide, totalMs,
 } from '../feeds';
 import type { FeedDraft } from '../feeds';
+import { DEFAULT_SETTINGS } from '../settings';
 import type { Feed, Settings } from '../types';
 
 const MIN = 60_000;
 const T0 = new Date(2026, 9, 24, 3, 0, 0).getTime(); // 3:00 am local
 let n = 0;
 const id = () => `f${++n}`;
-const settings: Settings = { babyName: '', remindersOn: true, intervalMin: 120, theme: 'night', reminderAsked: true };
+const settings: Settings = { ...DEFAULT_SETTINGS, reminderAsked: true };
 
 describe('timer', () => {
   it('starts a feed on one tap and counts from the stored start time', () => {
