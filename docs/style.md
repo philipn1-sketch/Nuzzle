@@ -55,6 +55,10 @@ Spacing steps: 4, 8, 12, 16, 24, 32; screen side margin 20. Corners: 18 for rows
 
 150 to 250 ms, gentle springs, only to show what changed. Reduced motion turns it into fades. A soft haptic tick on start, switch, pause and stop.
 
+## App icon
+
+A deep rose heart (#B24C6A) with a crescent moon cut out of it, on milk cream (#FBF6EF). Chosen by Philip from the colourway options; the app itself keeps Midnight Plum. The splash screen shows the same mark in rose (#EBA3B9) on plum. The Watch app uses the same icon.
+
 ## Words
 
 Short, kind, plain. No exclamation marks, no dashes, no advice. "Baby" until she types a name.

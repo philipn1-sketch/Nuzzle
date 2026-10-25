@@ -2,7 +2,7 @@ import type { Baby, Feed } from '../core/types';
 
 /**
  * The online copy, through one database function (see supabase/migrations). The address and the
- * publishable key come from environment variables, set in mobile/.env. Without them sync stays off.
+ * publishable key come from environment variables, set in .env. Without them sync stays off.
  */
 const URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? '';

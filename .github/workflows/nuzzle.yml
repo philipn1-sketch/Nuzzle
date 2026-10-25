@@ -1,0 +1,98 @@
+# Nuzzle: unit tests and typecheck, then an iPhone simulator build tested end to end (start, switch, pause,
+# stop and undo, reminder queued, closing mid feed, typing in the editor, edit and delete) with screenshots.
+name: Nuzzle
+
+on:
+  push:
+  workflow_dispatch:
+
+concurrency:
+  group: nuzzle-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: .
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - name: Unit tests in two time zones
+        run: |
+          TZ=Australia/Perth npx jest
+          TZ=America/New_York npx jest
+      - name: No dashes in app text
+        run: node scripts/check-dashes.js
+
+  ios:
+    needs: check
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Generate the native iPhone project
+        run: npx expo prebuild --platform ios
+      - name: Build for the iPhone simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -workspace ios/Nuzzle.xcworkspace -scheme Nuzzle -configuration Release \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO 2>&1 | tee xcodebuild.log | grep -E "error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" xcodebuild.log
+      - name: Show build errors
+        if: failure()
+        run: grep -B2 -A8 "error:" xcodebuild.log | head -200 || tail -150 xcodebuild.log
+      - name: Install Maestro
+        working-directory: .
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      - name: End to end on an iPhone simulator
+        run: bash e2e/ios-run.sh "$PWD/build/Build/Products/Release-iphonesimulator/Nuzzle.app" "$GITHUB_WORKSPACE/e2e-out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nuzzle-ios-e2e
+          path: |
+            e2e-out
+            e2e/*.png
+            ~/.maestro/tests
+      - name: Save the iPhone screenshots in the repository
+        if: always()
+        working-directory: .
+        run: |
+          mkdir -p e2e-out
+          # Maestro's screenshot folder varies by version: gather them from wherever they landed
+          find "$HOME/.maestro" "$GITHUB_WORKSPACE/e2e" "$GITHUB_WORKSPACE/e2e-out" -type f \( -name 'night-[0-9]*.png' -o -name 'day-[0-9]*.png' \) -not -path '*/e2e-out/*' -exec cp {} e2e-out/ \; 2>/dev/null || true
+          ls -la e2e-out
+          ls e2e-out/*.png >/dev/null 2>&1 || exit 0
+          mkdir -p docs/screenshots/iphone
+          rm -f docs/screenshots/iphone/*.png
+          cp e2e-out/*.png docs/screenshots/iphone/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots/iphone
+          git diff --cached --quiet && exit 0
+          git commit -m "Update iPhone simulator screenshots from the end to end run [skip ci]"
+          git stash -u -q || true  # leave out files the native build generated
+          for i in 1 2 3; do git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && break; sleep 5; done

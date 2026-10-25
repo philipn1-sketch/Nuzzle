@@ -8,8 +8,8 @@ You do this once; it takes about 30 minutes, mostly waiting. Everything runs on 
 2. **Install Node.js** on the computer from nodejs.org (the LTS button).
 3. **Get the code.** Open Terminal (Mac) or PowerShell (Windows) and paste, one line at a time:
    ```
-   git clone -b claude/breastfeeding-tracker-app-dyycl7 https://github.com/philipn1-sketch/Game.git
-   cd Game/mobile
+   git clone https://github.com/philipn1-sketch/nuzzle.git
+   cd nuzzle
    npm install
    npx eas-cli@latest login
    npx eas-cli@latest init
