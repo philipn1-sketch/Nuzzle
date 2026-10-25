@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { loadFonts } from '../services/fonts';
 import { AppStateProvider } from '../state/AppState';
+import { LinkActions } from '../state/LinkActions';
 import { useThemeName } from '../state/theme';
 import { palettes } from '../theme';
 
@@ -36,6 +37,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <AppStateProvider>
         <Themed />
+        <LinkActions />
       </AppStateProvider>
     </SafeAreaProvider>
   );
