@@ -35,7 +35,8 @@
     "test": "jest",
     "typecheck": "tsc --noEmit",
     "preview:web": "expo export --platform web --output-dir dist && node scripts/serve-web.js",
-    "shots": "node scripts/shots-web.js docs/screenshots/web"
+    "shots": "node scripts/shots-web.js docs/screenshots/web",
+    "check:dashes": "node scripts/check-dashes.js"
   },
   "private": true,
   "jest": {

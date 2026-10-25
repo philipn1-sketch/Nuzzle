@@ -1,0 +1,41 @@
+// Fails if any text the app shows contains a hyphen between words or a dash.
+// Uses the TypeScript parser so code like `now - start` is never mistaken for text.
+const ts = require('typescript');
+const fs = require('fs');
+const path = require('path');
+
+const files = [];
+const walk = (dir) => {
+  for (const f of fs.readdirSync(dir)) {
+    const p = path.join(dir, f);
+    if (fs.statSync(p).isDirectory()) { if (f !== '__tests__') walk(p); }
+    else if (/\.tsx?$/.test(f) && f !== 'theme.ts') files.push(p); // theme.ts holds font names, not app text
+  }
+};
+walk(path.join(__dirname, '..', 'src'));
+
+// text only: anything with a space in it (ids, keys and styles have none)
+const bad = (s) => /\s/.test(s) && (/[–—]/.test(s) || /\s-\s/.test(s) || /[A-Za-z]-[A-Za-z]/.test(s));
+const problems = [];
+for (const file of files) {
+  const src = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const visit = (node) => {
+    let text = null;
+    if (ts.isJsxText(node)) text = node.getText();
+    else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) text = node.text;
+    else if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) text = node.text;
+    const inImport = !!node.parent && (ts.isImportDeclaration(node.parent) || ts.isExportDeclaration(node.parent));
+    if (text && !inImport && bad(text)) {
+      const { line } = src.getLineAndCharacterOfPosition(node.getStart());
+      problems.push(`${path.relative(process.cwd(), file)}:${line + 1}: ${text.trim()}`);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(src);
+}
+// comments are not app text, so they are not checked
+if (problems.length) {
+  console.error('Dashes or hyphens in app text:\n' + problems.join('\n'));
+  process.exit(1);
+}
+console.log(`No dashes in app text (${files.length} files checked).`);
