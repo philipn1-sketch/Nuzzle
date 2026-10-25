@@ -13,10 +13,13 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Edit feed"
 - takeScreenshot: night-10-edit-feed
 - tapOn:
-    id: "left-more"
+    id: "left-value"
+- inputText: "15"
+- takeScreenshot: night-10b-edit-feed-typing
 - tapOn:
     id: "save-feed"
 - assertVisible: "Feed updated."
+- assertVisible: "15m"
 - tapOn:
     id: "feed-row-.*"
     index: 0

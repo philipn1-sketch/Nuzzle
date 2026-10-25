@@ -37,7 +37,8 @@ export default function Home() {
   const showAsk = !active && last !== null && !settings.reminderAsked && permission === 'undetermined' && app.snack === null;
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
   const reminder = permission === 'granted' ? planReminder(feeds, settings, now) : null;
-  const due = settings.remindersOn && isDue(feeds, settings, now);
+  // only when a reminder can actually ring
+  const due = settings.remindersOn && permission === 'granted' && isDue(feeds, settings, now);
 
   return (
     <Screen>

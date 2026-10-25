@@ -92,3 +92,11 @@ Verdict: one more pass. Confirmed: 30 unit tests pass, running and paused feeds 
 3. "Past your 2h reminder time" showed with reminders off. **Fixed:** the due line and its honey colour only appear when reminders are on.
 4. Screen readers would read "1h 40m" oddly. **Fixed:** big numbers, side buttons and the last feed line have spoken labels in full words ("1 hour 40 minutes", "left 10 minutes").
 5. "Left side last" echoed Huckleberry. **Fixed:** "Feed added. Ended on the left."
+
+## Round 7: full recheck (critic G, fresh)
+
+Verdict: one more pass, on testing grounds. No remaining design or flow problems: every round 1 to 6 item is built, the 3 am path is one tap, palette and words hold, nothing like Huckleberry.
+
+1. The latest build had not yet run on an emulator, and no end to end step typed a number. **Fixed:** the Android run now types minutes in the editor and saves; a full run is started on the current code. The editor moves above the keyboard on Android too.
+2. At the largest text sizes the snackbar and Done text had no ceiling. **Fixed:** capped like the side buttons.
+3. The due line showed when phone notifications were refused. **Fixed:** it only shows when a reminder can actually ring.

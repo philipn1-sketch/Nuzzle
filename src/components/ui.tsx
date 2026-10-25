@@ -38,7 +38,7 @@ export function PrimaryButton({ label, onPress, hint, testID }: { label: string;
       accessibilityHint={hint}
       style={({ pressed }) => [styles.primary, { backgroundColor: p.accent, opacity: pressed ? 0.85 : 1 }]}
     >
-      <T tone="onAccent" style={type.title}>{label}</T>
+      <T tone="onAccent" style={type.title} maxFontSizeMultiplier={1.6}>{label}</T>
     </Pressable>
   );
 }
@@ -136,7 +136,7 @@ export function SnackbarSlot() {
       accessibilityLiveRegion="polite"
       style={[styles.snack, { backgroundColor: p.surface, borderColor: p.accent, opacity: y, transform: [{ translateY: y.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}
     >
-      <Text style={[type.body, { color: p.ink, flex: 1, minWidth: 140 }]}>{snack.message}</Text>
+      <Text maxFontSizeMultiplier={1.6} style={[type.body, { color: p.ink, flex: 1, minWidth: 140 }]}>{snack.message}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {snack.actions.map((a) => (
           <Pressable key={a.label} testID={`snack-${a.label.toLowerCase()}`} accessibilityRole="button" hitSlop={6}
@@ -146,7 +146,7 @@ export function SnackbarSlot() {
               hideSnack();
               a.onPress();
             }} style={styles.snackAction}>
-            <Text style={[type.body, { color: p.accent, textDecorationLine: 'underline' }]}>{a.label}</Text>
+            <Text maxFontSizeMultiplier={1.6} style={[type.body, { color: p.accent, textDecorationLine: 'underline' }]}>{a.label}</Text>
           </Pressable>
         ))}
       </View>
