@@ -1,5 +1,11 @@
 # Phase 2: finishing the online backup
 
+**Done 25 Oct 2026.** Project `nuzzle` (ref `dfpfjivvcqxrjeolkhpo`) lives in the free Nuzzle organisation,
+region ap-southeast-2. Both migrations are applied, and `nuzzle_sync` is callable by anon only (the extra
+migration takes it away from signed in users). The security advisor's remaining notes are on purpose: the tables
+have no policies because nothing reads them directly, and the function has to be public because there are no
+accounts. `mobile/.env` holds the address and publishable key.
+
 Everything in the app is built and tested (see `src/core/sync.ts`, `src/services/sync.ts`, the sync part of
 `src/state/AppState.tsx`, `src/components/SyncSection.tsx`). Sync stays off until the app knows where the backup lives.
 
