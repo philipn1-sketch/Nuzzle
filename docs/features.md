@@ -39,10 +39,18 @@ Sources: the eight screenshots Philip took of Huckleberry on his wife's phone (O
 | Timer on the lock screen | An ongoing notification while a feed runs. Checked against the complexity rule before adding. | Nice to have |
 | Export history to CSV | Shares a CSV through the phone's share sheet. | Nice to have |
 | Start side as well as end side | Shown in history ("L then R"); answers a common complaint at no cost. | Nice to have (free with the segment model) |
-| Bottle, solids, nappies, sleep, pumping, growth | Not built. | Out of scope |
-| Accounts, sync between two phones | Not built; sharing comes in a later version. | Out of scope |
+| Bottle feeds | Phase 1: amount in ml or oz, breast milk or formula. Counts as the last feed; the side suggestion follows the last breast feed. | Added |
+| Notes on a feed | Phase 1: a note on any feed or bottle, shown in History and on Home. | Added |
+| Week chart and timeline | Phase 1: History, Week. Bars of time on the breast per day, plus a 24 hour strip per day. | Added |
+| Baby's age | Phase 1: birthday in Settings; Home shows "2 weeks 3 days old". | Added |
+| More than one baby | Phase 1: each baby has their own feeds, suggestion and reminder. Old feeds belong to the first baby. | Added |
+| Theme follows the phone | Phase 1: Night, Day or Phone. | Added |
+| Solids, nappies, sleep, pumping, growth | Not built. | Out of scope |
+| Sync between two phones, cloud backup | Phase 2, with Supabase. | Planned |
+| Home screen widget, lock screen timer | Phase 3. | Planned |
+| Apple Watch, Siri | Phase 4. | Planned |
 | Sleep plans, AI logging, upgrades, ads, analytics | Not built. | Out of scope |
-| Reminder at a fixed clock time | Not built: the brief asks for a reminder after the last feed only. | Out of scope |
+| Reminder at a fixed clock time | Phase 1: up to four daily times, as well as the reminder after a feed. | Added |
 
 ## Sources
 

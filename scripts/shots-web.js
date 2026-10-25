@@ -104,6 +104,38 @@ async function main() {
     await p.click('[data-testid="open-settings"]');
     await p.waitForTimeout(400);
     await shot('15-settings');
+
+    // Phase 1: bottles, notes, babies, week view
+    const day0 = new Date(now); day0.setHours(0, 0, 0, 0);
+    const born = new Date(day0); born.setDate(born.getDate() - 17);
+    const twoBabies = { babies: [{ id: 'b1', name: 'Daphne', birthday: born.getTime() }, { id: 'b2', name: 'Ivy', birthday: born.getTime() }], activeBabyId: 'b1', units: 'ml', clockReminders: [{ hour: 21, minute: 0 }] };
+    const withBottle = [
+      ...sampleFeeds(now - 40 * MIN).map((f, i) => (i === 1 ? { ...f, note: 'Sleepy, woke for the second side' } : f)),
+      { id: 'bottle1', status: 'saved', segments: [], deletedAt: null, kind: 'bottle', bottle: { at: now - 25 * MIN, amountMl: 90, milk: 'breast' }, note: 'Dad did this one' },
+    ];
+    const daphne = { babies: [twoBabies.babies[0]], activeBabyId: 'b1', units: 'ml', clockReminders: [] };
+    await load(withBottle, daphne);
+    await shot('16-home-after-bottle');
+    await p.click('[data-testid="open-history"]');
+    await p.waitForTimeout(400);
+    await shot('17-history-bottle-note');
+    await p.click('[data-testid="choice-week"]:visible');
+    await p.waitForTimeout(400);
+    await shot('18-week');
+    await p.click('[data-testid="back"]');
+    await p.waitForTimeout(300);
+    await p.click('[data-testid="log-bottle"]');
+    await p.waitForTimeout(400);
+    await shot('19-log-bottle');
+    await load(withBottle, twoBabies);
+    await shot('20-home-two-babies');
+    await p.click('[data-testid="open-settings"]');
+    await p.waitForTimeout(400);
+    await shot('21-settings-babies');
+    await p.mouse.move(195, 500);
+    await p.mouse.wheel(0, 900);
+    await p.waitForTimeout(300);
+    await shot('22-settings-more');
     await ctx.close();
   }
   await b.close();

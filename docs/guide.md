@@ -30,10 +30,6 @@ You do this once; it takes about 30 minutes, mostly waiting. Everything runs on 
 
 TestFlight builds last 90 days. To renew, run steps 4 and 5 again; her feeds stay on the phone.
 
-## Put it on an Android phone
-
-On the phone, open the **Nuzzle for Android** release in the GitHub repository (Releases, nuzzle-android), download **nuzzle.apk**, open it, and allow installing from this source when asked.
-
 ## Using it
 
 * **Start a feed:** tap **Left** or **Right** at the bottom. The side to start on has a honey outline and says **Start here**.
@@ -43,6 +39,12 @@ On the phone, open the **Nuzzle for Android** release in the GitHub repository (
 * **Reminder:** after the first feed, Nuzzle asks if she wants a reminder. It comes 2 hours after a feed starts unless she changes it in **Settings** (1 to 4 hours). It never arrives while a feed is running.
 * **Lock screen:** while a feed runs, a quiet notice shows which side and since when.
 * **History:** every feed by day, with the minutes on each side. Tap a feed to edit or delete it. **Add a feed** logs one she forgot.
-* **Settings:** baby's name, reminder, Night or Day theme, and **Export** (a spreadsheet of every feed, through the phone's share menu).
+* **Bottles:** tap **Log a bottle** on Home. Choose the amount (ml or oz, set in Settings) and breast milk or formula. A bottle counts as the last feed for the timer and the reminder; the Left or Right suggestion still follows the last breast feed.
+* **Notes:** every feed and bottle has a Note box in its editor. Notes show in History and under the last feed on Home.
+* **Week view:** in History, tap **Week** for a bar per day of time on the breast (tap a bar for that day's numbers) and a 24 hour strip per day showing when each feed happened. Left is the tall rose block, Right the shorter peach block, a bottle a thin line.
+* **Age:** set the birthday in Settings and Home shows how old she is under her name.
+* **Two babies:** **Add another baby** in Settings. Home then shows a switch between them; each baby has their own feeds, side suggestion and reminder.
+* **Daily reminders:** Settings, **Also remind me every day at**, for a reminder at a set clock time (up to four).
+* **Settings:** babies, reminders, bottle units, Night, Day or Phone theme (Phone follows the iPhone's dark mode), and **Export** (a spreadsheet of every feed, through the phone's share menu).
 
 Everything stays on her phone. Nothing is sent anywhere, and the app works with no signal.

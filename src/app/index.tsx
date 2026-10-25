@@ -120,10 +120,11 @@ export default function Home() {
           ) : last ? (
             <View style={styles.under}>
               {last.bottle ? (
-                <T tone="muted" style={[type.label, styles.centreText]}>
-                  Last feed at {timeOf(feedStart(last))} · Bottle {amount(last.bottle.amountMl, settings.units)}
-                  {lastSide ? ` · Last side ${sideWord(endSide(lastSide))}` : ''}
-                </T>
+                lastSide && (
+                  <T tone="muted" style={[type.label, styles.centreText]}>
+                    Last breast feed ended on the {sideWord(endSide(lastSide))}
+                  </T>
+                )
               ) : (
                 <T tone="muted" style={[type.label, styles.centreText]}
                   accessibilityLabel={`Last feed at ${timeOf(feedStart(last))}: ${sideRuns(last, now).map((r) => `${sideWord(r.side)} ${mins(r.ms)} minutes`).join(', then ')}`}>

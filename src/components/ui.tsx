@@ -103,7 +103,7 @@ export function Choice<V extends string>({ options, value, onChange, label }: { 
       {options.map((o) => {
         const on = o.value === value;
         return (
-          <Pressable key={o.value} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ checked: on }}
+          <Pressable key={o.value} testID={`choice-${o.value}`} onPress={() => onChange(o.value)} accessibilityRole="radio" accessibilityState={{ checked: on }}
             style={[styles.choiceItem, on && { backgroundColor: p.accent }]}>
             <T tone={on ? 'onAccent' : 'ink'}>{o.label}</T>
           </Pressable>
