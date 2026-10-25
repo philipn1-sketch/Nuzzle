@@ -22,7 +22,7 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
   const p = usePalette();
   const running = state === 'running';
   const marked = state === 'suggested' || state === 'paused';
-  const fg = running ? 'onAccent' : 'ink';
+  const fg = 'ink';
   const c = sideColor(p, side);
   return (
     <Pressable
@@ -34,8 +34,8 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: running ? c : marked ? wash(c, '1F') : p.surface,
-          borderColor: marked ? c : 'transparent',
+          backgroundColor: running ? wash(c, '40') : marked ? wash(c, '1F') : p.surface,
+          borderColor: running || marked ? c : 'transparent',
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
@@ -46,11 +46,11 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
           {clock(ms)}
         </T>
       )}
-      <View style={[styles.chip, marked && { backgroundColor: c }]}>
+      <View style={[styles.chip, (marked || running) && { backgroundColor: c }]}>
         <T
-          tone={running ? 'onAccent' : marked ? 'onAccent' : 'muted'}
+          tone={running || marked ? 'onAccent' : 'muted'}
           maxFontSizeMultiplier={1.5}
-          style={[type.label, { textAlign: 'center', fontWeight: marked ? '700' : '500' }]}
+          style={[type.label, { textAlign: 'center', fontWeight: marked || running ? '700' : '500' }]}
         >
           {STATUS[state]}
         </T>

@@ -9,9 +9,9 @@ Direction (chosen by Philip): **soft midnight plum, with a big ring**. Nuzzle sh
 | `bg` | `#1A1221` deep plum | `#F6EEF3` blush | Screen background; also the text on filled rose or peach |
 | `surface` | `#2A1E33` aubergine | `#FFF9FB` | Cards, side buttons at rest, sheets |
 | `ink` | `#F4E9EF` soft pink cream (never pure white) | `#2D1E33` | Main text, big numbers, the neutral Done and Save buttons |
-| `muted` | `#BBA9C2` lilac grey | `#6B5872` | Labels, secondary lines, the ring's track |
+| `muted` | `#BBA9C2` lilac grey | `#6B5872` | Labels, the ring at rest, Done and Save (filled, with plum text) |
 | `accent` (rose) | `#EBA3B9` | `#A8456A` | **Left** everywhere; the ring at rest; selected options |
-| `peach` | `#F4BC9C` | `#A9532B` | **Right** everywhere |
+| `peach` | `#F4BC9C` | `#B0503F` coral | **Right** everywhere |
 
 **Each side keeps its own colour on every screen:** Left is rose and Right is peach, on the side buttons, the ring while feeding, the "Ended on" chip and the History chips. Half asleep, she can tell the sides apart without reading. The main actions (Done, Save, Add a feed) are deliberately neutral (a soft cream outline) so they are never mistaken for a side.
 

@@ -77,7 +77,7 @@ export default function History() {
           );
         }}
       />
-      <View style={styles.bottom}>
+      <View style={[styles.bottom, { borderTopColor: wash(p.muted, '33') }]}>
         <SnackbarSlot />
         <PrimaryButton label="Add a feed" onPress={() => router.push('/feed/new')} testID="add-feed" />
       </View>
@@ -93,5 +93,5 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 999, paddingHorizontal: space.s + 2, paddingVertical: 3 },
   time: { minWidth: 84, fontVariant: ['tabular-nums'] },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.s, paddingTop: 120 },
-  bottom: { paddingHorizontal: space.side, gap: space.m },
+  bottom: { paddingHorizontal: space.side, gap: space.m, paddingTop: space.m, borderTopWidth: StyleSheet.hairlineWidth * 2 },
 });

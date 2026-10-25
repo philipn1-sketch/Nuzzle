@@ -45,18 +45,15 @@ export default function Home() {
   // only when a reminder can actually ring
   const due = settings.remindersOn && permission === 'granted' && isDue(feeds, settings, now);
 
-  // The ring: while feeding it sweeps once a minute like a gentle second hand; otherwise it fills
-  // as time since the last feed started approaches her reminder time.
   const { width, height } = useWindowDimensions();
   // the ring makes room when a question card is showing
   const ring = Math.min(width - 2 * space.side - 40, height * 0.36, 300);
   // when a question card needs the room, the same answer shows without the ring
   const compact = showStill || showAsk;
-  const ringProgress = active
-    ? (totalMs(active, now) % 60_000) / 60_000
-    : last ? (now - feedStart(last)) / (settings.intervalMin * 60_000) : 0;
-  // the ring takes the colour of the side that is feeding; at rest it is rose, and full once her time has passed
-  const ringColor = active ? (active.status === 'paused' ? p.muted : sideColor(p, endSide(active))) : p.accent;
+  const ringProgress = active ? 1 : last ? (now - feedStart(last)) / (settings.intervalMin * 60_000) : 0;
+  // While feeding the ring is a calm full circle in the feeding side's colour. At rest it is neutral
+  // and fills as time passes towards her reminder time.
+  const ringColor = active ? (active.status === 'paused' ? wash(p.muted, '80') : sideColor(p, endSide(active))) : p.muted;
 
   return (
     <Screen>
@@ -108,7 +105,7 @@ export default function Home() {
                 Last feed at {timeOf(feedStart(last))} · {sideRuns(last, now).map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ')}
               </T>
               {due ? (
-                <T tone="accent" style={[type.body, styles.centreText]}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
+                <T style={[type.body, styles.centreText]}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
               ) : (
                 app.scheduledAt !== null && <T testID="reminder-at" tone="muted" style={[type.label, styles.centreText]}>Reminder at {timeOf(app.scheduledAt)}</T>
               )}
@@ -136,7 +133,7 @@ export default function Home() {
           {showAsk && (
             <Card style={styles.wide}>
               <T style={type.body}>Want a reminder after each feed starts?</T>
-              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>You choose how long in Settings. It starts at {span(settings.intervalMin * 60_000)}.</T>
+              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>It comes {span(settings.intervalMin * 60_000)} after a feed starts. You can change that in Settings.</T>
               <View style={styles.cardButtons}>
                 <SecondaryButton label="Turn on" strong onPress={app.askReminders} testID="reminders-on" />
                 <SecondaryButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true, remindersOn: false })} testID="reminders-not-now" />
@@ -166,7 +163,7 @@ const styles = StyleSheet.create({
   sideChip: { borderRadius: 999, paddingHorizontal: space.l, paddingVertical: 6, marginTop: space.xs },
   under: { gap: 2, alignItems: 'center' },
   wide: { alignSelf: 'stretch' },
-  cardButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s, marginTop: space.l },
+  cardButtons: { gap: space.xs, marginTop: space.l },
   bottom: { gap: space.m, paddingHorizontal: space.side, paddingTop: space.s },
   sides: { flexDirection: 'row', gap: space.m },
 });

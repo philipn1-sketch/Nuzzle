@@ -22,7 +22,7 @@ export const palettes = {
     ink: '#2D1E33',
     muted: '#6B5872',
     accent: '#A8456A',
-    peach: '#A9532B',
+    peach: '#B0503F',
     onAccent: '#F6EEF3',
   },
 } as const;

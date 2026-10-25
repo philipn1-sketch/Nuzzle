@@ -66,11 +66,11 @@ export default function SettingsScreen() {
           {settings.remindersOn && permission === 'denied' && (
             <View style={{ gap: space.xs }}>
               <T tone="muted" style={type.label}>Notifications are off for {APP_NAME} in your phone settings.</T>
-              <QuietButton label="Open settings" tone="accent" onPress={() => Linking.openSettings()} style={styles.left} />
+              <QuietButton label="Open settings" tone="ink" onPress={() => Linking.openSettings()} style={styles.left} />
             </View>
           )}
           {settings.remindersOn && permission === 'undetermined' && (
-            <QuietButton label="Allow notifications" tone="accent" onPress={askReminders} style={styles.left} testID="allow" />
+            <QuietButton label="Allow notifications ›" tone="ink" onPress={askReminders} style={styles.left} testID="allow" />
           )}
         </Section>
 
@@ -86,8 +86,8 @@ export default function SettingsScreen() {
         <Section label="Your data">
           <T tone="muted" style={type.label}>Everything stays on this phone. Nothing is sent anywhere.</T>
           <QuietButton
-            label={`Export ${savedFeeds(feeds).length} feeds as a spreadsheet`}
-            tone="accent"
+            label={`Export ${savedFeeds(feeds).length} feeds as a spreadsheet ›`}
+            tone="ink"
             onPress={exportCsv}
             style={styles.left}
             testID="export"

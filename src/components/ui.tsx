@@ -36,9 +36,9 @@ export function PrimaryButton({ label, onPress, hint, testID }: { label: string;
       onPress={onPress}
       accessibilityRole="button"
       accessibilityHint={hint}
-      style={({ pressed }) => [styles.primary, { backgroundColor: wash(p.ink, pressed ? '2E' : '1A'), borderColor: wash(p.ink, '59') }]}
+      style={({ pressed }) => [styles.primary, { backgroundColor: p.muted, opacity: pressed ? 0.85 : 1 }]}
     >
-      <T style={type.title} maxFontSizeMultiplier={1.6}>{label}</T>
+      <T tone="onAccent" style={type.title} maxFontSizeMultiplier={1.6}>{label}</T>
     </Pressable>
   );
 }
@@ -48,8 +48,8 @@ export function SecondaryButton({ label, onPress, testID, strong }: { label: str
   const p = usePalette();
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button"
-      style={({ pressed }) => [styles.secondary, { backgroundColor: p.bg, borderColor: strong ? p.accent : 'transparent', opacity: pressed ? 0.75 : 1 }]}>
-      <T tone={strong ? 'accent' : 'ink'} style={{ textAlign: 'center' }}>{label}</T>
+      style={({ pressed }) => [styles.secondary, { backgroundColor: strong ? p.muted : 'transparent', opacity: pressed ? 0.75 : 1 }]}>
+      <T tone={strong ? 'onAccent' : 'muted'} style={{ textAlign: 'center' }}>{label}</T>
     </Pressable>
   );
 }
@@ -69,7 +69,7 @@ export function PillButton({ label, onPress, testID, a11yLabel }: { label: strin
   const p = usePalette();
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11yLabel ?? label}
-      style={({ pressed }) => [styles.pill, { backgroundColor: p.surface, borderColor: line(p), opacity: pressed ? 0.75 : 1 }]}>
+      style={({ pressed }) => [styles.pill, { backgroundColor: wash(p.surface, 'B3'), opacity: pressed ? 0.75 : 1 }]}>
       <T maxFontSizeMultiplier={1.5} numberOfLines={1} style={type.label}>{label}</T>
     </Pressable>
   );
@@ -78,8 +78,13 @@ export function PillButton({ label, onPress, testID, a11yLabel }: { label: strin
 export function TopBar({ title, left, right }: { title?: string; left?: ReactNode; right?: ReactNode }) {
   return (
     <View style={styles.topBar}>
+      {title ? (
+        <View style={[StyleSheet.absoluteFill, styles.topTitleBox]} pointerEvents="none">
+          <T style={[type.title, styles.topTitle]} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={1.4}>{title}</T>
+        </View>
+      ) : null}
       <View style={styles.topSide}>{left}</View>
-      {title ? <T style={[type.title, styles.topTitle]} accessibilityRole="header" numberOfLines={1}>{title}</T> : <View style={{ flex: 1 }} />}
+      <View style={{ flex: 1 }} />
       <View style={[styles.topSide, { alignItems: 'flex-end' }]}>{right}</View>
     </View>
   );
@@ -134,7 +139,7 @@ export function SnackbarSlot() {
   return (
     <Animated.View
       accessibilityLiveRegion="polite"
-      style={[styles.snack, { backgroundColor: p.surface, borderColor: p.accent, opacity: y, transform: [{ translateY: y.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}
+      style={[styles.snack, { backgroundColor: p.surface, borderColor: wash(p.muted, '59'), opacity: y, transform: [{ translateY: y.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }]}
     >
       <Text maxFontSizeMultiplier={1.6} style={[type.body, { color: p.ink, flex: 1, minWidth: 140 }]}>{snack.message}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -146,7 +151,7 @@ export function SnackbarSlot() {
               hideSnack();
               a.onPress();
             }} style={styles.snackAction}>
-            <Text maxFontSizeMultiplier={1.6} style={[type.body, { color: p.accent, textDecorationLine: 'underline' }]}>{a.label}</Text>
+            <Text maxFontSizeMultiplier={1.6} style={[type.body, { color: p.ink, fontWeight: '700' }]}>{a.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -155,13 +160,14 @@ export function SnackbarSlot() {
 }
 
 const styles = StyleSheet.create({
-  primary: { minHeight: 64, borderWidth: 1.5, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
-  secondary: { flexGrow: 1, flexBasis: 140, minHeight: TAP, borderRadius: radius.row, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m, paddingVertical: space.s },
+  primary: { minHeight: 64, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
+  secondary: { alignSelf: 'stretch', minHeight: TAP, borderRadius: radius.row, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m, paddingVertical: space.s },
   quiet: { minHeight: TAP, minWidth: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
-  pill: { minHeight: TAP, minWidth: TAP, borderRadius: TAP / 2, borderWidth: 1, paddingHorizontal: space.l + 2, alignItems: 'center', justifyContent: 'center' },
+  pill: { minHeight: 48, minWidth: TAP, borderRadius: 24, paddingHorizontal: space.l, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.side, paddingVertical: space.s, gap: space.m, minHeight: TAP + space.l },
   topSide: { minWidth: TAP },
-  topTitle: { flex: 1, textAlign: 'center' },
+  topTitleBox: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 120 },
+  topTitle: { textAlign: 'center' },
   choice: { flexDirection: 'row', borderWidth: 1.5, borderRadius: radius.row, overflow: 'hidden' },
   choiceItem: { flex: 1, minHeight: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
   snack: { borderRadius: radius.row, borderWidth: 1.5, paddingHorizontal: space.l, paddingVertical: space.s, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: space.s },

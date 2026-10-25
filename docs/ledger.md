@@ -114,3 +114,16 @@ Philip found the warm brown and honey look ugly and chose "soft midnight plum" w
 * New icon in the same palette.
 * "Reminder at" on Home now reads the reminder the phone actually has queued, which the iPhone end to end run checks.
 * Android dropped at Philip's request; testing moved to an iPhone simulator on GitHub's Macs.
+
+## Round 8: critic on the plum redesign (first of the two Philip allowed before he checks it)
+
+Verdict: one more pass ("clearly better than brown and honey ... not premium yet"). Fixed:
+
+1. Done was the weakest button while feeding. **Now** a filled lilac button with plum text; Save and Add a feed match.
+2. The solid side tile glared at 3 am, and the day Right colour read brown. **Now** the feeding side is a soft tint with a coloured outline and a filled "Tap to pause" chip; day Right is coral `#B0503F`.
+3. The ring's meaning clashed with the side colours and swept every minute for no reason. **Now** lilac at rest, filling towards her reminder time; a calm full circle in the feeding side's colour while feeding; no sweep.
+5. Card buttons had the wrong emphasis and wrapped. **Now** the main choice is filled and full width, the other is quiet text under it; copy rewritten to avoid orphans.
+6. Rose meant too many things. **Now** errors and links are in the text colour (links with ›).
+7. Polish: titles truly centred; History list sits above a divider; snackbar actions are bold text, not web links; top bar pills lighter.
+
+Not changed: the ring stepping aside for question cards (kept on purpose so card buttons always fit), and Done above the side buttons (moving it below would make the side buttons jump when a feed starts, which round 5 fixed).

@@ -96,7 +96,7 @@ export default function FeedEditor() {
             />
           </View>
         )}
-        {problem && <T tone="accent" accessibilityLiveRegion="polite" style={type.body}>{problem}</T>}
+        {problem && <T accessibilityLiveRegion="polite" style={[type.body, { textDecorationLine: 'underline' }]}>{problem}</T>}
       </ScrollView>
       <View style={styles.bottom}>
         <PrimaryButton label="Save" onPress={save} testID="save-feed" />
