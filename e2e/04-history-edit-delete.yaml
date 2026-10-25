@@ -12,6 +12,9 @@ appId: com.philipnader.nuzzle
     index: 0
 - assertVisible: "Edit feed"
 - takeScreenshot: night-10-edit-feed
+# the feeds from the earlier flows are only minutes old; move this one to yesterday so 15 minutes fits
+- tapOn:
+    id: "day-less"
 - tapOn:
     id: "left-value"
 - inputText: "15"
