@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Linking, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { Stepper } from '../components/Stepper';
+import { SyncSection } from '../components/SyncSection';
 import { Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from '../config';
 import { feedsToCsv } from '../core/csv';
@@ -15,7 +16,7 @@ import { usePalette } from '../state/theme';
 import { line, radius, space, TAP, type } from '../theme';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, permission, askReminders, allFeeds, addBaby, updateBaby, removeBaby } = useApp();
+  const { settings, updateSettings, permission, askReminders, allFeeds, addBaby, updateBaby, removeBaby, sync } = useApp();
   const p = usePalette();
   const now = Date.now();
 
@@ -152,8 +153,14 @@ export default function SettingsScreen() {
           {settings.theme === 'system' && <T tone="muted" style={type.label}>Follows your phone: Night when it is in dark mode.</T>}
         </Section>
 
+        <Section label="Backup and second phone">
+          <SyncSection />
+        </Section>
+
         <Section label="Your data">
-          <T tone="muted" style={type.label}>Everything stays on this phone. Nothing is sent anywhere.</T>
+          <T tone="muted" style={type.label}>
+            {sync.code ? 'Your feeds are on this phone and in the backup. Nothing else is sent anywhere.' : 'Everything stays on this phone. Nothing is sent anywhere.'}
+          </T>
           <QuietButton
             label={`Export ${savedFeeds(allFeeds).length} feeds as a spreadsheet ›`}
             tone="ink"

@@ -14,6 +14,8 @@ import { activityProps, glanceProps } from '../core/glance';
 import * as db from '../data/db';
 import * as glance from '../services/glance';
 import * as nuzzleNative from '../../modules/nuzzle-native';
+import { mergeBabies, mergeFeeds, unsent } from '../core/sync';
+import { syncAvailable, syncWithServer } from '../services/sync';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
 
@@ -56,8 +58,33 @@ interface AppStateValue {
   /** Only a baby with no feeds can be removed, so nothing is ever lost. */
   removeBaby: (id: string) => void;
   askReminders: () => Promise<void>;
+  sync: SyncStatus;
+  /** Starts sharing with a new family code, or joins one typed in from the other phone. */
+  startSync: (code: string, joining: boolean) => void;
+  stopSync: () => void;
+  syncNow: () => void;
   hideSnack: () => void;
 }
+
+export interface SyncStatus {
+  /** Off when the app was built without the online copy's address. */
+  available: boolean;
+  code: string | null;
+  state: 'off' | 'syncing' | 'ok' | 'offline';
+  lastOk: number | null;
+}
+
+/** How far this phone has got, kept apart from settings so syncing doesn't re-run reminders. */
+interface SyncProgress {
+  code: string;
+  /** The server's change counter at the last pull. */
+  since: number;
+  /** Local time the last successful send began: anything changed after it is sent next time. */
+  sentAt: number;
+  lastOk: number | null;
+}
+
+const SYNC_EVERY_MS = 20_000;
 
 const Ctx = createContext<AppStateValue | null>(null);
 
@@ -303,7 +330,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const addBaby = useCallback(() => {
     setSettings((s) => {
       const id = `b${Date.now().toString(36)}`;
-      const next = { ...s, babies: [...s.babies, { id, name: '', birthday: null }], activeBabyId: id };
+      const next = { ...s, babies: [...s.babies, { id, name: '', birthday: null }], activeBabyId: id, babiesUpdatedAt: Date.now() };
       db.putSettings(next);
       return next;
     });
@@ -311,7 +338,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const updateBaby = useCallback((id: string, patch: Partial<Omit<Baby, 'id'>>) => {
     setSettings((s) => {
-      const next = { ...s, babies: s.babies.map((b) => (b.id === id ? { ...b, ...patch } : b)) };
+      const next = { ...s, babies: s.babies.map((b) => (b.id === id ? { ...b, ...patch } : b)), babiesUpdatedAt: Date.now() };
       db.putSettings(next);
       return next;
     });
@@ -321,11 +348,116 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setSettings((s) => {
       if (s.babies.length < 2 || feedsOf(allRef.current, s, id).length > 0) return s;
       const babies = s.babies.filter((b) => b.id !== id);
-      const next = { ...s, babies, activeBabyId: s.activeBabyId === id ? babies[0].id : s.activeBabyId };
+      const next = { ...s, babies, activeBabyId: s.activeBabyId === id ? babies[0].id : s.activeBabyId, babiesUpdatedAt: Date.now() };
       db.putSettings(next);
       return next;
     });
   }, []);
+
+  // ---------- sync ----------
+
+  const [progress, setProgress] = useState<SyncProgress | null>(() => db.getValue<SyncProgress>('sync'));
+  const progressRef = useRef(progress);
+  progressRef.current = progress;
+  const [syncState, setSyncState] = useState<SyncStatus['state']>(progress ? 'syncing' : 'off');
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const busy = useRef(false);
+  const again = useRef(false);
+
+  const saveProgress = (p: SyncProgress | null) => {
+    db.setValue('sync', p);
+    progressRef.current = p;
+    setProgress(p);
+  };
+
+  /** Feeds from the other phone go straight in, keeping their own change times. */
+  const takeIn = useCallback((remote: Feed[]) => {
+    const changed = mergeFeeds(allRef.current, remote);
+    if (changed.length === 0) return;
+    for (const f of changed) db.putFeed(f);
+    const ids = new Set(changed.map((f) => f.id));
+    const next = [...allRef.current.filter((f) => !ids.has(f.id)), ...changed];
+    allRef.current = next;
+    setAllFeeds(next);
+  }, []);
+
+  const runSync = useCallback(async () => {
+    const p = progressRef.current;
+    if (!p || !syncAvailable) return;
+    if (busy.current) {
+      again.current = true;
+      return;
+    }
+    busy.current = true;
+    setSyncState('syncing');
+    const startedAt = Date.now();
+    const s = settingsRef.current;
+    try {
+      // a little overlap, so a change saved by the other phone at the same moment is never skipped
+      const reply = await syncWithServer(p.code, unsent(allRef.current, p.sentAt), s.babies, s.babiesUpdatedAt ?? 0, Math.max(0, p.since - 100));
+      if (progressRef.current?.code !== p.code) return; // stopped or changed while this was running
+      takeIn(reply.feeds);
+      const babies = mergeBabies(settingsRef.current.babiesUpdatedAt ?? 0, reply.babies, reply.babiesUpdated);
+      if (babies) {
+        setSettings((cur) => {
+          const next = {
+            ...cur, babies, babiesUpdatedAt: reply.babiesUpdated,
+            activeBabyId: babies.some((b) => b.id === cur.activeBabyId) ? cur.activeBabyId : babies[0].id,
+          };
+          db.putSettings(next);
+          return next;
+        });
+      }
+      saveProgress({ code: p.code, since: reply.seq, sentAt: startedAt, lastOk: Date.now() });
+      setSyncState('ok');
+    } catch {
+      setSyncState('offline');
+    } finally {
+      busy.current = false;
+      if (again.current) {
+        again.current = false;
+        runSync();
+      }
+    }
+  }, [takeIn]);
+
+  // send soon after any change here, check for the other phone's changes regularly while open
+  useEffect(() => {
+    if (!progress) return;
+    const t = setTimeout(runSync, 1500);
+    return () => clearTimeout(t);
+  }, [allFeeds, settings.babies, progress?.code, runSync]);
+  useEffect(() => {
+    if (!progress) return;
+    runSync();
+    const t = setInterval(() => RNAppState.currentState === 'active' && runSync(), SYNC_EVERY_MS);
+    return () => clearInterval(t);
+  }, [foreground, progress?.code, runSync]);
+
+  const startSync = useCallback((code: string, joining: boolean) => {
+    // A new family takes this phone's babies. A phone joining takes the family's babies instead,
+    // so a blank "Baby" here never overwrites her name there.
+    setSettings((cur) => {
+      const next = { ...cur, babiesUpdatedAt: joining ? 0 : Date.now() };
+      db.putSettings(next);
+      settingsRef.current = next;
+      return next;
+    });
+    // from 0, so this phone sends everything it has and takes in everything already there
+    saveProgress({ code, since: 0, sentAt: 0, lastOk: null });
+    setSyncState('syncing');
+  }, []);
+
+  const stopSync = useCallback(() => {
+    saveProgress(null);
+    setSyncState('off');
+  }, []);
+
+  const sync = useMemo<SyncStatus>(
+    () => ({ available: syncAvailable, code: progress?.code ?? null, state: progress ? syncState : 'off', lastOk: progress?.lastOk ?? null }),
+    [progress, syncState],
+  );
 
   const askReminders = useCallback(async () => {
     const p = await notify.askPermission().catch(() => 'denied' as const);
@@ -337,9 +469,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     () => ({
       feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
       tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
+      sync, startSync, stopSync, syncNow: runSync,
     }),
     [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
-      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack],
+      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack, sync, startSync, stopSync, runSync],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

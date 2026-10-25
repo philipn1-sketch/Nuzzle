@@ -20,3 +20,8 @@ export const putFeed = (f: Feed): void => write('nuzzle.feeds', [...loadFeeds().
 export const removeFeed = (id: string): void => write('nuzzle.feeds', loadFeeds().filter((x) => x.id !== id));
 export const loadSettings = (): Record<string, unknown> => read('nuzzle.settings', {});
 export const putSettings = (s: Settings): void => write('nuzzle.settings', s);
+export const getValue = <T,>(key: string): T | null => read<T | null>(`nuzzle.${key}`, null);
+export const setValue = (key: string, value: unknown): void => {
+  if (value === null) globalThis.localStorage?.removeItem(`nuzzle.${key}`);
+  else write(`nuzzle.${key}`, value);
+};

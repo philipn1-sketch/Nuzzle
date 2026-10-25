@@ -62,6 +62,8 @@ export interface Settings {
   babies: Baby[];
   activeBabyId: string;
   units: Units;
+  /** When the babies list last changed, so the newer list wins between two phones. */
+  babiesUpdatedAt?: number;
   clockReminders: ClockReminder[];
   remindersOn: boolean;
   intervalMin: number;

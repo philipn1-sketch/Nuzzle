@@ -28,8 +28,8 @@ type FeedRow = { id: string; status: Feed['status']; segments: string; deleted_a
 type Extra = Pick<Feed, 'kind' | 'babyId' | 'note' | 'bottle' | 'updatedAt'>;
 
 export function loadFeeds(): Feed[] {
-  // deleted feeds are kept a day so Undo works, then cleared out
-  db.runSync('DELETE FROM feeds WHERE deleted_at IS NOT NULL AND deleted_at < ?', Date.now() - 86_400_000);
+  // deleted feeds are kept 30 days, so Undo works and the delete reaches a second phone, then cleared out
+  db.runSync('DELETE FROM feeds WHERE deleted_at IS NOT NULL AND deleted_at < ?', Date.now() - 30 * 86_400_000);
   return db
     .getAllSync<FeedRow>('SELECT id, status, segments, deleted_at, extra FROM feeds')
     .map((r) => ({
@@ -57,4 +57,15 @@ export function loadSettings(): Record<string, unknown> {
 
 export function putSettings(s: Settings): void {
   db.runSync("INSERT OR REPLACE INTO settings (key, value) VALUES ('settings', ?)", JSON.stringify(s));
+}
+
+/** Small values kept apart from settings, such as how far sync has got. */
+export function getValue<T>(key: string): T | null {
+  const row = db.getFirstSync<{ value: string }>('SELECT value FROM settings WHERE key = ?', key);
+  return row ? (JSON.parse(row.value) as T) : null;
+}
+
+export function setValue(key: string, value: unknown): void {
+  if (value === null) db.runSync('DELETE FROM settings WHERE key = ?', key);
+  else db.runSync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', key, JSON.stringify(value));
 }
