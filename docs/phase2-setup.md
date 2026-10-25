@@ -12,10 +12,22 @@ Steps left:
    region `ap-southeast-2` (Perth/Sydney). It must be quoted at $0. Never create it in Quick-quote.
 2. Apply `supabase/migrations/20261025000000_nuzzle_sync.sql` (already tested on Postgres 16), then run the
    security advisor and fix anything it flags.
-3. Put the project URL and its publishable key (`sb_publishable_...`) in `mobile/.env`
+3. Put the project URL and its publishable key (`sb_publishable_...`) in `.env`
    (see `.env.example`; both values are public by design and are committed so the phone build picks them up).
 4. Check the function with one call to `/rest/v1/rpc/nuzzle_sync` using a test code, then delete that test family:
    `delete from nuzzle_families where family = encode(sha256(convert_to('<CODE>','UTF8')),'hex');`
 5. Commit, push, and tell Philip to rebuild: `git pull`, `npm install`, `npx expo prebuild --clean --platform ios`,
    `npx expo run:ios --device --configuration Release`. Then Settings, Start backup and sharing on her phone,
    Join with a code on his.
+
+## Moving Nuzzle to its own repository
+
+Philip wants Nuzzle apart from Pip Flap (Game repository). Once he has made an empty private repository
+`philipn1-sketch/nuzzle` and given Claude access to it:
+
+```
+git subtree split --prefix=mobile -b nuzzle-split
+git push https://github.com/philipn1-sketch/nuzzle.git nuzzle-split:main
+```
+
+`mobile/.github/workflows/nuzzle.yml` and `mobile/README.md` are already written for the new repository's root.
