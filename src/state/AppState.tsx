@@ -3,14 +3,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState as RNAppState } from 'react-native';
 
 import {
-  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, sideMs, tapSide, totalMs,
+  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, runningSide, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
 import type { Baby, Feed, Settings, Side } from '../core/types';
+import { activityProps, glanceProps } from '../core/glance';
 import * as db from '../data/db';
+import * as glance from '../services/glance';
+import * as nuzzleNative from '../../modules/nuzzle-native';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
 
@@ -37,8 +40,11 @@ interface AppStateValue {
   snack: Snack | null;
   /** The "Still feeding?" card was answered with Yes since the app last came to the front. */
   stillFeedingAnswered: boolean;
-  tap: (side: Side) => void;
-  done: () => Feed | null;
+  /** A tap on a side. `at` is when it happened, for taps passed on from the Watch. */
+  tap: (side: Side, at?: number) => void;
+  /** Starts, switches to or carries on with a side, but never pauses: for Siri. */
+  startOn: (side: Side) => void;
+  done: (at?: number) => Feed | null;
   discard: () => void;
   keepFeeding: () => void;
   saveDraft: (draft: FeedDraft, editingId: string | null) => DraftProblem | null;
@@ -58,6 +64,15 @@ const Ctx = createContext<AppStateValue | null>(null);
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
 /** The lock screen notice for a feed in progress. */
+/** A time passed on from the Watch, kept between the start of the current stretch and now. */
+function clampAt(active: Feed | null, at: number | undefined): number {
+  const now = Date.now();
+  if (typeof at !== 'number' || !Number.isFinite(at)) return now;
+  if (!active) return Math.min(at, now);
+  const last = active.segments[active.segments.length - 1];
+  return Math.min(now, Math.max(at, last.end ?? last.start));
+}
+
 function runningText(f: Feed): string {
   const now = Date.now();
   if (f.status === 'paused') {
@@ -112,6 +127,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     notify.setUpNotifications().catch(() => {});
     const sub = RNAppState.addEventListener('change', (s) => {
       if (s === 'active') {
+        glance.resend();
         setForeground((n) => n + 1);
         setStillFeedingAnswered(false);
       }
@@ -129,14 +145,31 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const now = Date.now();
     const many = settings.babies.length > 1;
     const plans: notify.Planned[] = [];
+    const notices: { babyId: string; text: string | null }[] = [];
     for (const b of settings.babies) {
       const mine = feedsOf(allFeeds, settings, b.id);
       const plan = planReminder(mine, settings, now, babyName(b));
       if (plan) plans.push({ babyId: b.id, ...plan });
       const a = activeFeed(mine);
-      const text = a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null;
-      notify.showRunningNotice(b.id, text).catch(() => {});
+      notices.push({ babyId: b.id, text: a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null });
     }
+    // the home screen widget follows the baby on screen; the lock screen timer follows a running feed
+    const shown = glanceProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), settings.units, now);
+    glance.updateWidget(shown);
+    // the same numbers go to the Watch and to Siri
+    nuzzleNative.setGlance(JSON.stringify(shown));
+    const timing = [baby, ...settings.babies]
+      .map((b) => ({ b, a: activeFeed(feedsOf(allFeeds, settings, b.id)) }))
+      .find((x) => x.a !== null);
+    glance
+      .syncActivity(timing?.a ? activityProps(timing.a, babyName(timing.b), now) : null)
+      .then((shown) => {
+        // the lock screen timer replaces the plain notice; the notice stays for when Live Activities are off
+        for (const n of notices) {
+          notify.showRunningNotice(n.babyId, shown && n.babyId === timing?.b.id ? null : n.text).catch(() => {});
+        }
+      })
+      .catch(() => {});
     const clock = settings.clockReminders.map((c) => ({ ...c, body: `Your ${clockTime(c.hour, c.minute)} reminder.` }));
     notify
       .syncReminders(plans, clock)
@@ -148,12 +181,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const lastTap = useRef({ side: 'L' as Side, at: 0 });
 
   const tap = useCallback(
-    (side: Side) => {
+    (side: Side, at?: number) => {
       // half asleep, a double tap is one tap: ignore a second tap on the same side within 0.6 s
       if (lastTap.current.side === side && Date.now() - lastTap.current.at < 600) return;
       lastTap.current = { side, at: Date.now() };
       const before = activeFeed(feedsRef.current);
-      const next = tapSide(before, side, Date.now(), newId);
+      const next = tapSide(before, side, clampAt(before, at), newId);
       commit([next]);
       tick();
       if (!before) {
@@ -175,10 +208,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [commit, showSnack],
   );
 
-  const done = useCallback((): Feed | null => {
+  const startOn = useCallback(
+    (side: Side) => {
+      const a = activeFeed(feedsRef.current);
+      if (a && runningSide(a) === side) return;
+      tap(side);
+    },
+    [tap],
+  );
+
+  const done = useCallback((at?: number): Feed | null => {
     const before = activeFeed(feedsRef.current);
     if (!before) return null;
-    const now = Date.now();
+    const now = clampAt(before, at);
     const saved = finishFeed(before, now);
     tick();
     if (!saved) {
@@ -239,6 +281,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Taps made on the Watch, including any that arrived before the app was listening
+  const watchRef = useRef({ tap, done });
+  watchRef.current = { tap, done };
+  useEffect(() => {
+    const apply = (a: nuzzleNative.WatchAction) => {
+      if (a.action === 'L' || a.action === 'R') watchRef.current.tap(a.action, a.at);
+      else if (a.action === 'done') watchRef.current.done(a.at);
+    };
+    nuzzleNative.takePendingActions().forEach(apply);
+    const sub = nuzzleNative.onWatchAction(apply);
+    return () => sub.remove();
+  }, [foreground]);
+
   const switchBaby = useCallback((id: string) => {
     setStillFeedingAnswered(false);
     setSnack(null);
@@ -281,9 +336,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppStateValue>(
     () => ({
       feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
-      tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
+      tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
     }),
-    [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, done, discard, keepFeeding, saveDraft, remove,
+    [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
       updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack],
   );
 

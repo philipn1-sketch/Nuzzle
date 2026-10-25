@@ -47,8 +47,8 @@ Sources: the eight screenshots Philip took of Huckleberry on his wife's phone (O
 | Theme follows the phone | Phase 1: Night, Day or Phone. | Added |
 | Solids, nappies, sleep, pumping, growth | Not built. | Out of scope |
 | Sync between two phones, cloud backup | Phase 2, with Supabase. | Planned |
-| Home screen widget, lock screen timer | Phase 3. | Planned |
-| Apple Watch, Siri | Phase 4. | Planned |
+| Home screen widget, lock screen timer | Phase 3: a widget for the home and lock screens, and a Live Activity timer on the lock screen and Dynamic Island. | Added |
+| Apple Watch, Siri | Phase 4: a Watch app with Left, Right and Done; Siri and Shortcuts to start, stop and ask about the last feed. | Added |
 | Sleep plans, AI logging, upgrades, ads, analytics | Not built. | Out of scope |
 | Reminder at a fixed clock time | Phase 1: up to four daily times, as well as the reminder after a feed. | Added |
 

@@ -177,7 +177,7 @@ export default function Home() {
 
       <View style={styles.bottom}>
         <SnackbarSlot />
-        {active && <PrimaryButton label="Done" onPress={app.done} testID="done" hint="Stops and saves this feed" />}
+        {active && <PrimaryButton label="Done" onPress={() => app.done()} testID="done" hint="Stops and saves this feed" />}
         <View style={styles.sides}>
           {(['L', 'R'] as const).map((s) => (
             <SideButton key={s} side={s} state={sideState(s)} ms={active ? sideMs(active, s, now) : null} onPress={() => app.tap(s)} />

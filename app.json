@@ -13,7 +13,8 @@
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "appleTeamId": "CCFVMBBSAP"
     },
     "android": {
       "package": "com.philipnader.nuzzle",
@@ -43,7 +44,33 @@
         {
           "color": "#EBA3B9"
         }
-      ]
+      ],
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.philipnader.nuzzle",
+          "widgets": [
+            {
+              "name": "NuzzleWidget",
+              "displayName": "Nuzzle",
+              "description": "Time since the last feed, the side to start on, and a running feed's timer.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium",
+                  "accessoryCircular",
+                  "accessoryRectangular",
+                  "accessoryInline"
+                ],
+                "initialLayout": "./src/widgets/NuzzleWidget.tsx"
+              }
+            }
+          ],
+          "bundleIdentifier": "com.philipnader.nuzzle.ExpoWidgetsTarget"
+        }
+      ],
+      "@bacons/apple-targets",
+      "./plugins/with-nuzzle-intents"
     ],
     "experiments": {
       "typedRoutes": false

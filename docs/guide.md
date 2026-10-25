@@ -45,6 +45,10 @@ TestFlight builds last 90 days. To renew, run steps 4 and 5 again; her feeds sta
 * **Age:** set the birthday in Settings and Home shows how old she is under her name.
 * **Two babies:** **Add another baby** in Settings. Home then shows a switch between them; each baby has their own feeds, side suggestion and reminder.
 * **Daily reminders:** Settings, **Also remind me every day at**, for a reminder at a set clock time (up to four).
+* **Home screen widget:** touch and hold the home screen, tap **Edit**, then **Add Widget**, find **Nuzzle**. Small or medium. It shows the time since the last feed, how it ended and the side to start on next, and a live timer during a feed. The same widget works on the lock screen (Customize the lock screen, then add Nuzzle).
+* **Lock screen timer:** starting a feed puts a live timer on the lock screen and in the Dynamic Island. It stops counting on pause and goes away on Done. If it doesn't show, check iPhone Settings, Nuzzle, Live Activities.
+* **Siri:** "Hey Siri, when was the last feed in Nuzzle", "Start left in Nuzzle", "Start right in Nuzzle", "Stop the feed in Nuzzle". They also show in the Shortcuts app, where they can go on the Action button or the home screen.
+* **Apple Watch:** the Watch app installs with Nuzzle (on the iPhone, open the Watch app, find Nuzzle, tap Install if it isn't on). It shows the time since the last feed and the side to start on, with Left, Right and Done buttons. Taps go to the iPhone, which keeps the feeds, with the time of the tap.
 * **Settings:** babies, reminders, bottle units, Night, Day or Phone theme (Phone follows the iPhone's dark mode), and **Export** (a spreadsheet of every feed, through the phone's share menu).
 
 Everything stays on her phone. Nothing is sent anywhere, and the app works with no signal.
