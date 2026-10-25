@@ -92,7 +92,7 @@ export default function Home() {
               </>
             ) : last ? (
               <>
-                <T tone="muted" style={[type.label, styles.centreText]} numberOfLines={2}>Since {name}&apos;s last feed</T>
+                <T tone="muted" style={[type.label, styles.centreText]} numberOfLines={2}>Since {name}&apos;s last feed started</T>
                 <T testID="since" accessibilityLabel={`${spanWords(now - feedStart(last))} since the last feed started`} numberOfLines={1}
                   adjustsFontSizeToFit maxFontSizeMultiplier={1.3} style={[type.answer, { color: p.ink }]}>
                   {cap(span(now - feedStart(last)))}

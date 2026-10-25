@@ -55,7 +55,7 @@ const NuzzleWidget = (props: GlanceProps, env: WidgetEnvironment) => {
   if (family === 'accessoryRectangular') {
     return (
       <VStack alignment="leading" spacing={1}>
-        <Text modifiers={[rounded(13, 'semibold')]}>{feeding ? props.feeding : `${props.name}'s last feed`}</Text>
+        <Text modifiers={[rounded(13, 'semibold')]}>{feeding ? props.feeding : `${props.name}'s last feed started`}</Text>
         {feeding ? timerText(20) : hasLast ? sinceText(20) : <Text>No feeds yet</Text>}
         {!feeding && props.next !== '' && <Text modifiers={[rounded(13, 'medium')]}>Next: {props.next}</Text>}
       </VStack>
@@ -75,7 +75,7 @@ const NuzzleWidget = (props: GlanceProps, env: WidgetEnvironment) => {
     </VStack>
   ) : hasLast ? (
     <VStack alignment="leading" spacing={4}>
-      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>Since the last feed</Text>
+      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>Since the last feed started</Text>
       {sinceText(family === 'systemSmall' ? 22 : 26)}
       <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{props.lastLine}</Text>
     </VStack>

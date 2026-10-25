@@ -119,7 +119,7 @@ struct ContentView: View {
           .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Palette.ink)
         } else if g.lastStart > 0 {
-          Text("Since the last feed")
+          Text("Since the last feed started")
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
           Text(Date(timeIntervalSince1970: g.lastStart / 1000), style: .relative)
