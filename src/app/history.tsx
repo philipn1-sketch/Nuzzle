@@ -7,7 +7,7 @@ import { dayLabel, mins, timeOf } from '../core/format';
 import type { Feed } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { line, radius, space, type } from '../theme';
+import { radius, space, type, wash } from '../theme';
 
 type Row = { kind: 'day'; group: DayGroup } | { kind: 'feed'; feed: Feed; first: boolean; lastInDay: boolean };
 
@@ -42,34 +42,37 @@ export default function History() {
             const g = item.group;
             return (
               <View style={styles.dayHead} accessibilityRole="header">
-                <T style={type.body}>{dayLabel(g.dayStart, now)}</T>
+                <T style={type.title}>{dayLabel(g.dayStart, now)}</T>
                 <T tone="muted" style={type.label}>
-                  {g.count} {g.count === 1 ? 'feed' : 'feeds'} · L {mins(g.leftMs)}m · R {mins(g.rightMs)}m
+                  {g.count} {g.count === 1 ? 'feed' : 'feeds'} · Left {mins(g.leftMs)}m · Right {mins(g.rightMs)}m
                 </T>
               </View>
             );
           }
           const f = item.feed;
           const sideList = sideRuns(f, now);
-          const runs = sideList.length === 1 ? `${sideList[0].side === 'L' ? 'Left' : 'Right'} only` : sideList.map((r) => `${r.side} ${mins(r.ms)}m`).join(' then ');
+          const runs = sideList.map((r) => `${r.side === 'L' ? 'left' : 'right'} ${mins(r.ms)} minutes`).join(', then ');
           return (
             <Pressable
               testID={`feed-row-${f.id}`}
               onPress={() => router.push(`/feed/${f.id}`)}
               accessibilityRole="button"
-              accessibilityLabel={`${timeOf(feedStart(f))}, ${runs.replace(/\bL\b/g, 'left').replace(/\bR\b/g, 'right')}, ${mins(totalMs(f, now))} minutes in total`}
+              accessibilityLabel={`${timeOf(feedStart(f))}, ${runs}, ${mins(totalMs(f, now))} minutes in total`}
               accessibilityHint="Opens this feed to edit or delete it"
               style={({ pressed }) => [
                 styles.row,
                 { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 },
-                item.first && styles.rowFirst,
-                item.lastInDay && styles.rowLast,
-                !item.first && { borderTopWidth: StyleSheet.hairlineWidth * 2, borderTopColor: line(p) },
               ]}
             >
               <T style={[type.body, styles.time]}>{timeOf(feedStart(f))}</T>
-              <T tone="muted" style={[type.label, { flex: 1 }]}>{runs}</T>
-              <T style={[type.body, { fontVariant: ['tabular-nums'] }]}>{mins(totalMs(f, now))}m</T>
+              <View style={styles.chips}>
+                {sideList.map((r, i) => (
+                  <View key={i} style={[styles.chip, { backgroundColor: wash(r.side === 'L' ? p.accent : p.peach, '2E') }]}>
+                    <T tone={r.side === 'L' ? 'accent' : 'peach'} style={type.small}>{r.side === 'L' ? 'Left' : 'Right'} {mins(r.ms)}m</T>
+                  </View>
+                ))}
+              </View>
+              <T tone="muted" style={[type.body, { fontVariant: ['tabular-nums'] }]}>{mins(totalMs(f, now))}m</T>
             </Pressable>
           );
         }}
@@ -84,10 +87,10 @@ export default function History() {
 
 const styles = StyleSheet.create({
   list: { paddingHorizontal: space.side, paddingBottom: space.xxl * 2, flexGrow: 1 },
-  dayHead: { paddingTop: space.xl, paddingBottom: space.s, paddingHorizontal: space.xs, gap: 2 },
-  row: { flexDirection: 'row', alignItems: 'center', alignContent: 'center', flexWrap: 'wrap', columnGap: space.m, rowGap: space.xs, minHeight: 64, paddingHorizontal: space.l, paddingVertical: space.m },
-  rowFirst: { borderTopLeftRadius: radius.row, borderTopRightRadius: radius.row },
-  rowLast: { borderBottomLeftRadius: radius.row, borderBottomRightRadius: radius.row },
+  dayHead: { paddingTop: space.xl, paddingBottom: space.m, paddingHorizontal: space.xs, gap: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', alignContent: 'center', flexWrap: 'wrap', columnGap: space.m, rowGap: space.xs, minHeight: 64, paddingHorizontal: space.l, paddingVertical: space.m, borderRadius: radius.row, marginBottom: space.s },
+  chips: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: space.xs },
+  chip: { borderRadius: 999, paddingHorizontal: space.s + 2, paddingVertical: 3 },
   time: { minWidth: 84, fontVariant: ['tabular-nums'] },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.s, paddingTop: 120 },
   bottom: { paddingHorizontal: space.side, gap: space.m },

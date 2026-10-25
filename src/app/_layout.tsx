@@ -4,6 +4,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { loadFonts } from '../services/fonts';
 import { AppStateProvider, useApp } from '../state/AppState';
 import { palettes } from '../theme';
 
@@ -25,6 +26,8 @@ function Themed() {
     </>
   );
 }
+
+loadFonts();
 
 export default function RootLayout() {
   return (

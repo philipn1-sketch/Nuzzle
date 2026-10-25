@@ -56,6 +56,8 @@ appId: com.philipnader.nuzzle
 - takeScreenshot: night-06-home-ask-reminders
 - tapOn:
     id: "reminders-on"
-- assertVisible:
-    text: "Reminder at.*"
+- extendedWaitUntil:
+    visible:
+      id: "reminder-at"
+    timeout: 10000
 - takeScreenshot: night-07-home-idle

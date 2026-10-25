@@ -1,58 +1,60 @@
 # Style bible
 
-Nuzzle should feel like a dim, warm lamp in a nursery at 3 am: dark brown, cream text, and one honey colour that means "this is happening now". Nothing glows white, nothing is red, nothing moves unless something changed.
+Direction (chosen by Philip): **soft midnight plum, with a big ring**. Nuzzle should feel like a dim, gentle night light: deep plum, soft rose and peach, rounded type, and one calm ring that answers the main question at a glance. Nothing glows white, nothing is red, nothing moves unless something changed.
 
 ## Colours (six per theme)
 
 | Token | Night (default) | Day | Used for |
 |---|---|---|---|
-| `bg` | `#16120F` warm near black | `#F4ECE1` oat | Screen background |
-| `surface` | `#251E19` | `#FBF5EC` | Cards, side buttons at rest, sheets |
-| `ink` | `#EFE3D3` cream (never pure white) | `#2C221B` | Main text, big numbers |
-| `muted` | `#B5A592` | `#6B5C4F` | Labels, secondary lines |
-| `accent` | `#E0B16B` honey | `#8A581A` dark honey | The running side, the suggested side's label, primary buttons, focus |
-| `onAccent` | `#2A1C0C` | `#FBF5EC` | Text on accent |
+| `bg` | `#1A1221` deep plum | `#F6EEF3` blush | Screen background; also the text on filled rose or peach |
+| `surface` | `#2A1E33` aubergine | `#FFF9FB` | Cards, side buttons at rest, sheets |
+| `ink` | `#F4E9EF` soft pink cream (never pure white) | `#2D1E33` | Main text, big numbers, the neutral Done and Save buttons |
+| `muted` | `#BBA9C2` lilac grey | `#6B5872` | Labels, secondary lines, the ring's track |
+| `accent` (rose) | `#EBA3B9` | `#A8456A` | **Left** everywhere; the ring at rest; selected options |
+| `peach` | `#F4BC9C` | `#A9532B` | **Right** everywhere |
 
-Lines and dividers are `muted` at 25% opacity. Pressed states darken by 8%. There is no red: an overdue reminder is shown in `accent`, never as an alarm.
+**Each side keeps its own colour on every screen:** Left is rose and Right is peach, on the side buttons, the ring while feeding, the "Ended on" chip and the History chips. Half asleep, she can tell the sides apart without reading. The main actions (Done, Save, Add a feed) are deliberately neutral (a soft cream outline) so they are never mistaken for a side.
 
-Contrast, measured: every text pair is at least 4.5:1. Night ink on bg 14.7, muted on surface 6.9, onAccent on accent 8.4. Day ink on bg 13.3, muted on bg 5.5, accent on bg 5.1, onAccent on accent 5.4.
+Contrast, measured: night ink on bg 15.4, muted on surface 7.2, rose on bg 9.1, peach on bg 10.9, plum text on rose 9.1. Day ink on bg 13.7, muted on bg 5.7, rose on bg 5.0, peach on bg 4.7. All at least 4.5:1.
+
+Nothing here is Huckleberry's: no navy, bright orange, lime, cyan or purple.
 
 ## Type
 
-The phone's own system font (San Francisco on iPhone, Roboto on Android): no font files to load, and it respects her text size setting. All numbers use tabular figures so timers don't jiggle.
+Apple's rounded system font (SF Pro Rounded) on iPhone, with no font files to load. The web preview stands in Nunito, which is close. Everything scales with her text size setting; the big numbers shrink to fit on one line rather than clipping.
 
 | Role | Size | Weight |
 |---|---|---|
-| Timer | 64 | 600 |
-| Big answer (time since last feed) | 40 | 700 |
-| Title | 22 | 700 |
+| Timer in the ring | 56 | 700 |
+| Time since the last feed | 44 | 700 |
+| Side name on the buttons | 30 | 700 |
+| Title | 21 | 700 |
 | Body and buttons | 17 | 600 |
 | Label | 15 | 500 |
-| Small | 13 | 500 |
+| Chip | 13 | 600 |
 
-Every text scales with the phone's text size setting. Layouts stack and wrap instead of clipping at the largest sizes.
+## Layout
+
+* **Home.** Baby's name centred at the top, with History on the left and Settings on the right. The ring sits in the middle: at rest it fills in rose as time passes towards her reminder time, with the time since the last feed and an "Ended on the right" chip inside. While feeding it shows the timer and sweeps once a minute in the colour of the feeding side. Under the ring: the last feed's details, or Discard during a feed. The two side buttons sit at the bottom in thumb reach and never move; Done and the Undo snackbar appear above them.
+* When a question card shows ("Still feeding?", the reminder question), the ring steps aside and the same answer shows as plain text, so the card's buttons always fit.
+* **History.** Day headings with totals per side, then one rounded row per feed: time, coloured side chips ("Left 9m", "Right 7m"), total.
 
 ## Spacing and shape
 
-Spacing steps: 4, 8, 12, 16, 24, 32. Screen side margin 20. Corner radius: 16 for rows and small buttons, 24 for cards, 32 for the side buttons and sheets.
+Spacing steps: 4, 8, 12, 16, 24, 32; screen side margin 20. Corners: 18 for rows, 28 for cards, 36 for side buttons. Chips are fully round.
 
 ## Components
 
-* **Side button.** The signature shape: two tall rounded rectangles side by side, filling the bottom of Home in thumb reach (at least 150 tall, never under 56). A huge letter L or R, the word Left or Right under it, and one status line ("Start here", "Tap to pause", "Tap to switch", "Tap to carry on"). At rest: `surface` with `ink` text. Suggested: an `accent` outline and the "Start here" line in `accent`. Running: filled `accent`, `onAccent` text, its own time shown.
-* **Top card.** The answer card on Home: the big time since the last feed, then the last side in words. While feeding it becomes the timer.
-* **Primary button.** Full width, 60 tall, `accent` fill, `onAccent` text (Done, Save).
-* **Quiet button.** Text only in `muted`, but still 56 tall to tap (Discard, Not now).
-* **Round icon button.** 56 by 56 in `surface`, for History and Settings in the top bar.
-* **Snackbar.** Bottom, above the side buttons, `ink` background with `bg` text; one message and up to two actions; stays 6 seconds.
-* **Stepper.** Minus, number, plus; buttons 56 by 56, repeat when held; the number can be tapped to type.
-* **Day header.** Small caps style label in `muted`: "Today · 8 feeds · L 64m · R 58m".
+* **Side button.** A tall soft pill with the side's name in 30pt. At rest: surface. Suggested or paused here: a wash of the side's colour, an outline, and a filled "Start here" or "Carry on here" chip. Running: filled with the side's colour, plum text, its own time.
+* **Ring.** 14 thick on a faint lilac track, drawn with plain views (no drawing library).
+* **Main button.** Full width, 64 tall, soft cream outline on a faint wash: Done, Save, Add a feed.
+* **Snackbar.** Above the main buttons, surface with a rose outline; actions 56 tall and ignore taps for their first 0.6 seconds.
+* **Choice.** Outlined segmented control; the chosen option fills with rose.
 
 ## Motion and feel
 
-* 150 to 250 ms, gentle springs, only to show what changed: the running side filling with honey, the timer appearing, the snackbar sliding up.
-* Reduced motion on the phone turns all of it into simple fades.
-* A soft haptic tick on start, switch, pause and stop.
+150 to 250 ms, gentle springs, only to show what changed. Reduced motion turns it into fades. A soft haptic tick on start, switch, pause and stop.
 
 ## Words
 
-Short, kind, plain. No exclamation marks, no dashes, no advice. "Baby" until she types a name. Examples: "Baby last fed 1h 40m ago", "Ended on the left", "Start here", "Saved. 18 min, ended on the right."
+Short, kind, plain. No exclamation marks, no dashes, no advice. "Baby" until she types a name.

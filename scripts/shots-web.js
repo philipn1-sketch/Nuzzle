@@ -40,7 +40,8 @@ async function main() {
       }, [feeds, settings(extra)]);
       await p.goto(URL);
       await p.waitForSelector('[data-testid="side-L"]');
-      await p.waitForTimeout(250);
+      await p.evaluate(() => document.fonts && document.fonts.ready);
+      await p.waitForTimeout(400);
     };
     const shot = async (name) => p.screenshot({ path: `${out}/${theme}-${name}.png` });
     const now = Date.now();

@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "backgroundColor": "#16120F",
+    "backgroundColor": "#1A1221",
     "ios": {
       "bundleIdentifier": "com.philipnader.nuzzle",
       "supportsTablet": false,
@@ -18,7 +18,7 @@
     "android": {
       "package": "com.philipnader.nuzzle",
       "adaptiveIcon": {
-        "backgroundColor": "#16120F",
+        "backgroundColor": "#1A1221",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -41,7 +41,7 @@
       [
         "expo-notifications",
         {
-          "color": "#E0B16B"
+          "color": "#EBA3B9"
         }
       ]
     ],

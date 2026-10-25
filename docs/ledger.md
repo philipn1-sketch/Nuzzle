@@ -100,3 +100,17 @@ Verdict: one more pass, on testing grounds. No remaining design or flow problems
 1. The latest build had not yet run on an emulator, and no end to end step typed a number. **Fixed:** the Android run now types minutes in the editor and saves; a full run is started on the current code. The editor moves above the keyboard on Android too.
 2. At the largest text sizes the snackbar and Done text had no ceiling. **Fixed:** capped like the side buttons.
 3. The due line showed when phone notifications were refused. **Fixed:** it only shows when a reminder can actually ring.
+
+## Redesign: soft midnight plum (Philip's call after seeing the screenshots)
+
+Philip found the warm brown and honey look ugly and chose "soft midnight plum" with a big ring on Home. Changes:
+
+* New six colour palette per theme (plum, aubergine, pink cream, lilac grey, rose, peach); all text pairs measured at 4.5:1 or better.
+* Apple's rounded system font on iPhone.
+* Home is built around a ring: time since the last feed fills it at rest; while feeding it shows the timer and sweeps once a minute in the feeding side's colour. It steps aside for question cards so their buttons always fit.
+* Left is rose and Right is peach on every screen, so the sides can be told apart by colour alone. Main actions are a neutral outline so Done is never mistaken for a side.
+* Side buttons became soft pills with the side's name, a filled "Start here" or "Carry on here" chip, and their own timer.
+* History rows got coloured side chips; day headings are larger.
+* New icon in the same palette.
+* "Reminder at" on Home now reads the reminder the phone actually has queued, which the iPhone end to end run checks.
+* Android dropped at Philip's request; testing moved to an iPhone simulator on GitHub's Macs.

@@ -36,6 +36,8 @@ interface AppStateValue {
   feeds: Feed[];
   settings: Settings;
   permission: notify.Permission;
+  /** When the phone actually has the next reminder queued, read back after scheduling. */
+  scheduledAt: number | null;
   snack: Snack | null;
   /** The "Still feeding?" card was answered with Yes since the app last came to the front. */
   stillFeedingAnswered: boolean;
@@ -68,6 +70,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...db.loadSettings() }));
   const [permission, setPermission] = useState<notify.Permission>('undetermined');
   const [snack, setSnack] = useState<Snack | null>(null);
+  const [scheduledAt, setScheduledAt] = useState<number | null>(null);
   const [stillFeedingAnswered, setStillFeedingAnswered] = useState(false);
   const [foreground, setForeground] = useState(0);
   const snackId = useRef(0);
@@ -109,7 +112,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   // feeds, settings or permission change, and whenever the app comes back, means a restart can't lose them.
   useEffect(() => {
     const plan = planReminder(feeds, settings, Date.now());
-    notify.scheduleReminder(plan?.at ?? null, plan?.body ?? '').catch(() => {});
+    notify
+      .scheduleReminder(plan?.at ?? null, plan?.body ?? '')
+      .then(() => notify.pendingReminderAt())
+      .then(setScheduledAt)
+      .catch(() => setScheduledAt(null));
     const a = activeFeed(feeds);
     notify.showRunningNotice(a ? runningText(a) : null).catch(() => {});
   }, [feeds, settings, permission, foreground]);
@@ -214,10 +221,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AppStateValue>(
     () => ({
-      feeds, settings, permission, snack, stillFeedingAnswered,
+      feeds, settings, permission, scheduledAt, snack, stillFeedingAnswered,
       tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, askReminders, hideSnack,
     }),
-    [feeds, settings, permission, snack, stillFeedingAnswered, tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, askReminders, hideSnack],
+    [feeds, settings, permission, scheduledAt, snack, stillFeedingAnswered, tap, done, discard, keepFeeding, saveDraft, remove, updateSettings, askReminders, hideSnack],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -3,48 +3,57 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { clock, sideName, spanWords } from '../core/format';
 import type { Side } from '../core/types';
 import { usePalette } from '../state/theme';
-import { radius, space, type } from '../theme';
+import { radius, sideColor, space, type, wash } from '../theme';
 import { T } from './ui';
 
 export type SideState = 'rest' | 'suggested' | 'running' | 'switch' | 'paused';
 // paused: the side she paused on; the other side shows 'switch'
 
 const STATUS: Record<SideState, string> = {
-  rest: ' ',
+  rest: 'Start',
   suggested: 'Start here',
   running: 'Tap to pause',
   switch: 'Tap to switch',
   paused: 'Carry on here',
 };
 
-/** One of the two big start buttons: a tall rounded block with a large letter. */
+/** One of the two big start buttons: a soft rounded pill with the side's name. */
 export function SideButton({ side, state, ms, onPress }: { side: Side; state: SideState; ms: number | null; onPress: () => void }) {
   const p = usePalette();
   const running = state === 'running';
+  const marked = state === 'suggested' || state === 'paused';
   const fg = running ? 'onAccent' : 'ink';
-  const status = STATUS[state];
+  const c = sideColor(p, side);
   return (
     <Pressable
       testID={`side-${side}`}
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${sideName(side)} side${ms !== null ? `, ${spanWords(ms)}` : ''}`}
-      accessibilityHint={status.trim() || 'Starts a feed on this side'}
+      accessibilityHint={state === 'rest' ? 'Starts a feed on this side' : STATUS[state]}
       style={({ pressed }) => [
         styles.button,
         {
-          backgroundColor: running ? p.accent : p.surface,
-          borderColor: state === 'suggested' || state === 'paused' ? p.accent : 'transparent',
-          transform: [{ scale: pressed ? 0.98 : 1 }],
+          backgroundColor: running ? c : marked ? wash(c, '1F') : p.surface,
+          borderColor: marked ? c : 'transparent',
+          transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
     >
-      <T tone={fg} style={styles.letter} allowFontScaling={false}>{side}</T>
-      <T tone={fg} style={type.title} maxFontSizeMultiplier={1.6}>{sideName(side)}</T>
-      <View style={styles.meta}>
-        {ms !== null && <T tone={fg} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.6} style={[type.title, { fontVariant: ['tabular-nums'] }]}>{clock(ms)}</T>}
-        <T tone={running ? 'onAccent' : state === 'suggested' || state === 'paused' ? 'accent' : 'muted'} maxFontSizeMultiplier={1.6}
-          style={[state === 'suggested' ? type.title : type.label, { textAlign: 'center' }]}>{status}</T>
+      <T tone={fg} style={type.side} maxFontSizeMultiplier={1.5}>{sideName(side)}</T>
+      {ms !== null && (
+        <T tone={fg} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.5} style={[type.title, { fontVariant: ['tabular-nums'] }]}>
+          {clock(ms)}
+        </T>
+      )}
+      <View style={[styles.chip, marked && { backgroundColor: c }]}>
+        <T
+          tone={running ? 'onAccent' : marked ? 'onAccent' : 'muted'}
+          maxFontSizeMultiplier={1.5}
+          style={[type.label, { textAlign: 'center', fontWeight: marked ? '700' : '500' }]}
+        >
+          {STATUS[state]}
+        </T>
       </View>
     </Pressable>
   );
@@ -53,15 +62,14 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
 const styles = StyleSheet.create({
   button: {
     flex: 1,
-    minHeight: 172,
+    minHeight: 150,
     borderRadius: radius.big,
-    borderWidth: 2.5,
+    borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: space.l,
     paddingHorizontal: space.s,
-    gap: 2,
+    gap: space.xs,
   },
-  letter: { fontSize: 64, lineHeight: 70, fontWeight: '700' },
-  meta: { alignItems: 'center', minHeight: 24, marginTop: space.xs },
+  chip: { borderRadius: 999, paddingHorizontal: space.m, paddingVertical: 5, marginTop: space.xs },
 });

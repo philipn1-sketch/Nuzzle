@@ -7,9 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SNACKBAR_MS } from '../config';
 import { useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { line, radius, space, TAP, type } from '../theme';
+import { line, radius, space, TAP, type, wash } from '../theme';
 
-type Tone = 'ink' | 'muted' | 'accent' | 'onAccent';
+type Tone = 'ink' | 'muted' | 'accent' | 'peach' | 'onAccent';
 
 /** Text in the theme. Always follows the phone's text size setting. */
 export function T({ tone = 'ink', style, ...rest }: TextProps & { tone?: Tone; style?: StyleProp<TextStyle> }) {
@@ -27,7 +27,7 @@ export function Screen({ children, style }: { children: ReactNode; style?: Style
   );
 }
 
-/** Full width honey button for the main action on a screen. */
+/** Full width main action (Done, Save). Neutral, so it is never mistaken for a side's colour. */
 export function PrimaryButton({ label, onPress, hint, testID }: { label: string; onPress: () => void; hint?: string; testID?: string }) {
   const p = usePalette();
   return (
@@ -36,9 +36,9 @@ export function PrimaryButton({ label, onPress, hint, testID }: { label: string;
       onPress={onPress}
       accessibilityRole="button"
       accessibilityHint={hint}
-      style={({ pressed }) => [styles.primary, { backgroundColor: p.accent, opacity: pressed ? 0.85 : 1 }]}
+      style={({ pressed }) => [styles.primary, { backgroundColor: wash(p.ink, pressed ? '2E' : '1A'), borderColor: wash(p.ink, '59') }]}
     >
-      <T tone="onAccent" style={type.title} maxFontSizeMultiplier={1.6}>{label}</T>
+      <T style={type.title} maxFontSizeMultiplier={1.6}>{label}</T>
     </Pressable>
   );
 }
@@ -69,8 +69,8 @@ export function PillButton({ label, onPress, testID, a11yLabel }: { label: strin
   const p = usePalette();
   return (
     <Pressable testID={testID} onPress={onPress} accessibilityRole="button" accessibilityLabel={a11yLabel ?? label}
-      style={({ pressed }) => [styles.pill, { backgroundColor: p.surface, opacity: pressed ? 0.75 : 1 }]}>
-      <T maxFontSizeMultiplier={1.5} numberOfLines={1}>{label}</T>
+      style={({ pressed }) => [styles.pill, { backgroundColor: p.surface, borderColor: line(p), opacity: pressed ? 0.75 : 1 }]}>
+      <T maxFontSizeMultiplier={1.5} numberOfLines={1} style={type.label}>{label}</T>
     </Pressable>
   );
 }
@@ -155,10 +155,10 @@ export function SnackbarSlot() {
 }
 
 const styles = StyleSheet.create({
-  primary: { minHeight: 60, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
+  primary: { minHeight: 64, borderWidth: 1.5, borderRadius: radius.big, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.xl, paddingVertical: space.m },
   secondary: { flexGrow: 1, flexBasis: 140, minHeight: TAP, borderRadius: radius.row, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m, paddingVertical: space.s },
   quiet: { minHeight: TAP, minWidth: TAP, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.m },
-  pill: { minHeight: TAP, minWidth: TAP, borderRadius: TAP / 2, paddingHorizontal: space.l, alignItems: 'center', justifyContent: 'center' },
+  pill: { minHeight: TAP, minWidth: TAP, borderRadius: TAP / 2, borderWidth: 1, paddingHorizontal: space.l + 2, alignItems: 'center', justifyContent: 'center' },
   topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: space.side, paddingVertical: space.s, gap: space.m, minHeight: TAP + space.l },
   topSide: { minWidth: TAP },
   topTitle: { flex: 1, textAlign: 'center' },

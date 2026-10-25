@@ -1,0 +1,29 @@
+# iPhone: close the app mid feed and reopen it; the timer must have kept counting from the stored start.
+# (The simulator uses the Mac's clock, so the "an hour later" check runs in the unit tests instead.)
+appId: com.philipnader.nuzzle
+---
+- launchApp
+- tapOn:
+    id: "side-L"
+- assertVisible: "Feeding on the left"
+- extendedWaitUntil:
+    visible:
+      id: "timer"
+      text: "0:0[4-9]"
+    timeout: 15000
+- stopApp
+- launchApp
+- assertVisible: "Feeding on the left"
+- extendedWaitUntil:
+    visible:
+      id: "timer"
+      text: "0:(0[6-9]|[1-5][0-9])"
+    timeout: 15000
+- takeScreenshot: night-08-home-running-after-reopening
+- tapOn:
+    id: "done"
+- assertVisible: "Ended on the left"
+- extendedWaitUntil:
+    visible:
+      id: "reminder-at"
+    timeout: 10000
