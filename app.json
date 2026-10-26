@@ -48,7 +48,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.philipnader.nuzzleapp",
+          "groupIdentifier": "group.com.quickquotegroup.nuzzle",
           "widgets": [
             {
               "name": "NuzzleWidget",

@@ -2,7 +2,7 @@ import ExpoModulesCore
 import WatchConnectivity
 
 /// The app group shared with the widget and the Siri shortcuts.
-let nuzzleGroup = "group.com.philipnader.nuzzleapp"
+let nuzzleGroup = "group.com.quickquotegroup.nuzzle"
 let glanceKey = "nuzzle.glance"
 
 /**

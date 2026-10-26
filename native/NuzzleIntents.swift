@@ -81,7 +81,7 @@ struct LastFeedIntent: AppIntent {
 
   func perform() async throws -> some IntentResult & ProvidesDialog {
     guard
-      let json = UserDefaults(suiteName: "group.com.philipnader.nuzzleapp")?.string(forKey: "nuzzle.glance"),
+      let json = UserDefaults(suiteName: "group.com.quickquotegroup.nuzzle")?.string(forKey: "nuzzle.glance"),
       let g = try? JSONDecoder().decode(Glance.self, from: Data(json.utf8))
     else {
       return .result(dialog: "Open Nuzzle once, then ask again.")
