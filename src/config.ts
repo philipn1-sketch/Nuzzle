@@ -2,7 +2,7 @@
 export const APP_NAME = 'Nuzzle';
 
 /** Nuzzle's own web pages, linked from the paywall, Settings and the App Store listing. */
-export const SITE_URL = 'https://nuzzle-app.vercel.app';
+export const SITE_URL = 'https://nuzzle-app-seven.vercel.app';
 export const PRIVACY_URL = `${SITE_URL}/privacy`;
 export const SUPPORT_URL = `${SITE_URL}/support`;
 /** Apple's standard licence agreement, which covers Nuzzle's subscription terms. */
