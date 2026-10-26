@@ -40,3 +40,21 @@ export async function syncWithServer(
     clearTimeout(timer);
   }
 }
+
+/** Deletes the family's online copy for good. Resolves true when there was one to delete. */
+export async function deleteBackup(code: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const res = await fetch(`${URL}/rest/v1/rpc/nuzzle_delete`, {
+      method: 'POST',
+      headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`delete ${res.status}`);
+    return (await res.json()) === true;
+  } finally {
+    clearTimeout(timer);
+  }
+}

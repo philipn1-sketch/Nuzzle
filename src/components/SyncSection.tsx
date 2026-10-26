@@ -5,6 +5,7 @@ import { Share, StyleSheet, TextInput, View } from 'react-native';
 import { APP_NAME } from '../config';
 import { span } from '../core/format';
 import { CODE_LENGTH, cleanCode, isCode, makeCode, showCode } from '../core/sync';
+import { deleteBackup } from '../services/sync';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, TAP, type } from '../theme';
@@ -22,6 +23,8 @@ export function SyncSection() {
   const [joining, setJoining] = useState(false);
   const [typed, setTyped] = useState('');
   const [sure, setSure] = useState(false);
+  const [erase, setErase] = useState(false);
+  const [eraseProblem, setEraseProblem] = useState<string | null>(null);
 
   if (!sync.available) {
     return <T tone="muted" style={type.label}>Backup and sharing with a second phone aren't set up in this build yet.</T>;
@@ -85,8 +88,33 @@ export function SyncSection() {
             <SecondaryButton label="Stop sharing on this phone" onPress={() => { stopSync(); setSure(false); }} />
             <SecondaryButton label="Keep sharing" strong onPress={() => setSure(false)} />
           </View>
+        ) : erase ? (
+          <View style={{ gap: space.xs }}>
+            <T style={type.label}>
+              This deletes the online copy for good, for every phone using this code. The feeds on this phone stay, and it stops sharing.
+            </T>
+            {eraseProblem && <T tone="muted" style={type.label} accessibilityLiveRegion="polite">{eraseProblem}</T>}
+            <SecondaryButton
+              label="Delete the online backup"
+              testID="delete-backup-confirm"
+              onPress={() => {
+                const code = sync.code ?? '';
+                setEraseProblem(null);
+                deleteBackup(code)
+                  .then(() => {
+                    stopSync();
+                    setErase(false);
+                  })
+                  .catch(() => setEraseProblem("Couldn't reach the backup. Check the connection and try again."));
+              }}
+            />
+            <SecondaryButton label="Keep it" strong onPress={() => setErase(false)} />
+          </View>
         ) : (
-          <QuietButton label="Stop sharing on this phone" style={styles.left} onPress={() => setSure(true)} />
+          <>
+            <QuietButton label="Stop sharing on this phone" style={styles.left} onPress={() => setSure(true)} />
+            <QuietButton label="Delete the online backup" style={styles.left} onPress={() => setErase(true)} testID="delete-backup" />
+          </>
         )}
       </View>
     );
