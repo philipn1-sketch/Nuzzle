@@ -9,7 +9,7 @@ import {
   activeFeed, endSide, feedStart, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, suggestedSide, totalMs,
 } from '../core/feeds';
 import { clock, sideWord, span, spanWords, timeOf } from '../core/format';
-import { babyName, nextFeedAt } from '../core/reminder';
+import { babyName, followsPlan, nextFeedAt } from '../core/reminder';
 import { runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
@@ -43,6 +43,7 @@ export default function Home() {
   // one next feed, from whichever rule is on: the daily plan's times, or her gap after a feed starts
   const dueAt = nextFeedAt(feeds, settings, app.baby, app.plus);
   const overdue = !active && dueAt !== null && now >= dueAt;
+  const fromPlan = followsPlan(app.baby, app.plus);
   const [more, setMore] = useState(false);
 
   const sideState = (side: Side): SideState => {
@@ -135,8 +136,8 @@ export default function Home() {
                       <T style={[type.label, { fontWeight: '700' }]}>Due {span(now - dueAt)} ago</T>
                     </View>
                   ) : dueAt !== null ? (
-                    <T testID="reminder-at" style={[type.label, styles.centreText, styles.next]} accessibilityLabel={`Next feed at ${timeOf(dueAt)}, in ${spanWords(dueAt - now)}`}>
-                      Next feed {timeOf(dueAt)}
+                    <T testID="reminder-at" style={[type.label, styles.centreText, styles.next]} accessibilityLabel={`Next feed at ${timeOf(dueAt)}${fromPlan ? " in the daily plan" : ""}, in ${spanWords(dueAt - now)}`}>
+                      Next feed {timeOf(dueAt)}{fromPlan ? ' · plan' : ''}
                     </T>
                   ) : null}
                   {!overdue && <T tone="muted" style={[type.small, styles.centreText]}>Edit last feed ›</T>}
@@ -157,7 +158,7 @@ export default function Home() {
               <PillButton label="Bottle" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" a11yLabel="Log a bottle" />
               <PillButton label="Nappy" onPress={() => router.push('/entry/new?kind=nappy')} testID="log-nappy" a11yLabel="Log a nappy" />
               {!sleeping && <PillButton label="Sleep" onPress={app.toggleSleep} testID="log-sleep" a11yLabel="Start a sleep" />}
-              <PillButton label="More" onPress={() => setMore(true)} testID="log-more" a11yLabel="Log pumping or a weight" />
+              <PillButton label="More" onPress={() => setMore(true)} testID="log-more" a11yLabel="Pumping, weight and the daily plan" />
             </View>
           )}
           {app.sync.code && !settings.codeSaved && !compact && !active && (
@@ -233,9 +234,10 @@ export default function Home() {
         <Pressable style={[styles.shade, { backgroundColor: wash(p.bg, 'B3') }]} onPress={() => setMore(false)} accessibilityLabel="Close" />
         <View style={[styles.sheet, { backgroundColor: p.surface }]}>
           <View style={[styles.grabber, { backgroundColor: line(p) }]} />
-          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">Log something else</T>
+          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">More</T>
           <SecondaryButton strong label="Pumping" testID="log-pump" onPress={() => { setMore(false); router.push('/entry/new?kind=pump'); }} />
           <SecondaryButton strong label="Weight and length" testID="add-growth" onPress={() => { setMore(false); router.push('/entry/new?kind=growth'); }} />
+          <SecondaryButton label={fromPlan ? 'Daily plan (on)' : 'Daily plan'} testID="more-plan" onPress={() => { setMore(false); router.push('/plan'); }} />
           <QuietButton label="Cancel" onPress={() => setMore(false)} testID="more-cancel" style={{ alignSelf: 'center' }} />
         </View>
       </Modal>
