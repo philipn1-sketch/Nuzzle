@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { Stepper } from '../components/Stepper';
-import { Card, PillButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
+import { Card, Choice, PillButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import { ageText, clockTime, span } from '../core/format';
-import { AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, type PlanSettings } from '../core/plan';
+import {
+  AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, nextReference, REFERENCE_DAYS, referenceFeedTimes, type PlanSettings,
+} from '../core/plan';
 import { babyName } from '../core/reminder';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
@@ -32,7 +34,15 @@ export default function Plan() {
   const items = buildPlan(plan);
   const d = new Date(now);
   const next = nextItem(items, d.getHours() * 60 + d.getMinutes());
-  const usingGap = settings.intervalMin === plan.gapMin;
+  const ref = plan.referenceId ? REFERENCE_DAYS.find((r) => r.id === plan.referenceId) ?? null : null;
+  const gapMin = ref ? ref.gapMin : plan.gapMin;
+  const usingGap = settings.intervalMin === gapMin;
+  const nowMin = d.getHours() * 60 + d.getMinutes();
+  const nextRef = ref ? nextReference(ref.items, nowMin) : null;
+  const feedTimes = ref ? referenceFeedTimes(ref) : [];
+  const remindersMatch =
+    ref !== null && feedTimes.length === settings.clockReminders.length &&
+    feedTimes.every((m) => settings.clockReminders.some((c) => c.hour * 60 + c.minute === m));
 
   const rows: [string, string][] = [
     ['Feeds', band.feedsPerDay],
@@ -69,6 +79,56 @@ export default function Plan() {
           These are examples from common baby care guides, not advice for {name}. Every baby is different, and feeding when {name} shows hunger comes first. Your midwife, child health nurse or GP can help with what suits {name}.
         </T>
 
+        <Choice<'own' | 'ref'>
+          label="Plan"
+          value={ref ? 'ref' : 'own'}
+          onChange={(v) => setPlan({ referenceId: v === 'ref' ? REFERENCE_DAYS[0].id : undefined })}
+          options={[{ value: 'own', label: 'Build my own' }, { value: 'ref', label: 'Reference day' }]}
+        />
+
+        {ref ? (
+          <>
+            <T style={type.title} accessibilityRole="header">{ref.label}</T>
+            <T tone="muted" style={type.label}>{ref.intro}</T>
+            <View style={{ gap: space.s }}>
+              {ref.items.map((i, k) => {
+                const isNext = nextRef === i;
+                // a feed window runs from one time to the other; a nap starts at either time
+                const time = i.until ? `${at(i.at)} ${i.kind === 'nap' ? 'or' : 'to'} ${at(i.until)}` : at(i.at);
+                return (
+                  <View
+                    key={k}
+                    testID={`ref-item-${k}`}
+                    accessible
+                    accessibilityLabel={`${time}, ${i.note}${isNext ? ', next' : ''}`}
+                    style={[
+                      styles.refItem,
+                      { backgroundColor: i.kind === 'feed' ? p.surface : wash(p.muted, '1F') },
+                      isNext && { borderWidth: 2, borderColor: p.accent },
+                    ]}
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.m }}>
+                      <T style={[type.body, { flex: 1, fontVariant: ['tabular-nums'] }]}>{time}</T>
+                      {isNext && <T tone="accent" style={type.small}>Next</T>}
+                    </View>
+                    <T tone={i.kind === 'feed' ? 'ink' : 'muted'} style={type.label}>{i.note}</T>
+                  </View>
+                );
+              })}
+            </View>
+            <T tone="muted" style={type.label}>{ref.night}</T>
+            {!remindersMatch ? (
+              <SecondaryButton
+                label="Remind me at these feed times"
+                onPress={() => updateSettings({ clockReminders: feedTimes.map((m) => ({ hour: Math.floor(m / 60), minute: m % 60 })), reminderAsked: true })}
+                testID="ref-reminders"
+              />
+            ) : (
+              <T tone="muted" style={type.label}>Daily reminders are set for these feed times. Change them in Settings.</T>
+            )}
+          </>
+        ) : (
+          <>
         <T style={type.title} accessibilityRole="header">Shape your day</T>
         <Row label="Day starts">
           <Stepper label="Day starts" testID="plan-start" display={at(plan.dayStartMin)} onStep={(dir) => setPlan({ dayStartMin: wrap(plan.dayStartMin + dir * 15) })} />
@@ -117,17 +177,19 @@ export default function Plan() {
           })}
           <T tone="muted" style={type.label}>Night feeds happen as {name} needs them, so the plan stops at bedtime.</T>
         </View>
+          </>
+        )}
 
         {!usingGap && (
           <SecondaryButton
             strong
-            label={`Use ${span(plan.gapMin * 60_000)} for the countdown and reminder`}
-            onPress={() => updateSettings({ intervalMin: plan.gapMin })}
+            label={`Use ${span(gapMin * 60_000)} for the countdown and reminder`}
+            onPress={() => updateSettings({ intervalMin: gapMin })}
             testID="plan-use-gap"
           />
         )}
         {usingGap && (
-          <T tone="muted" style={type.label}>The countdown and reminder use this {span(plan.gapMin * 60_000)} gap.</T>
+          <T tone="muted" style={type.label}>The countdown and reminder use this {span(gapMin * 60_000)} gap.</T>
         )}
       </ScrollView>
       <View style={styles.bottom}>
@@ -153,6 +215,7 @@ const styles = StyleSheet.create({
   row: { gap: space.s, paddingVertical: space.s, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
   item: { flexDirection: 'row', alignItems: 'center', gap: space.m, minHeight: 52, paddingHorizontal: space.l, borderRadius: radius.row },
   time: { width: 96, fontVariant: ['tabular-nums'] },
+  refItem: { gap: 2, paddingHorizontal: space.l, paddingVertical: space.m, borderRadius: radius.row },
   left: { alignSelf: 'flex-start', paddingHorizontal: 0 },
   bottom: { paddingHorizontal: space.side },
 });

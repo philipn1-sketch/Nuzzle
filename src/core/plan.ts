@@ -79,6 +79,8 @@ export interface PlanSettings {
   bedtimeMin: number;
   gapMin: number;
   awakeMin: number;
+  /** Set when she follows a reference day instead of building her own. */
+  referenceId?: string;
 }
 
 export interface PlanItem {
@@ -114,3 +116,63 @@ export function nextItem(items: PlanItem[], nowMin: number): PlanItem | null {
 }
 
 export const defaultPlan = (band: AgeBand): PlanSettings => ({ dayStartMin: 7 * 60, bedtimeMin: 19 * 60, gapMin: band.gapMin, awakeMin: band.awakeMin });
+
+/**
+ * A fixed day to follow, from a reference schedule the family follows (2 to 4 weeks), summarised in
+ * our own words. Times are minutes after midnight.
+ */
+export interface ReferenceItem {
+  kind: 'feed' | 'play' | 'nap' | 'bath' | 'bedtime';
+  at: number;
+  /** For a window such as "between 6 and 7". */
+  until?: number;
+  note: string;
+}
+
+export interface ReferenceDay {
+  id: string;
+  label: string;
+  intro: string;
+  items: ReferenceItem[];
+  night: string;
+  /** The usual gap between daytime feeds, in minutes. */
+  gapMin: number;
+}
+
+const h = (hours: number, minutes = 0) => hours * 60 + minutes;
+
+export const REFERENCE_DAYS: ReferenceDay[] = [
+  {
+    id: 'ref-2-4w',
+    label: 'Reference day, 2 to 4 weeks',
+    intro: 'Feeds take about 30 minutes start to finish. Bottles are usually 3 to 4 oz (90 to 120 ml) of breast milk or formula.',
+    gapMin: 180,
+    night: 'Night feeds on demand, often around midnight to 2 am, and in the first weeks sometimes again around 3 am. Keep night feeds quiet and dim.',
+    items: [
+      { kind: 'feed', at: h(6), until: h(7), note: 'First feed of the day, any time between 6 and 7, then back to sleep' },
+      { kind: 'feed', at: h(9), note: 'Feed at 9 whenever the last feed was' },
+      { kind: 'play', at: h(9, 30), note: 'Awake time, 10 to 30 minutes: cuddles and a nappy change' },
+      { kind: 'nap', at: h(9, 45), until: h(10), note: 'Nap, as close to two hours as possible' },
+      { kind: 'feed', at: h(12), note: 'Feed, waking the baby if needed' },
+      { kind: 'play', at: h(12, 30), note: 'Awake time, 10 to 30 minutes' },
+      { kind: 'nap', at: h(12, 45), until: h(13), note: 'Nap, as close to two hours as possible' },
+      { kind: 'feed', at: h(15), note: 'Feed, waking the baby if needed; often more alert and unsettled now' },
+      { kind: 'play', at: h(15, 30), note: 'Awake time, 10 to 30 minutes' },
+      { kind: 'nap', at: h(15, 45), until: h(16), note: 'Nap, as close to two hours as possible' },
+      { kind: 'feed', at: h(18), note: 'Supper feed, then the next feed is the bedtime feed at 9' },
+      { kind: 'play', at: h(18, 30), note: 'Awake time: a few minutes each of bouncer, tummy time and swing' },
+      { kind: 'nap', at: h(18, 45), until: h(19), note: 'Short sleep, about an hour to an hour and a half' },
+      { kind: 'bath', at: h(20, 30), note: 'Bath time' },
+      { kind: 'feed', at: h(21), note: 'Bedtime feed' },
+      { kind: 'bedtime', at: h(21, 30), note: 'Into bed: swaddled, dark room, white noise on' },
+    ],
+  },
+];
+
+/** The first item still to come, given the minutes after midnight now. A window counts until it closes. */
+export function nextReference(items: ReferenceItem[], nowMin: number): ReferenceItem | null {
+  return items.find((i) => (i.until ?? i.at) >= nowMin) ?? null;
+}
+
+/** The daytime feed times, for reminders: the start of each feed window. */
+export const referenceFeedTimes = (day: ReferenceDay): number[] => day.items.filter((i) => i.kind === 'feed').map((i) => i.at);

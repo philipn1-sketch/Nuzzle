@@ -138,7 +138,7 @@ export default function SettingsScreen() {
               <QuietButton label="Remove" onPress={() => setClock(i, null)} />
             </View>
           ))}
-          {settings.clockReminders.length < 4 && (
+          {settings.clockReminders.length < 8 && (
             <QuietButton label="Add a time ›" tone="ink" onPress={addClock} style={styles.left} testID="add-clock" />
           )}
           <T style={{ marginTop: space.s }}>Quiet hours</T>

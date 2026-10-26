@@ -1,4 +1,4 @@
-import { AGE_BANDS, bandFor, buildPlan, nextItem } from '../plan';
+import { AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, REFERENCE_DAYS, referenceFeedTimes } from '../plan';
 
 const DAY = 86_400_000;
 const born = new Date(2026, 9, 8).getTime();
@@ -32,5 +32,22 @@ describe('the day plan', () => {
   it('leaves out a nap with no real time before the next feed', () => {
     const plan = buildPlan({ dayStartMin: 7 * 60, bedtimeMin: 10 * 60, gapMin: 120, awakeMin: 110 });
     expect(plan.filter((i) => i.kind === 'nap')).toHaveLength(0);
+  });
+});
+
+describe('the reference day', () => {
+  it('runs in order from the first feed to bed, with six feeds', () => {
+    const day = REFERENCE_DAYS[0];
+    const times = day.items.map((i) => i.at);
+    expect([...times].sort((a, b) => a - b)).toEqual(times);
+    expect(referenceFeedTimes(day).map((t) => t / 60)).toEqual([6, 9, 12, 15, 18, 21]);
+    expect(day.items[day.items.length - 1].kind).toBe('bedtime');
+  });
+
+  it('keeps a window open until it closes', () => {
+    const day = REFERENCE_DAYS[0];
+    expect(nextReference(day.items, 6 * 60 + 30)?.at).toBe(6 * 60);
+    expect(nextReference(day.items, 9 * 60 + 50)?.kind).toBe('nap');
+    expect(nextReference(day.items, 22 * 60)).toBeNull();
   });
 });
