@@ -48,7 +48,7 @@
       [
         "expo-widgets",
         {
-          "groupIdentifier": "group.com.philipnader.nuzzle",
+          "groupIdentifier": "group.com.philipnader.nuzzleapp",
           "widgets": [
             {
               "name": "NuzzleWidget",
