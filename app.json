@@ -92,7 +92,26 @@
       ],
       "@bacons/apple-targets",
       "./plugins/with-nuzzle-intents",
-      "expo-iap"
+      "expo-iap",
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "en",
+              "es",
+              "fr",
+              "de",
+              "it",
+              "pt",
+              "nl",
+              "ja",
+              "zh-Hans",
+              "ko"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

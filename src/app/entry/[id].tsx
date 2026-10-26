@@ -10,13 +10,14 @@ import type { Entry, EntryKind, Nappy } from '../../core/types';
 import { useApp } from '../../state/AppState';
 import { usePalette } from '../../state/theme';
 import { line, radius, space, TAP, type } from '../../theme';
+import { t, tk } from '../../i18n';
 
 const MIN = 60_000;
 const TITLES: Record<EntryKind, [string, string]> = {
-  nappy: ['Nappy', 'Edit nappy'],
-  pump: ['Pumping', 'Edit pumping'],
-  growth: ['Weight', 'Edit weight'],
-  sleep: ['Sleep', 'Edit sleep'],
+  nappy: [tk('Nappy'), tk('Edit nappy')],
+  pump: [tk('Pumping'), tk('Edit pumping')],
+  growth: [tk('Weight'), tk('Edit weight')],
+  sleep: [tk('Sleep'), tk('Edit sleep')],
 };
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
@@ -55,9 +56,9 @@ export default function EntryEditor() {
   const save = () => {
     const result = saveEntry(withNote(draft, draft.note));
     if (!result) return router.back();
-    if (result === 'future') setProblem('That is later than now.');
-    else if (result === 'order') setProblem('She woke before she fell asleep. Check the times.');
-    else setProblem(k === 'pump' ? 'Add how much on at least one side.' : 'Add a weight or a length.');
+    if (result === 'future') setProblem(t('That is later than now.'));
+    else if (result === 'order') setProblem(t('She woke before she fell asleep. Check the times.'));
+    else setProblem(k === 'pump' ? t('Add how much on at least one side.') : t('Add a weight or a length.'));
   };
 
   const moveDay = (dir: 1 | -1) => {
@@ -79,14 +80,14 @@ export default function EntryEditor() {
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Cancel" onPress={() => router.back()} testID="cancel" />} title={TITLES[k][existing ? 1 : 0]} />
+      <TopBar left={<PillButton label={t('Cancel')} onPress={() => router.back()} testID="cancel" />} title={t(TITLES[k][existing ? 1 : 0])} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <Row label="Day">
-            <Stepper label="Day" testID="day" display={dayLabel(day0, now)} onStep={moveDay} />
+          <Row label={t('Day')}>
+            <Stepper label={t('Day')} testID="day" display={dayLabel(day0, now)} onStep={moveDay} />
           </Row>
-          <Row label={k === 'sleep' ? 'Fell asleep at' : 'At'}>
-            <Stepper label="Time" testID="time" display={timeOf(draft.at)} onStep={moveTime} />
+          <Row label={k === 'sleep' ? t('Fell asleep at') : t('At')}>
+            <Stepper label={t('Time')} testID="time" display={timeOf(draft.at)} onStep={moveTime} />
           </Row>
 
           {quickNappy && (
@@ -96,7 +97,7 @@ export default function EntryEditor() {
                   key={n}
                   testID={`nappy-${n}`}
                   accessibilityRole="button"
-                  accessibilityHint={`Saves a ${nappyWord(n).toLowerCase()} nappy at ${timeOf(draft.at)}`}
+                  accessibilityHint={t('Saves it at {time}', { time: timeOf(draft.at) })}
                   onPress={() => {
                     logNappy(n, draft.at);
                     router.back();
@@ -110,47 +111,47 @@ export default function EntryEditor() {
           )}
 
           {!quickNappy && k === 'nappy' && (
-            <Row label="Nappy">
+            <Row label={t('Nappy')}>
               <Choice<Nappy>
-                label="Nappy"
+                label={t('Nappy')}
                 value={draft.nappy ?? 'wet'}
                 onChange={(v) => set({ nappy: v })}
-                options={[{ value: 'wet', label: 'Wet' }, { value: 'dirty', label: 'Dirty' }, { value: 'both', label: 'Both' }]}
+                options={[{ value: 'wet', label: t('Wet') }, { value: 'dirty', label: t('Dirty') }, { value: 'both', label: t('Both') }]}
               />
             </Row>
           )}
 
           {k === 'pump' && (
             <>
-              <Row label="Left">
-                <Stepper label="Left amount" testID="pump-left" display={amount(draft.leftMl ?? 0, units)} onStep={(d, f) => set({ leftMl: stepMl(draft.leftMl ?? 0, d, f) })} />
+              <Row label={t('Left')}>
+                <Stepper label={t('Left amount')} testID="pump-left" display={amount(draft.leftMl ?? 0, units)} onStep={(d, f) => set({ leftMl: stepMl(draft.leftMl ?? 0, d, f) })} />
               </Row>
-              <Row label="Right">
-                <Stepper label="Right amount" testID="pump-right" display={amount(draft.rightMl ?? 0, units)} onStep={(d, f) => set({ rightMl: stepMl(draft.rightMl ?? 0, d, f) })} />
+              <Row label={t('Right')}>
+                <Stepper label={t('Right amount')} testID="pump-right" display={amount(draft.rightMl ?? 0, units)} onStep={(d, f) => set({ rightMl: stepMl(draft.rightMl ?? 0, d, f) })} />
               </Row>
-              <Row label="How long">
-                <Stepper label="Minutes pumping" display={`${draft.minutes ?? 0} min`} onStep={(d, f) => set({ minutes: Math.max(0, Math.min(120, (draft.minutes ?? 0) + d * (f ? 5 : 1))) })} />
+              <Row label={t('How long')}>
+                <Stepper label={t('Minutes pumping')} display={t('{n} min', { n: draft.minutes ?? 0 })} onStep={(d, f) => set({ minutes: Math.max(0, Math.min(120, (draft.minutes ?? 0) + d * (f ? 5 : 1))) })} />
               </Row>
             </>
           )}
 
           {k === 'growth' && (
             <>
-              <Row label="Weight">
+              <Row label={t('Weight')}>
                 <Stepper
-                  label="Weight"
+                  label={t('Weight')}
                   testID="weight"
-                  display={draft.weightG ? weightText(draft.weightG, units) : 'Not measured'}
+                  display={draft.weightG ? weightText(draft.weightG, units) : t('Not measured')}
                   onStep={(d, f) => {
                     const step = units === 'oz' ? 28.3495 * (f ? 4 : 1) : f ? 100 : 10;
                     set({ weightG: Math.max(0, Math.min(30000, Math.round((draft.weightG ?? 0) + d * step))) });
                   }}
                 />
               </Row>
-              <Row label="Length">
+              <Row label={t('Length')}>
                 <Stepper
-                  label="Length"
-                  display={draft.lengthMm ? lengthText(draft.lengthMm, units) : 'Not measured'}
+                  label={t('Length')}
+                  display={draft.lengthMm ? lengthText(draft.lengthMm, units) : t('Not measured')}
                   onStep={(d, f) => {
                     const start = draft.lengthMm || 500;
                     const step = units === 'oz' ? 25.4 * (f ? 1 : 0.25) : f ? 10 : 5;
@@ -162,17 +163,17 @@ export default function EntryEditor() {
           )}
 
           {k === 'sleep' && (
-            <Row label="Slept for">
+            <Row label={t('Slept for')}>
               {running ? (
                 <View style={{ gap: space.s }}>
-                  <T>Still asleep, {span(now - draft.at)} so far</T>
-                  <QuietButton label="She woke up now" tone="ink" style={styles.left} onPress={() => set({ end: Date.now() })} />
+                  <T>{t('Still asleep, {time} so far', { time: span(now - draft.at) })}</T>
+                  <QuietButton label={t('She woke up now')} tone="ink" style={styles.left} onPress={() => set({ end: Date.now() })} />
                 </View>
               ) : (
                 <Stepper
-                  label="Sleep length"
+                  label={t('Sleep length')}
                   testID="sleep-length"
-                  display={span(durationMin * MIN) === 'just now' ? '0m' : span(durationMin * MIN)}
+                  display={durationMin < 1 ? t('{m}m', { m: 0 }) : span(durationMin * MIN)}
                   onStep={(d, f) => set({ end: draft.at + Math.max(0, durationMin + d * (f ? 15 : 5)) * MIN })}
                 />
               )}
@@ -180,15 +181,15 @@ export default function EntryEditor() {
           )}
 
           {!quickNappy && (
-            <Row label="Note">
+            <Row label={t('Note')}>
               <TextInput
                 testID="note"
                 value={draft.note ?? ''}
                 onChangeText={(t) => set({ note: t.slice(0, 200) })}
-                placeholder="Anything to remember"
+                placeholder={t('Anything to remember')}
                 placeholderTextColor={p.muted}
                 multiline
-                accessibilityLabel="Note"
+                accessibilityLabel={t('Note')}
                 style={[type.body, styles.note, { color: p.ink, backgroundColor: p.surface }]}
               />
             </Row>
@@ -200,10 +201,10 @@ export default function EntryEditor() {
               <T accessibilityLiveRegion="polite" style={type.body}>{problem}</T>
             </View>
           )}
-          {!quickNappy && <PrimaryButton label="Save" onPress={save} testID="save-entry" />}
+          {!quickNappy && <PrimaryButton label={t('Save')} onPress={save} testID="save-entry" />}
           {existing && (
             <QuietButton
-              label="Delete"
+              label={t('Delete')}
               testID="delete-entry"
               onPress={() => {
                 removeEntry(existing.id);

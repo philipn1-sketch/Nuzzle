@@ -77,6 +77,14 @@ struct LastFeedIntent: AppIntent {
     let feeding: String
     let timerFrom: Double
     let pausedAt: Double
+    /// Sentences in her language, sent by the phone; English when missing.
+    let words: [String: String]?
+
+    func say(_ key: String, _ english: String, _ fill: [String: String]) -> String {
+      var s = words?[key] ?? english
+      for (k, v) in fill { s = s.replacingOccurrences(of: "{\(k)}", with: v) }
+      return s
+    }
   }
 
   func perform() async throws -> some IntentResult & ProvidesDialog {
@@ -93,15 +101,18 @@ struct LastFeedIntent: AppIntent {
     if !g.feeding.isEmpty {
       let fed = (g.pausedAt > 0 ? g.pausedAt : now) - g.timerFrom
       let span = words.string(from: max(60, fed / 1000)) ?? ""
-      return .result(dialog: "\(g.feeding), for \(span) so far.")
+      return .result(dialog: "\(g.say("siriFeeding", "{feeding}, for {time} so far.", ["feeding": g.feeding, "time": span]))")
     }
     if g.lastStart <= 0 {
-      return .result(dialog: "There are no feeds yet.")
+      return .result(dialog: "\(g.say("siriNone", "There are no feeds yet.", [:]))")
     }
     let since = (now - g.lastStart) / 1000
-    let ago = since < 60 ? "just now" : "\(words.string(from: since) ?? "") ago"
-    let next = g.next.isEmpty ? "" : " Next, start on the \(g.next.lowercased())."
-    return .result(dialog: "\(g.name)'s last feed started \(ago). \(g.lastLine).\(next)")
+    let last = since < 60
+      ? g.say("siriJustNow", "{name}'s last feed started just now.", ["name": g.name])
+      : g.say("siriAgo", "{name}'s last feed started {time} ago.", ["name": g.name, "time": words.string(from: since) ?? ""])
+    let start = g.words?["startLine"] ?? (g.next.isEmpty ? "" : "Start on the \(g.next.lowercased())")
+    let next = start.isEmpty ? "" : " \(start)."
+    return .result(dialog: "\(last) \(g.lastLine).\(next)")
   }
 }
 

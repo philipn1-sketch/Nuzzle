@@ -11,7 +11,7 @@ describe('widget and lock screen', () => {
     const f = feedFromDraft({ start: T0, leftMin: 10, rightMin: 8, endedOn: 'L' }, 'a');
     expect(glanceProps([f], 'Daphne', 'ml', T0 + 60 * MIN)).toEqual({
       name: 'Daphne', lastStart: T0, lastLine: 'Ended on the left', next: 'Right', letter: 'R', feeding: '', timerFrom: 0, pausedAt: 0,
-      dueAt: T0 + 120 * MIN, windowText: '2h',
+      dueAt: T0 + 120 * MIN, windowText: '2h', startLine: 'Start on the right', nextChip: 'Next: Right', pastLine: 'Past your 2h window',
     });
     expect(glanceProps([], 'Baby', 'ml', T0)).toMatchObject({ lastStart: 0, lastLine: '', next: '', dueAt: 0 });
     expect(glanceProps([f], 'Daphne', 'ml', T0, 165)).toMatchObject({ dueAt: T0 + 165 * MIN, windowText: '2h 45m' });

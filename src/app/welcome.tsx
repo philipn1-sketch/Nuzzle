@@ -10,8 +10,9 @@ import { planIsOn, referenceFor } from '../core/plan';
 import { useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { line, radius, space, TAP, type } from '../theme';
+import { t, tk } from '../i18n';
 
-const TITLES = { 1: 'Who are we feeding?', 2: 'Remind you when the next feed is due?', 3: 'Use a daily plan?' } as const;
+const TITLES = { 1: tk('Who are we feeding?'), 2: tk('Remind you when the next feed is due?'), 3: tk('Use a daily plan?') } as const;
 type Step = keyof typeof TITLES;
 
 /**
@@ -51,10 +52,10 @@ export default function Welcome() {
     <Screen>
       <View>
         <TopBar
-          left={step > 1 ? <PillButton label="Back" onPress={() => setStep((step - 1) as Step)} testID="welcome-back" /> : undefined}
-          right={<PillButton label="Skip" onPress={finish} testID="welcome-skip" a11yLabel="Skip the questions" />}
+          left={step > 1 ? <PillButton label={t('Back')} onPress={() => setStep((step - 1) as Step)} testID="welcome-back" /> : undefined}
+          right={<PillButton label={t('Skip')} onPress={finish} testID="welcome-skip" a11yLabel={t('Skip the questions')} />}
         />
-        <View style={styles.dots} pointerEvents="none" accessible accessibilityLabel={`Step ${step} of 3`}>
+        <View style={styles.dots} pointerEvents="none" accessible accessibilityLabel={t('Step {n} of 3', { n: step })}>
           {([1, 2, 3] as Step[]).map((n) => (
             <View key={n} style={[styles.dot, { width: n === step ? 24 : 8, backgroundColor: n <= step ? p.ink : line(p) }]} />
           ))}
@@ -62,8 +63,8 @@ export default function Welcome() {
       </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-          <T tone="muted" style={[type.label, { fontWeight: '700' }]}>Step {step} of 3</T>
-          <T style={styles.title} accessibilityRole="header">{TITLES[step]}</T>
+          <T tone="muted" style={[type.label, { fontWeight: '700' }]}>{t('Step {n} of 3', { n: step })}</T>
+          <T style={styles.title} accessibilityRole="header">{t(TITLES[step])}</T>
 
           {step === 1 && (
             <View style={{ gap: space.m }}>
@@ -71,28 +72,28 @@ export default function Welcome() {
                 testID="welcome-name"
                 value={baby.name}
                 onChangeText={(t) => updateBaby(baby.id, { name: t.slice(0, 30) })}
-                placeholder="Baby's name"
+                placeholder={t("Baby's name")}
                 placeholderTextColor={p.muted}
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="done"
-                accessibilityLabel="Baby's name"
+                accessibilityLabel={t("Baby's name")}
                 style={[type.title, styles.field, { color: p.ink, backgroundColor: p.surface }]}
               />
               <Pressable
                 testID="welcome-birthday"
                 accessibilityRole="button"
-                accessibilityLabel={baby.birthday === null ? 'Birthday, not set' : `Birthday, ${date(baby.birthday)}`}
-                accessibilityHint="Opens a calendar"
+                accessibilityLabel={baby.birthday === null ? t('Birthday, not set') : t('Birthday, {date}', { date: date(baby.birthday) })}
+                accessibilityHint={t('Opens a calendar')}
                 onPress={() => setCalendar(true)}
                 style={({ pressed }) => [styles.field, styles.row, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
               >
-                <T tone="muted">Birthday</T>
-                <T style={{ fontWeight: '700' }}>{baby.birthday === null ? 'Pick ›' : `${date(baby.birthday)} ›`}</T>
+                <T tone="muted">{t('Birthday')}</T>
+                <T style={{ fontWeight: '700' }}>{baby.birthday === null ? t('Pick ›') : `${date(baby.birthday)} ›`}</T>
               </Pressable>
               <CalendarSheet
                 visible={calendar}
-                title={`${baby.name.trim() || 'Baby'}'s birthday`}
+                title={t("{name}'s birthday", { name: baby.name.trim() || t('Baby') })}
                 value={baby.birthday ?? dayStartOf(now)}
                 max={dayStartOf(now)}
                 onDone={(d) => {
@@ -107,13 +108,13 @@ export default function Welcome() {
           {step === 2 && (
             <View style={{ gap: space.m }}>
               <Choice<'on' | 'off'>
-                label="Reminder"
+                label={t('Reminder')}
                 value={settings.remindersOn ? 'on' : 'off'}
                 onChange={(v) => updateSettings({ remindersOn: v === 'on', reminderAsked: true })}
-                options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+                options={[{ value: 'on', label: t('On') }, { value: 'off', label: t('Off') }]}
               />
               <T tone="muted" style={type.label}>
-                We nudge you {span(settings.intervalMin * 60_000)} after a feed starts, or at the plan&apos;s times if you use one.
+                {t("We nudge you {time} after a feed starts, or at the plan's times if you use one.", { time: span(settings.intervalMin * 60_000) })}
               </T>
             </View>
           )}
@@ -121,19 +122,19 @@ export default function Welcome() {
           {step === 3 && (
             <View style={{ gap: space.m }}>
               <Choice<'on' | 'off'>
-                label="Daily plan"
+                label={t('Daily plan')}
                 value={plan}
                 onChange={setPlan}
-                options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+                options={[{ value: 'on', label: t('On') }, { value: 'off', label: t('Off') }]}
               />
               <T tone="muted" style={type.label}>
-                A gentle rhythm for her age. You can bend it any time.{plus ? '' : ' The daily plan is part of Nuzzle Plus.'}
+                {t('A gentle rhythm for her age. You can bend it any time.')}{plus ? '' : ` ${t('The daily plan is part of Nuzzle Plus.')}`}
               </T>
             </View>
           )}
         </ScrollView>
         <View style={styles.bottom}>
-          <PrimaryButton label={step === 3 ? 'Start' : 'Next'} onPress={next} testID={step === 3 ? 'welcome-finish' : 'welcome-next'} />
+          <PrimaryButton label={step === 3 ? t('Start') : t('Next')} onPress={next} testID={step === 3 ? 'welcome-finish' : 'welcome-next'} />
         </View>
       </KeyboardAvoidingView>
     </Screen>

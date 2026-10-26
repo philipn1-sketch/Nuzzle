@@ -1,5 +1,6 @@
 import { amount, span } from './format';
 import type { Entry, EntryKind, Nappy, QuietHours, Settings, Units } from './types';
+import { t, tn } from '../i18n';
 
 export const ENTRY_KINDS: EntryKind[] = ['nappy', 'pump', 'growth', 'sleep'];
 
@@ -24,7 +25,10 @@ export const wakeUp = (sleep: Entry, now: number): Entry => ({ ...sleep, end: Ma
 
 export const sleepMs = (e: Entry, now: number): number => Math.max(0, (e.end ?? now) - e.at);
 
-export const nappyWord = (n: Nappy): string => (n === 'both' ? 'Wet and dirty' : n === 'wet' ? 'Wet' : 'Dirty');
+export const nappyWord = (n: Nappy): string => (n === 'both' ? t('Wet and dirty') : n === 'wet' ? t('Wet') : t('Dirty'));
+
+/** "Wet nappy", "Dirty nappy" or "Wet and dirty nappy". */
+export const nappyTitle = (n: Nappy): string => (n === 'both' ? t('Wet and dirty nappy') : n === 'wet' ? t('Wet nappy') : t('Dirty nappy'));
 
 const GRAMS_PER_OZ = 28.3495;
 
@@ -44,26 +48,26 @@ export function lengthText(mm: number, units: Units): string {
 export function entryTitle(e: Entry, units: Units, now: number): string {
   switch (e.kind) {
     case 'nappy':
-      return `${nappyWord(e.nappy ?? 'wet')} nappy`;
+      return nappyTitle(e.nappy ?? 'wet');
     case 'pump': {
       const total = (e.leftMl ?? 0) + (e.rightMl ?? 0);
-      return `Pumped ${amount(total, units)}`;
+      return t('Pumped {amount}', { amount: amount(total, units) });
     }
     case 'growth': {
-      const parts = [e.weightG ? `Weight ${weightText(e.weightG, units)}` : '', e.lengthMm ? `length ${lengthText(e.lengthMm, units)}` : ''].filter(Boolean);
+      const parts = [e.weightG ? t('Weight {weight}', { weight: weightText(e.weightG, units) }) : '', e.lengthMm ? t('length {length}', { length: lengthText(e.lengthMm, units) }) : ''].filter(Boolean);
       const line = parts.join(', ');
       return line.charAt(0).toUpperCase() + line.slice(1);
     }
     case 'sleep':
-      return (e.end ?? null) === null ? `Asleep for ${span(now - e.at)}` : `Slept ${span(sleepMs(e, now))}`;
+      return (e.end ?? null) === null ? t('Asleep for {time}', { time: span(now - e.at) }) : t('Slept {time}', { time: span(sleepMs(e, now)) });
   }
 }
 
 /** Extra detail for pumping: "Left 60 ml, right 50 ml, 15 min". */
 export function entryDetail(e: Entry, units: Units): string {
   if (e.kind !== 'pump') return '';
-  const parts = [`Left ${amount(e.leftMl ?? 0, units)}`, `right ${amount(e.rightMl ?? 0, units)}`];
-  if (e.minutes) parts.push(`${e.minutes} min`);
+  const parts = [t('Left {amount}', { amount: amount(e.leftMl ?? 0, units) }), t('right {amount}', { amount: amount(e.rightMl ?? 0, units) })];
+  if (e.minutes) parts.push(t('{n} min', { n: e.minutes }));
   return parts.join(', ');
 }
 
@@ -95,9 +99,10 @@ export function nappyCount(entries: Entry[], from: number, to: number): NappyCou
 }
 
 /** "3 nappies today: 2 wet, 1 wet and dirty". Each nappy is counted once. */
-export function nappyLine(c: NappyCount, when = 'today'): string {
-  const parts = [c.wetOnly ? `${c.wetOnly} wet` : '', c.dirtyOnly ? `${c.dirtyOnly} dirty` : '', c.both ? `${c.both} wet and dirty` : ''].filter(Boolean);
-  return `${c.total} ${c.total === 1 ? 'nappy' : 'nappies'}${when ? ` ${when}` : ''}: ${parts.join(', ')}`;
+export function nappyLine(c: NappyCount, today = true): string {
+  const parts = [c.wetOnly ? t('{n} wet', { n: c.wetOnly }) : '', c.dirtyOnly ? t('{n} dirty', { n: c.dirtyOnly }) : '', c.both ? t('{n} wet and dirty', { n: c.both }) : ''].filter(Boolean);
+  const count = today ? tn('{n} nappy today', '{n} nappies today', c.total) : tn('{n} nappy', '{n} nappies', c.total);
+  return `${count}: ${parts.join(', ')}`;
 }
 
 /** Sleep between two times, counting only the part inside the window. */

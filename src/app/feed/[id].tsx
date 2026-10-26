@@ -11,6 +11,7 @@ import type { Milk, Side } from '../../core/types';
 import { useApp } from '../../state/AppState';
 import { line, radius, space, TAP, type } from '../../theme';
 import { usePalette } from '../../state/theme';
+import { t } from '../../i18n';
 
 const MIN = 60_000;
 
@@ -57,10 +58,10 @@ export default function FeedEditor() {
       router.back();
       return;
     }
-    if (result === 'empty') setProblem(isBottle ? 'Add how much was in the bottle.' : 'Add some minutes on at least one side.');
-    else if (result === 'future') setProblem('The start time is later than now.');
-    else if (result === 'ends-later') setProblem('With those minutes it would end later than now.');
-    else setProblem(`That overlaps the feed at ${timeOf(feedStart(result.overlaps))}.`);
+    if (result === 'empty') setProblem(isBottle ? t('Add how much was in the bottle.') : t('Add some minutes on at least one side.'));
+    else if (result === 'future') setProblem(t('The start time is later than now.'));
+    else if (result === 'ends-later') setProblem(t('With those minutes it would end later than now.'));
+    else setProblem(t('That overlaps the feed at {time}.', { time: timeOf(feedStart(result.overlaps)) }));
   };
 
   const now = Date.now();
@@ -68,34 +69,34 @@ export default function FeedEditor() {
   const day0 = new Date(new Date(draft.start).setHours(0, 0, 0, 0)).getTime();
   const both = draft.leftMin > 0 && draft.rightMin > 0;
 
-  const when = Math.abs(now - draft.start) < 2 * MIN ? 'Now' : `${dayLabel(day0, now)} ${timeOf(draft.start)}`;
+  const when = Math.abs(now - draft.start) < 2 * MIN ? t('Now') : `${dayLabel(day0, now)} ${timeOf(draft.start)}`;
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Cancel" onPress={() => router.back()} testID="cancel" />} title="Feed" />
+      <TopBar left={<PillButton label={t('Cancel')} onPress={() => router.back()} testID="cancel" />} title={t('Feed')} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         <Choice<'breast' | 'bottle'>
-          label="Feed type"
+          label={t('Feed type')}
           value={draft.kind ?? 'breast'}
           onChange={(v) => set({ kind: v })}
-          options={[{ value: 'breast', label: 'Breast' }, { value: 'bottle', label: 'Bottle' }]}
+          options={[{ value: 'breast', label: t('Breast') }, { value: 'bottle', label: t('Bottle') }]}
         />
         <Pressable
           testID="when"
           accessibilityRole="button"
-          accessibilityLabel={`When: ${when}`}
-          accessibilityHint={whenOpen ? 'Hides the day and time' : 'Change the day and time'}
+          accessibilityLabel={t('When: {when}', { when })}
+          accessibilityHint={whenOpen ? t('Hides the day and time') : t('Change the day and time')}
           onPress={() => setWhenOpen((o) => !o)}
           style={({ pressed }) => [styles.whenRow, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
         >
-          <T tone="muted">When</T>
+          <T tone="muted">{t('When')}</T>
           <T style={{ fontWeight: '700' }}>{when} {whenOpen ? '⌄' : '›'}</T>
         </Pressable>
         {whenOpen && (
           <View style={{ gap: space.s }}>
             <Stepper
-              label="Day"
+              label={t('Day')}
               testID="day"
               display={dayLabel(day0, now)}
               onStep={(dir) => {
@@ -105,10 +106,10 @@ export default function FeedEditor() {
               }}
               onPressValue={() => setCalendar(true)}
             />
-            <Stepper label="Start time" testID="time" display={timeOf(draft.start)} onStep={(dir, fast) => set({ start: draft.start + dir * (fast ? 5 : 1) * MIN })} />
+            <Stepper label={t('Start time')} testID="time" display={timeOf(draft.start)} onStep={(dir, fast) => set({ start: draft.start + dir * (fast ? 5 : 1) * MIN })} />
             <CalendarSheet
               visible={calendar}
-              title="Which day?"
+              title={t('Which day?')}
               value={day0}
               max={today0}
               onDone={(day) => {
@@ -125,40 +126,40 @@ export default function FeedEditor() {
         )}
         {isBottle ? (
           <View style={{ gap: space.m }}>
-            <T tone="muted" style={type.label}>Amount{oz ? '' : ', tap to type'}</T>
+            <T tone="muted" style={type.label}>{oz ? t('Amount') : t('Amount, tap to type')}</T>
             <Stepper
-              label="Amount" testID="amount" numeric={oz ? undefined : ml} display={amount(ml, settings.units)}
+              label={t('Amount')} testID="amount" numeric={oz ? undefined : ml} display={amount(ml, settings.units)}
               onStep={stepAmount}
               onType={oz ? undefined : (n) => set({ amountMl: clampMl(n) })}
             />
             <Choice<Milk>
-              label="Milk"
+              label={t('Milk')}
               value={draft.milk ?? 'breast'}
               onChange={(v) => set({ milk: v })}
-              options={[{ value: 'breast', label: 'Breast milk' }, { value: 'formula', label: 'Formula' }]}
+              options={[{ value: 'breast', label: t('Breast milk') }, { value: 'formula', label: t('Formula') }]}
             />
           </View>
         ) : (
           <View style={{ gap: space.m }}>
-            <T tone="accent" style={type.label}>Left</T>
+            <T tone="accent" style={type.label}>{t('Left')}</T>
             <Stepper
-              label="Minutes on the left" testID="left" numeric={draft.leftMin} display={`${draft.leftMin}m`}
+              label={t('Minutes on the left')} testID="left" numeric={draft.leftMin} display={t('{m}m', { m: draft.leftMin })}
               onStep={(dir, fast) => set({ leftMin: clampMin(draft.leftMin + dir * (fast ? 5 : 1)) })}
               onType={(n) => set({ leftMin: clampMin(n) })}
             />
-            <T tone="peach" style={type.label}>Right</T>
+            <T tone="peach" style={type.label}>{t('Right')}</T>
             <Stepper
-              label="Minutes on the right" testID="right" numeric={draft.rightMin} display={`${draft.rightMin}m`}
+              label={t('Minutes on the right')} testID="right" numeric={draft.rightMin} display={t('{m}m', { m: draft.rightMin })}
               onStep={(dir, fast) => set({ rightMin: clampMin(draft.rightMin + dir * (fast ? 5 : 1)) })}
               onType={(n) => set({ rightMin: clampMin(n) })}
             />
             {both && (
               // which side came last decides the side to start on next time
               <Choice<Side>
-                label="Ended on"
+                label={t('Ended on')}
                 value={effectiveEndSide(draft)}
                 onChange={(v) => set({ endedOn: v })}
-                options={[{ value: 'L', label: 'Ended on left' }, { value: 'R', label: 'Ended on right' }]}
+                options={[{ value: 'L', label: t('Ended on left') }, { value: 'R', label: t('Ended on right') }]}
               />
             )}
           </View>
@@ -168,15 +169,15 @@ export default function FeedEditor() {
             testID="note"
             value={draft.note ?? ''}
             onChangeText={(t) => set({ note: t.slice(0, 200) })}
-            placeholder="Anything to remember"
+            placeholder={t('Anything to remember')}
             placeholderTextColor={p.muted}
             multiline
             autoFocus={noteOpen && !draft.note}
-            accessibilityLabel="Note"
+            accessibilityLabel={t('Note')}
             style={[type.body, styles.note, { color: p.ink, backgroundColor: p.surface }]}
           />
         ) : (
-          <QuietButton label="+ Note" onPress={() => setNoteOpen(true)} testID="add-note" style={styles.left} />
+          <QuietButton label={t('+ Note')} onPress={() => setNoteOpen(true)} testID="add-note" style={styles.left} />
         )}
       </ScrollView>
       <View style={styles.bottom}>
@@ -185,10 +186,10 @@ export default function FeedEditor() {
             <T accessibilityLiveRegion="polite" style={type.body}>{problem}</T>
           </View>
         )}
-        <PrimaryButton label="Save" onPress={save} testID="save-feed" />
+        <PrimaryButton label={t('Save')} onPress={save} testID="save-feed" />
         {existing && (
           <QuietButton
-            label="Delete feed"
+            label={t('Delete feed')}
             testID="delete-feed"
             onPress={() => {
               remove(existing.id);

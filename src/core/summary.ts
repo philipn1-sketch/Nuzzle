@@ -2,6 +2,7 @@ import { dayStartOf, feedStart, isBottle, liveFeedsOnly, sideMs } from './feeds'
 import { lengthText, liveEntries, nappyCount, sleepWithin, weightText } from './entries';
 import { amount, mins, span } from './format';
 import type { Entry, Feed, Units } from './types';
+import { currentLanguage, t } from '../i18n';
 
 export interface SummaryDay {
   dayStart: number;
@@ -58,15 +59,15 @@ export function summaryHtml(o: { name: string; age: string; feeds: Feed[]; entri
   const growth = liveEntries(o.entries).filter((e) => e.kind === 'growth').sort((a, b) => b.at - a.at).slice(0, 6);
   const first = rows[0]?.dayStart ?? o.now;
   const cell = (s: string) => `<td>${s}</td>`;
-  const head = ['Day', 'Feeds', 'Left', 'Right', ...(showBottles ? ['Bottles'] : []), ...(showNappies ? ['Wet', 'Dirty'] : []), ...(showSleep ? ['Sleep'] : [])];
+  const head = [t('Day'), t('Feeds'), t('Left'), t('Right'), ...(showBottles ? [t('Bottles')] : []), ...(showNappies ? [t('Wet'), t('Dirty')] : []), ...(showSleep ? [t('Sleep')] : [])];
   const body = rows
     .map((r) =>
-      r.empty ? `<tr>${cell(date(r.dayStart))}<td colspan="${head.length - 1}">Nothing logged</td></tr>` :
+      r.empty ? `<tr>${cell(date(r.dayStart))}<td colspan="${head.length - 1}">${t('Nothing logged')}</td></tr>` :
       `<tr>${[
         date(r.dayStart),
         String(r.feeds),
-        `${mins(r.leftMs)} min`,
-        `${mins(r.rightMs)} min`,
+        t('{n} min', { n: mins(r.leftMs) }),
+        t('{n} min', { n: mins(r.rightMs) }),
         ...(showBottles ? [r.bottles ? `${r.bottles} · ${amount(r.bottleMl, o.units)}` : '0'] : []),
         ...(showNappies ? [String(r.wet), String(r.dirty)] : []),
         ...(showSleep ? [r.sleepMs ? span(r.sleepMs) : '0'] : []),
@@ -76,7 +77,7 @@ export function summaryHtml(o: { name: string; age: string; feeds: Feed[]; entri
   const growthRows = growth
     .map((g) => `<tr>${cell(date(g.at))}${cell(g.weightG ? weightText(g.weightG, o.units) : '')}${cell(g.lengthMm ? lengthText(g.lengthMm, o.units) : '')}${cell(esc(g.note ?? ''))}</tr>`)
     .join('');
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
+  return `<!doctype html><html lang="${currentLanguage()}"><head><meta charset="utf-8"><style>
 body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#2D1E33;margin:32px;font-size:12pt}
 h1{font-size:20pt;margin:0}p{margin:4px 0 16px;color:#6B5872}
 table{border-collapse:collapse;width:100%;margin-bottom:20px}
@@ -84,9 +85,9 @@ th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #E5DAE2;font-size:
 th{color:#6B5872;font-weight:600}h2{font-size:13pt;margin:16px 0 6px}
 </style></head><body>
 <h1>${esc(o.name)}</h1>
-<p>${o.age ? `${esc(o.age)} · ` : ''}${date(first)} to ${date(o.now)} · from Nuzzle</p>
+<p>${o.age ? `${esc(o.age)} · ` : ''}${esc(t('{from} to {to} · from Nuzzle', { from: date(first), to: date(o.now) }))}</p>
 <table><thead><tr>${head.map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>
-${growthRows ? `<h2>Weight and length</h2><table><thead><tr><th>Day</th><th>Weight</th><th>Length</th><th>Note</th></tr></thead><tbody>${growthRows}</tbody></table>` : ''}
-<p>Feeds include bottles. Left and Right are minutes on each side. Days with nothing logged may just not have been recorded.</p>
+${growthRows ? `<h2>${t('Weight and length')}</h2><table><thead><tr>${[t('Day'), t('Weight'), t('Length'), t('Note')].map((h) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${growthRows}</tbody></table>` : ''}
+<p>${t('Feeds include bottles. Left and Right are minutes on each side. Days with nothing logged may just not have been recorded.')}</p>
 </body></html>`;
 }

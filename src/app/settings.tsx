@@ -15,6 +15,7 @@ import type { ThemeChoice } from '../core/types';
 import { hasData, useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { space, TAP, type } from '../theme';
+import { t, tn } from '../i18n';
 
 export default function SettingsScreen() {
   const { settings, baby, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync, plus } = useApp();
@@ -23,15 +24,15 @@ export default function SettingsScreen() {
   const [calendarFor, setCalendarFor] = useState<string | null>(null);
   const planOn = plus && planIsOn(baby.plan);
   const remindNote = !settings.remindersOn
-    ? 'No reminders.'
+    ? t('No reminders.')
     : planOn
-      ? 'Uses the daily plan times while the plan is on.'
-      : `${cap(spanWords(settings.intervalMin * 60_000))} after a feed starts.`;
+      ? t('Uses the daily plan times while the plan is on.')
+      : cap(t('{time} after a feed starts.', { time: spanWords(settings.intervalMin * 60_000) }));
   const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Settings" />
+      <TopBar left={<PillButton label={t('Back')} onPress={() => router.back()} testID="back" />} title={t('Settings')} />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
         {settings.babies.map((b, i) => {
           const many = settings.babies.length > 1;
@@ -39,34 +40,34 @@ export default function SettingsScreen() {
           return (
             <Card key={b.id} style={{ gap: space.s }}>
               <View style={styles.pair}>
-                <T tone="muted">Name</T>
+                <T tone="muted">{t('Name')}</T>
                 <TextInput
                   testID={i === 0 ? 'baby-name' : `baby-name-${i}`}
                   value={b.name}
                   onChangeText={(t) => updateBaby(b.id, { name: t.slice(0, 30) })}
-                  placeholder="Baby"
+                  placeholder={t('Baby')}
                   placeholderTextColor={p.muted}
                   autoCapitalize="words"
                   autoCorrect={false}
                   returnKeyType="done"
-                  accessibilityLabel={many ? `Name of baby ${i + 1}` : "Baby's name"}
+                  accessibilityLabel={many ? t('Name of baby {n}', { n: i + 1 }) : t("Baby's name")}
                   style={[type.body, styles.name, { color: p.ink }]}
                 />
               </View>
               <Pressable
                 testID={i === 0 ? 'birthday' : `birthday-${i}`}
                 accessibilityRole="button"
-                accessibilityLabel={`Birthday, ${b.birthday === null ? 'not set' : date(b.birthday)}`}
-                accessibilityHint="Opens a calendar"
+                accessibilityLabel={b.birthday === null ? t('Birthday, not set') : t('Birthday, {date}', { date: date(b.birthday) })}
+                accessibilityHint={t('Opens a calendar')}
                 onPress={() => setCalendarFor(b.id)}
                 style={styles.pair}
               >
-                <T tone="muted">Birthday</T>
-                <T style={styles.value}>{b.birthday === null ? 'Set ›' : `${date(b.birthday)} ›`}</T>
+                <T tone="muted">{t('Birthday')}</T>
+                <T style={styles.value}>{b.birthday === null ? t('Set ›') : `${date(b.birthday)} ›`}</T>
               </Pressable>
               <CalendarSheet
                 visible={calendarFor === b.id}
-                title={`${b.name.trim() || 'Baby'}'s birthday`}
+                title={t("{name}'s birthday", { name: b.name.trim() || t('Baby') })}
                 value={b.birthday ?? dayStartOf(now)}
                 max={dayStartOf(now)}
                 onDone={(day) => {
@@ -75,26 +76,26 @@ export default function SettingsScreen() {
                 }}
                 onCancel={() => setCalendarFor(null)}
               />
-              {canRemove && <QuietButton label="Remove this baby" onPress={() => removeBaby(b.id)} style={styles.left} />}
+              {canRemove && <QuietButton label={t('Remove this baby')} onPress={() => removeBaby(b.id)} style={styles.left} />}
             </Card>
           );
         })}
 
         <Card style={{ gap: space.m }}>
-          <T tone="muted" style={type.label}>Remind me when the next feed is due</T>
+          <T tone="muted" style={type.label}>{t('Remind me when the next feed is due')}</T>
           <Choice<'on' | 'off'>
-            label="Reminder"
+            label={t('Reminder')}
             value={settings.remindersOn ? 'on' : 'off'}
             onChange={(v) => {
               updateSettings({ remindersOn: v === 'on', reminderAsked: true });
               if (v === 'on' && permission === 'undetermined') askReminders();
             }}
-            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+            options={[{ value: 'on', label: t('On') }, { value: 'off', label: t('Off') }]}
           />
           <T tone="muted" style={type.small} testID="remind-note">{remindNote}</T>
           {settings.remindersOn && !planOn && (
             <Stepper
-              label="Time between feeds"
+              label={t('Time between feeds')}
               testID="interval"
               display={span(settings.intervalMin * 60_000)}
               onStep={(dir) =>
@@ -106,38 +107,38 @@ export default function SettingsScreen() {
           )}
           {settings.remindersOn && permission === 'denied' && (
             <View style={{ gap: space.xs }}>
-              <T tone="muted" style={type.label}>Notifications are off for {APP_NAME} in your phone settings.</T>
-              <QuietButton label="Open settings" tone="ink" onPress={() => Linking.openSettings()} style={styles.left} />
+              <T tone="muted" style={type.label}>{t('Notifications are off for {app} in your phone settings.', { app: APP_NAME })}</T>
+              <QuietButton label={t('Open settings')} tone="ink" onPress={() => Linking.openSettings()} style={styles.left} />
             </View>
           )}
         </Card>
 
         <Card style={{ gap: space.m }}>
-          <T tone="muted" style={type.label}>Look</T>
+          <T tone="muted" style={type.label}>{t('Look')}</T>
           <Choice<ThemeChoice>
-            label="Theme"
+            label={t('Theme')}
             value={settings.theme}
             onChange={(v) => updateSettings({ theme: v })}
-            options={[{ value: 'night', label: 'Night' }, { value: 'day', label: 'Day' }, { value: 'system', label: 'Auto' }]}
+            options={[{ value: 'night', label: t('Night') }, { value: 'day', label: t('Day') }, { value: 'system', label: t('Auto') }]}
           />
         </Card>
 
         <Card style={{ gap: space.xs }}>
           <LinkRow
-            label="Units"
+            label={t('Units')}
             value={settings.units === 'oz' ? 'oz, lb, in' : 'ml, kg, cm'}
             testID="units"
             onPress={() => updateSettings({ units: settings.units === 'oz' ? 'ml' : 'oz' })}
           />
-          <LinkRow label="Backup and sharing" value={sync.code ? 'On' : 'Off'} testID="open-sharing" onPress={() => router.push('/sharing')} />
-          <LinkRow label="Daily plan" value={planOn ? 'On' : 'Off'} testID="open-plan" onPress={() => router.push('/plan')} />
+          <LinkRow label={t('Backup and sharing')} value={sync.code ? t('On') : t('Off')} testID="open-sharing" onPress={() => router.push('/sharing')} />
+          <LinkRow label={t('Daily plan')} value={planOn ? t('On') : t('Off')} testID="open-plan" onPress={() => router.push('/plan')} />
           <LinkRow
-            label="Nuzzle Plus"
-            value={settings.plus?.owned ? 'On' : plus ? `${trialDaysLeft(settings, now)} days free` : 'Off'}
+            label={t('Nuzzle Plus')}
+            value={settings.plus?.owned ? t('On') : plus ? tn('{n} day free', '{n} days free', trialDaysLeft(settings, now)) : t('Off')}
             testID="open-plus"
             onPress={() => router.push('/plus')}
           />
-          <LinkRow label="Another baby" value="Add" testID="add-baby" onPress={plus ? addBaby : () => router.push('/plus?feature=babies')} />
+          <LinkRow label={t('Another baby')} value={t('Add')} testID="add-baby" onPress={plus ? addBaby : () => router.push('/plus?feature=babies')} />
         </Card>
 
         <T tone="muted" style={[type.small, { textAlign: 'center', marginTop: space.l }]}>

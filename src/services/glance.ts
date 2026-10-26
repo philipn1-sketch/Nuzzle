@@ -4,6 +4,7 @@ import type { ActivityProps } from '../core/glance';
 import type { Baby } from '../core/types';
 import FeedActivity from '../widgets/FeedActivity';
 import NuzzleWidget, { type WidgetProps } from '../widgets/NuzzleWidget';
+import { t } from '../i18n';
 
 let lastWidget = '';
 
@@ -74,7 +75,7 @@ let lastBabies = '';
 
 /** The choice of baby offered when she sets up a widget: the baby on screen, or a named baby. */
 export function offerBabies(babies: Baby[]): void {
-  const options = [{ name: 'Baby on screen', value: 'active' }, ...babies.map((b, i) => ({ name: b.name.trim() || `Baby ${i + 1}`, value: b.id }))];
+  const options = [{ name: t('Baby on screen'), value: 'active' }, ...babies.map((b, i) => ({ name: b.name.trim() || t('Baby {n}', { n: i + 1 }), value: b.id }))];
   const key = JSON.stringify(options);
   if (key === lastBabies || Platform.OS !== 'ios') return;
   lastBabies = key;

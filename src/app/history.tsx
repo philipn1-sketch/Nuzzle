@@ -17,6 +17,7 @@ import { shareSummaryPdf } from '../services/summary';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, type, wash } from '../theme';
+import { t } from '../i18n';
 
 type Day = { key: string; dayStart: number; feeds: DayGroup | null; nappies: number };
 type Row = { kind: 'day'; day: Day } | { kind: 'feed'; feed: Feed } | { kind: 'entry'; entry: Entry };
@@ -48,13 +49,13 @@ export default function History() {
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="History" />
+      <TopBar left={<PillButton label={t('Back')} onPress={() => router.back()} testID="back" />} title={t('History')} />
       <View style={styles.toggle}>
         <Choice<Tab>
-          label="View"
+          label={t('View')}
           value={tab}
           onChange={setTab}
-          options={[{ value: 'list', label: 'List' }, { value: 'week', label: 'Week' }, { value: 'summary', label: 'Summary' }]}
+          options={[{ value: 'list', label: t('List') }, { value: 'week', label: t('Week') }, { value: 'summary', label: t('Summary') }]}
         />
       </View>
       {tab === 'week' ? (
@@ -72,8 +73,8 @@ export default function History() {
           contentContainerStyle={styles.list}
           ListEmptyComponent={
             <View style={styles.empty}>
-              <T style={type.title}>Nothing here yet</T>
-              <T tone="muted" style={[type.label, { textAlign: 'center' }]}>Feeds you save will show up here.</T>
+              <T style={type.title}>{t('Nothing here yet')}</T>
+              <T tone="muted" style={[type.label, { textAlign: 'center' }]}>{t('Feeds you save will show up here.')}</T>
             </View>
           }
           renderItem={({ item }) => {
@@ -95,7 +96,7 @@ export default function History() {
                 <RowBox
                   testID={`entry-row-${e.id}`}
                   onPress={() => router.push(`/entry/${e.id}`)}
-                  label={`${timeOf(e.at)}, ${title}${detail ? `, ${detail}` : ''}${e.note ? `, note: ${e.note}` : ''}`}
+                  label={`${timeOf(e.at)}, ${title}${detail ? `, ${detail}` : ''}${noteText(e.note)}`}
                   time={timeOf(e.at)}
                   note={e.note}
                 >
@@ -109,22 +110,22 @@ export default function History() {
                 <RowBox
                   testID={`feed-row-${f.id}`}
                   onPress={() => router.push(`/feed/${f.id}`)}
-                  label={`${timeOf(feedStart(f))}, bottle, ${amount(f.bottle.amountMl, settings.units)} of ${milkWord(f.bottle.milk)}${f.note ? `, note: ${f.note}` : ''}`}
+                  label={`${timeOf(feedStart(f))}, ${t('bottle, {amount} of {milk}', { amount: amount(f.bottle.amountMl, settings.units), milk: milkWord(f.bottle.milk) })}${noteText(f.note)}`}
                   time={timeOf(feedStart(f))}
                   note={f.note}
                 >
-                  <View style={[styles.bottle, { backgroundColor: wash(p.muted, '40') }]}><T style={[type.small, { fontWeight: '700' }]}>Bottle</T></View>
+                  <View style={[styles.bottle, { backgroundColor: wash(p.muted, '40') }]}><T style={[type.small, { fontWeight: '700' }]}>{t('Bottle')}</T></View>
                   <T style={styles.what}>{amount(f.bottle.amountMl, settings.units)}</T>
                 </RowBox>
               );
             }
             const runs = sideRuns(f, now);
-            const text = runs.map((r) => `${r.side === 'L' ? 'Left' : 'Right'} ${mins(r.ms)}m`).join(' · ');
+            const text = runs.map((r) => t(r.side === 'L' ? 'Left {n}m' : 'Right {n}m', { n: mins(r.ms) })).join(' · ');
             return (
               <RowBox
                 testID={`feed-row-${f.id}`}
                 onPress={() => router.push(`/feed/${f.id}`)}
-                label={`${timeOf(feedStart(f))}, ${runs.map((r) => `${r.side === 'L' ? 'left' : 'right'} ${mins(r.ms)} minutes`).join(', then ')}${f.note ? `, note: ${f.note}` : ''}`}
+                label={`${timeOf(feedStart(f))}, ${runs.map((r) => t(r.side === 'L' ? 'left {n} minutes' : 'right {n} minutes', { n: mins(r.ms) })).join(t(', then '))}${noteText(f.note)}`}
                 time={timeOf(feedStart(f))}
                 note={f.note}
               >
@@ -136,7 +137,7 @@ export default function History() {
       )}
       <View style={styles.bottom}>
         <SnackbarSlot />
-        <PrimaryButton label="Add a feed" onPress={() => router.push('/feed/new')} testID="add-feed" />
+        <PrimaryButton label={t('Add a feed')} onPress={() => router.push('/feed/new')} testID="add-feed" />
       </View>
     </Screen>
   );
@@ -152,10 +153,10 @@ export default function History() {
     const nappiesADay = Math.round(nappyCount(entries, from, dayStartOf(now, -1)).total / n);
     const weight = liveEntries(entries).filter((e) => e.kind === 'growth' && e.weightG).sort((a, b) => b.at - a.at)[0];
     const facts: [string, string][] = [
-      ['Feeds a day', String(feedsADay)],
-      ['Time on the breast', span(breastADay) === 'just now' ? '0m' : span(breastADay)],
-      ['Nappies a day', String(nappiesADay)],
-      ...(weight?.weightG ? [['Weight', weightText(weight.weightG, settings.units)] as [string, string]] : []),
+      [t('Feeds a day'), String(feedsADay)],
+      [t('Time on the breast'), breastADay < 60_000 ? t('{m}m', { m: 0 }) : span(breastADay)],
+      [t('Nappies a day'), String(nappiesADay)],
+      ...(weight?.weightG ? [[t('Weight'), weightText(weight.weightG, settings.units)] as [string, string]] : []),
     ];
     const name = babyName(baby);
     const pdf = () => {
@@ -165,11 +166,11 @@ export default function History() {
     const csv = () => {
       const first = settings.babies[0];
       const nameOf = (f: { babyId?: string }) => babyName(settings.babies.find((b) => b.id === (f.babyId ?? first.id)));
-      Share.share({ title: `${APP_NAME} feeds`, message: feedsToCsv(allFeeds, Date.now(), nameOf, allEntries, settings.units) }).catch(() => {});
+      Share.share({ title: t('{app} feeds', { app: APP_NAME }), message: feedsToCsv(allFeeds, Date.now(), nameOf, allEntries, settings.units) }).catch(() => {});
     };
     return (
       <Card style={{ gap: 14 }}>
-        <T tone="muted" style={type.label} accessibilityRole="header">Last 7 days{logged.length < 7 && logged.length > 0 ? `, averaged over the ${logged.length} logged` : ''}</T>
+        <T tone="muted" style={type.label} accessibilityRole="header">{logged.length < 7 && logged.length > 0 ? t('Last 7 days, averaged over the {n} logged', { n: logged.length }) : t('Last 7 days')}</T>
         {facts.map(([k, v]) => (
           <View key={k} style={styles.fact} accessible accessibilityLabel={`${k}: ${v}`}>
             <T tone="muted">{k}</T>
@@ -178,13 +179,13 @@ export default function History() {
         ))}
         <SecondaryButton
           strong
-          label="Share as PDF or spreadsheet"
+          label={t('Share as PDF or spreadsheet')}
           testID="share-summary"
           onPress={() =>
-            Alert.alert('Share', undefined, [
-              { text: 'One page PDF for a check up', onPress: pdf },
-              { text: 'Spreadsheet of everything', onPress: csv },
-              { text: 'Cancel', style: 'cancel' },
+            Alert.alert(t('Share'), undefined, [
+              { text: t('One page PDF for a check up'), onPress: pdf },
+              { text: t('Spreadsheet of everything'), onPress: csv },
+              { text: t('Cancel'), style: 'cancel' },
             ])
           }
         />
@@ -192,6 +193,8 @@ export default function History() {
     );
   }
 }
+
+const noteText = (note?: string) => (note ? `, ${t('note: {note}', { note })}` : '');
 
 function RowBox({ testID, onPress, label, time, note, children }: {
   testID: string; onPress: () => void; label: string; time: string; note?: string; children: React.ReactNode;
@@ -203,7 +206,7 @@ function RowBox({ testID, onPress, label, time, note, children }: {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint="Opens it to edit or delete"
+      accessibilityHint={t('Opens it to edit or delete')}
       style={({ pressed }) => [styles.row, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
     >
       <View style={styles.line}>

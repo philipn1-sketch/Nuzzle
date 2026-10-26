@@ -16,8 +16,12 @@ struct Glance: Codable, Equatable {
   var pausedAt: Double
   /// The end of her window; missing from phones on an older version.
   var dueAt: Double?
+  /// Fixed words in her language, sent by the phone; English when missing.
+  var words: [String: String]?
 
-  static let empty = Glance(name: "Baby", lastStart: 0, lastLine: "", next: "", letter: "", feeding: "", timerFrom: 0, pausedAt: 0, dueAt: nil)
+  static let empty = Glance(name: "Baby", lastStart: 0, lastLine: "", next: "", letter: "", feeding: "", timerFrom: 0, pausedAt: 0, dueAt: nil, words: nil)
+
+  func word(_ key: String, _ english: String) -> String { words?[key] ?? english }
 }
 
 enum Palette {
@@ -121,7 +125,7 @@ struct ContentView: View {
           .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Palette.ink)
         } else if let due = g.dueAt, due / 1000 > Date().timeIntervalSince1970, g.lastStart > 0 {
-          Text("Next feed in")
+          Text(g.word("nextIn", "Next feed in"))
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
           Text(
@@ -134,7 +138,7 @@ struct ContentView: View {
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
         } else if g.lastStart > 0 {
-          Text("Since the last feed started")
+          Text(g.word("sinceStarted", "Since the last feed started"))
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
           Text(Date(timeIntervalSince1970: g.lastStart / 1000), style: .relative)
@@ -145,18 +149,18 @@ struct ContentView: View {
             .font(.system(size: 13, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
         } else {
-          Text("No feeds yet")
+          Text(g.word("noFeeds", "No feeds yet"))
             .font(.system(size: 15, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
         }
 
         HStack(spacing: 8) {
-          SideButton(label: "Left", color: Palette.left, highlighted: feeding ? g.letter == "L" : g.next == "Left") { link.tap("L") }
-          SideButton(label: "Right", color: Palette.right, highlighted: feeding ? g.letter == "R" : g.next == "Right") { link.tap("R") }
+          SideButton(label: g.word("left", "Left"), color: Palette.left, highlighted: g.letter == "L") { link.tap("L") }
+          SideButton(label: g.word("right", "Right"), color: Palette.right, highlighted: g.letter == "R") { link.tap("R") }
         }
         if feeding {
           Button { link.tap("done") } label: {
-            Text("Done")
+            Text(g.word("done", "Done"))
               .font(.system(size: 18, weight: .bold, design: .rounded))
               .frame(maxWidth: .infinity, minHeight: 44)
               .foregroundStyle(Palette.bg)
@@ -165,7 +169,7 @@ struct ContentView: View {
           .buttonStyle(.plain)
         }
         if link.waiting {
-          Text("Sent to your iPhone")
+          Text(g.word("sent", "Sent to your iPhone"))
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .foregroundStyle(Palette.muted)
         }

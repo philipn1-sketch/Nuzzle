@@ -8,6 +8,7 @@ import { ageText, clockTime } from '../core/format';
 import { FLEXIBILITY_TIPS, planIsOn, planSteps, referenceFor } from '../core/plan';
 import { useApp, useNow } from '../state/AppState';
 import { space, type } from '../theme';
+import { t } from '../i18n';
 
 const at = (m: number) => clockTime(Math.floor(m / 60), m % 60);
 
@@ -23,7 +24,7 @@ export default function Plan() {
   const on = planIsOn(baby.plan);
   const steps = planSteps({ ...(baby.plan ?? { dayStartMin: 420, bedtimeMin: 1140, gapMin: day.gapMin, awakeMin: 60 }), referenceId: day.id })
     .filter((s) => s.label !== 'Awake time');
-  const forWhom = baby.birthday !== null ? `${ageText(baby.birthday, now)} old` : 'a newborn';
+  const forWhom = baby.birthday !== null ? ageText(baby.birthday, now) : '';
 
   const setOn = (v: boolean) =>
     updateBaby(baby.id, {
@@ -33,7 +34,7 @@ export default function Plan() {
   if (!plus) {
     return (
       <Screen>
-        <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Daily plan" />
+        <TopBar left={<PillButton label={t('Back')} onPress={() => router.back()} testID="back" />} title={t('Daily plan')} />
         <View style={{ paddingHorizontal: space.side }}><PlusCard feature="plan" /></View>
       </Screen>
     );
@@ -41,41 +42,41 @@ export default function Plan() {
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Daily plan" />
+      <TopBar left={<PillButton label={t('Back')} onPress={() => router.back()} testID="back" />} title={t('Daily plan')} />
       <ScrollView contentContainerStyle={styles.body}>
         <Card style={{ gap: space.m }}>
-          <T tone="muted" style={type.label}>A gentle day for {forWhom}</T>
+          <T tone="muted" style={type.label}>{forWhom ? t('A gentle day for {age}', { age: forWhom }) : t('A gentle day for a newborn')}</T>
           <Choice<'on' | 'off'>
-            label="Daily plan"
+            label={t('Daily plan')}
             value={on ? 'on' : 'off'}
             onChange={(v) => setOn(v === 'on')}
-            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+            options={[{ value: 'on', label: t('On') }, { value: 'off', label: t('Off') }]}
           />
           <T tone="muted" style={type.small}>
-            {on ? 'Home and the reminder use these feed times.' : 'Home and the reminder count from when each feed starts.'}
+            {on ? t('Home and the reminder use these feed times.') : t('Home and the reminder count from when each feed starts.')}
           </T>
         </Card>
         <View style={{ gap: 6 }}>
           {steps.map((s, k) => (
-            <View key={k} style={styles.step} testID={`plan-item-${k}`} accessible accessibilityLabel={`${at(s.at)}, ${s.label}`}>
+            <View key={k} style={styles.step} testID={`plan-item-${k}`} accessible accessibilityLabel={`${at(s.at)}, ${t(s.label)}`}>
               <T style={styles.time}>{at(s.at)}</T>
-              <T tone="muted">{s.label}</T>
+              <T tone="muted">{t(s.label)}</T>
             </View>
           ))}
         </View>
-        <QuietButton label={flexible ? 'How flexible is this? ⌄' : 'How flexible is this? ›'} tone="ink" onPress={() => setFlexible((f) => !f)} style={styles.left} testID="plan-flexible" />
+        <QuietButton label={`${t('How flexible is this?')} ${flexible ? '⌄' : '›'}`} tone="ink" onPress={() => setFlexible((f) => !f)} style={styles.left} testID="plan-flexible" />
         {flexible && (
           <View style={{ gap: space.s }}>
-            <T tone="muted" style={type.label}>{day.intro}</T>
-            <T tone="muted" style={type.label}>{day.night}</T>
-            {FLEXIBILITY_TIPS.map((t) => (
-              <T key={t} tone="muted" style={type.label}>{t}</T>
+            <T tone="muted" style={type.label}>{t(day.intro)}</T>
+            <T tone="muted" style={type.label}>{t(day.night)}</T>
+            {FLEXIBILITY_TIPS.map((tip) => (
+              <T key={tip} tone="muted" style={type.label}>{t(tip)}</T>
             ))}
           </View>
         )}
       </ScrollView>
       <View style={styles.bottom}>
-        <PrimaryButton label="Done" onPress={() => router.back()} testID="plan-done" />
+        <PrimaryButton label={t('Done')} onPress={() => router.back()} testID="plan-done" />
       </View>
     </Screen>
   );

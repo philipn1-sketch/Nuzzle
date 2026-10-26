@@ -6,11 +6,13 @@ import type { Feed, Units } from '../core/types';
 import { usePalette } from '../state/theme';
 import { line, space, type } from '../theme';
 import { Card, T } from './ui';
+import { t, tn } from '../i18n';
 
 const STRIP_H = 22;
 
-const short = (dayStart: number, today: boolean) => (today ? 'Today' : new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' }));
-const feedsWord = (n: number) => `${n} ${n === 1 ? 'feed' : 'feeds'}`;
+const short = (dayStart: number, today: boolean) => (today ? t('Today') : new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short' }));
+const feedsWord = (n: number) => tn('{n} feed', '{n} feeds', n);
+const breastWord = (ms: number) => (ms < 60_000 ? t('{m}m', { m: 0 }) : span(ms));
 
 /**
  * The last seven days in one chart: each day's feeds laid on a 24 hour strip, oldest at the top.
@@ -22,8 +24,8 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
 
   const summary = (i: number) => {
     const d = days[i];
-    const bottles = d.bottleMl > 0 ? `, bottles ${amount(d.bottleMl, units)}` : '';
-    return `${short(d.dayStart, i === days.length - 1)}, ${feedsWord(d.count)}, ${spanWords(d.breastMs)} on the breast${bottles}`;
+    const bottles = d.bottleMl > 0 ? `, ${t('bottles {amount}', { amount: amount(d.bottleMl, units) })}` : '';
+    return `${short(d.dayStart, i === days.length - 1)}, ${feedsWord(d.count)}, ${t('{time} on the breast', { time: spanWords(d.breastMs) })}${bottles}`;
   };
 
   const blockStyle = (b: Block) => {
@@ -36,7 +38,7 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
 
   return (
     <Card style={{ gap: space.m }}>
-      <T tone="muted" style={type.label} accessibilityRole="header">Feeds through the day</T>
+      <T tone="muted" style={type.label} accessibilityRole="header">{t('Feeds through the day')}</T>
       {days.map((d, i) => (
         <View key={d.dayStart} style={styles.dayRow} accessible accessibilityLabel={summary(i)} testID={`week-day-${i}`}>
           <T tone="muted" style={[type.small, styles.dayCol]} numberOfLines={1}>{short(d.dayStart, i === days.length - 1)}</T>
@@ -48,13 +50,13 @@ export function Week({ feeds, now, units }: { feeds: Feed[]; now: number; units:
       <View style={styles.dayRow}>
         <View style={styles.dayCol} />
         <View style={styles.hours}>
-          {['12am', '12pm', '12am'].map((h, i) => (
+          {[0, 12, 0].map((hour) => new Date(2000, 0, 1, hour).toLocaleTimeString(undefined, { hour: 'numeric' })).map((h, i) => (
             <T key={i} tone="muted" style={type.small}>{h}</T>
           ))}
         </View>
       </View>
       <T tone="muted" style={type.small} testID="week-picked">
-        Today {feedsWord(days[days.length - 1].count)} · {span(days[days.length - 1].breastMs) === 'just now' ? '0m' : span(days[days.length - 1].breastMs)} on the breast
+        {t('Today {feeds} · {time} on the breast', { feeds: feedsWord(days[days.length - 1].count), time: breastWord(days[days.length - 1].breastMs) })}
       </T>
     </Card>
   );

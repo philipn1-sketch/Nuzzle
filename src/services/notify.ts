@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { APP_NAME } from '../config';
+import { t } from '../i18n';
 
 export type Permission = 'granted' | 'denied' | 'undetermined';
 
@@ -22,12 +23,12 @@ export async function setUpNotifications(): Promise<void> {
   });
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('reminders', {
-      name: 'Feed reminders',
+      name: t('Feed reminders'),
       importance: Notifications.AndroidImportance.HIGH,
       sound: 'default',
     });
     await Notifications.setNotificationChannelAsync('feeding', {
-      name: 'Feed in progress',
+      name: t('Feed in progress'),
       importance: Notifications.AndroidImportance.LOW,
       sound: null,
       showBadge: false,

@@ -5,16 +5,17 @@ import type { Side } from '../core/types';
 import { usePalette } from '../state/theme';
 import { radius, sideColor, space, type, wash } from '../theme';
 import { T } from './ui';
+import { t, tk } from '../i18n';
 
 export type SideState = 'rest' | 'suggested' | 'running' | 'switch' | 'paused';
 // paused: the side she paused on; the other side shows 'switch'
 
 const STATUS: Record<SideState, string> = {
-  rest: 'Start',
-  suggested: 'Start here',
-  running: 'Tap to pause',
-  switch: 'Tap to switch',
-  paused: 'Carry on here',
+  rest: tk('Start'),
+  suggested: tk('Start here'),
+  running: tk('Tap to pause'),
+  switch: tk('Tap to switch'),
+  paused: tk('Carry on here'),
 };
 
 /** One of the two big start buttons: a soft rounded pill with the side's name. */
@@ -30,8 +31,8 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
       onPress={onPress}
       accessibilityRole="button"
       // VoiceOver reads the button as one item, so its status goes in the label: "Right side, Tap to pause, 2 minutes"
-      accessibilityLabel={`${sideName(side)} side, ${STATUS[state]}${ms !== null ? `, ${spanWords(ms)}` : ''}`}
-      accessibilityHint={state === 'rest' ? 'Starts a feed on this side' : undefined}
+      accessibilityLabel={`${t('{side} side, {status}', { side: sideName(side), status: t(STATUS[state]) })}${ms !== null ? `, ${spanWords(ms)}` : ''}`}
+      accessibilityHint={state === 'rest' ? t('Starts a feed on this side') : undefined}
       style={({ pressed }) => [
         styles.button,
         {
@@ -53,7 +54,7 @@ export function SideButton({ side, state, ms, onPress }: { side: Side; state: Si
           maxFontSizeMultiplier={1.5}
           style={[type.label, { textAlign: 'center', fontWeight: marked || running ? '700' : '500' }]}
         >
-          {STATUS[state]}
+          {t(STATUS[state])}
         </T>
       </View>
     </Pressable>

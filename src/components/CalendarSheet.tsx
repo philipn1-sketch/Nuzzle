@@ -6,6 +6,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { usePalette } from '../state/theme';
 import { radius, space, type } from '../theme';
 import { PrimaryButton, QuietButton, T } from './ui';
+import { t } from '../i18n';
 
 /**
  * A calendar to pick a day from, in a sheet over the screen. Apple's own calendar, so it reads and
@@ -27,7 +28,7 @@ export function CalendarSheet({
   const [picked, setPicked] = useState(value);
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel} onShow={() => setPicked(value)}>
-      <Pressable style={styles.shade} onPress={onCancel} accessibilityLabel="Close the calendar" />
+      <Pressable style={styles.shade} onPress={onCancel} accessibilityLabel={t('Close the calendar')} />
       <View style={[styles.sheet, { backgroundColor: p.surface }]}>
         <T style={[type.title, { textAlign: 'center' }]} accessibilityRole="header">{title}</T>
         <Host matchContents={{ vertical: true }} style={{ alignSelf: 'stretch' }}>
@@ -39,8 +40,8 @@ export function CalendarSheet({
             modifiers={[datePickerStyle('graphical'), tint(p.accent)]}
           />
         </Host>
-        <PrimaryButton label="Done" onPress={() => onDone(picked)} testID="calendar-done" />
-        <QuietButton label="Cancel" onPress={onCancel} />
+        <PrimaryButton label={t('Done')} onPress={() => onDone(picked)} testID="calendar-done" />
+        <QuietButton label={t('Cancel')} onPress={onCancel} />
       </View>
     </Modal>
   );

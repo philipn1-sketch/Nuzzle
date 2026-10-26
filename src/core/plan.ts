@@ -1,4 +1,5 @@
 import type { BabyPlan } from './types';
+import { tk } from '../i18n';
 
 /**
  * Example rhythms by age, from common published baby care guides (child health services, NHS and
@@ -153,9 +154,9 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
     id: 'day-0-6w',
     label: 'Example day, 0 to 6 weeks',
     fromDay: 0, toDay: 42,
-    intro: 'Newborns feed on cue, often 8 to 12 times in 24 hours, so treat this as a loose shape to hang feeds on rather than a timetable. Awake times are short: 45 minutes to an hour, including the feed.',
+    intro: tk('Newborns feed on cue, often 8 to 12 times in 24 hours, so treat this as a loose shape to hang feeds on rather than a timetable. Awake times are short: 45 minutes to an hour, including the feed.'),
     gapMin: 180,
-    night: 'Night feeds whenever she wakes hungry, often every 2 to 4 hours. Keep the light low and talk to a minimum, so night slowly becomes different from day.',
+    night: tk('Night feeds whenever she wakes hungry, often every 2 to 4 hours. Keep the light low and talk to a minimum, so night slowly becomes different from day.'),
     items: [
       { kind: 'feed', at: h(7), note: 'Start the day with a feed and open the curtains' },
       { kind: 'nap', at: h(8), note: 'Sleep once she has been awake about 45 minutes to an hour' },
@@ -176,9 +177,9 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
     id: 'day-6-12w',
     label: 'Example day, 6 to 12 weeks',
     fromDay: 42, toDay: 84,
-    intro: 'Feeds start to space out to roughly every 3 hours in the day. Awake times stretch to about an hour to an hour and a half, and a longer first stretch of night sleep often appears.',
+    intro: tk('Feeds start to space out to roughly every 3 hours in the day. Awake times stretch to about an hour to an hour and a half, and a longer first stretch of night sleep often appears.'),
     gapMin: 180,
-    night: 'Usually one to three night feeds. Feed when she wakes hungry; there is no need to wake her at night unless your nurse has asked you to.',
+    night: tk('Usually one to three night feeds. Feed when she wakes hungry; there is no need to wake her at night unless your nurse has asked you to.'),
     items: [
       { kind: 'feed', at: h(7), note: 'Wake up and feed' },
       { kind: 'play', at: h(7, 30), note: 'Awake time: chat, songs, a few minutes on her tummy' },
@@ -199,9 +200,9 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
     id: 'day-3-4m',
     label: 'Example day, 3 to 4 months',
     fromDay: 84, toDay: 122,
-    intro: 'Feeds are often about 3 to 4 hours apart in the day, and she can stay happily awake for an hour and a half to two hours. Sleep can get unsettled around 4 months for a few weeks; it passes.',
+    intro: tk('Feeds are often about 3 to 4 hours apart in the day, and she can stay happily awake for an hour and a half to two hours. Sleep can get unsettled around 4 months for a few weeks; it passes.'),
     gapMin: 210,
-    night: 'Many babies have one or two night feeds now, and some none. Feed when she is hungry.',
+    night: tk('Many babies have one or two night feeds now, and some none. Feed when she is hungry.'),
     items: [
       { kind: 'feed', at: h(7), note: 'Wake up and feed' },
       { kind: 'play', at: h(7, 30), note: 'Play: floor time, looking at faces and books' },
@@ -220,9 +221,9 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
     id: 'day-4-6m',
     label: 'Example day, 4 to 6 months',
     fromDay: 122, toDay: 183,
-    intro: 'Milk feeds are often about 4 hours apart, with two to three naps. Solids usually start at around 6 months, when she can sit with support and shows interest in food; milk stays her main food.',
+    intro: tk('Milk feeds are often about 4 hours apart, with two to three naps. Solids usually start at around 6 months, when she can sit with support and shows interest in food; milk stays her main food.'),
     gapMin: 240,
-    night: 'Some babies sleep through by now and some still wake once or twice to feed. Both are normal.',
+    night: tk('Some babies sleep through by now and some still wake once or twice to feed. Both are normal.'),
     items: [
       { kind: 'feed', at: h(7), note: 'Wake up and feed' },
       { kind: 'play', at: h(7, 30), note: 'Play time; she can stay awake about two hours now' },
@@ -260,12 +261,12 @@ export function referenceFor(birthday: number | null, now: number): ReferenceDay
 
 /** Ways to keep a plan useful on real days. */
 export const FLEXIBILITY_TIPS: string[] = [
-  'These times are a guide. If she shows hunger cues, feed her, whatever the plan says.',
-  'Keeping the first feed and bedtime about the same each day matters more than any single time in between.',
-  'A short nap or an early feed is fine: pick the plan up again at the next feed.',
-  'Days out and visitors happen. Feed and sleep wherever you are, and start fresh tomorrow.',
-  'Safe sleep, every sleep: on her back, in her own cot, face and head uncovered, in a smoke free home.',
-  'Worried about feeds, weight or wet nappies? Your child health nurse or GP can help.',
+  tk('These times are a guide. If she shows hunger cues, feed her, whatever the plan says.'),
+  tk('Keeping the first feed and bedtime about the same each day matters more than any single time in between.'),
+  tk('A short nap or an early feed is fine: pick the plan up again at the next feed.'),
+  tk('Days out and visitors happen. Feed and sleep wherever you are, and start fresh tomorrow.'),
+  tk('Safe sleep, every sleep: on her back, in her own cot, face and head uncovered, in a smoke free home.'),
+  tk('Worried about feeds, weight or wet nappies? Your child health nurse or GP can help.'),
 ];
 
 /** The first item still to come, given the minutes after midnight now. A window counts until it closes. */
@@ -291,7 +292,7 @@ export interface DayStep {
 export function planSteps(p: PlanSettings): DayStep[] {
   const ref = referenceById(p.referenceId);
   if (ref) {
-    const word = { feed: 'Feed', play: 'Awake time', nap: 'Nap', solids: 'Solids', bath: 'Bath', bedtime: 'Bed' } as const;
+    const word = { feed: tk('Feed'), play: tk('Awake time'), nap: tk('Nap'), solids: tk('Solids'), bath: tk('Bath'), bedtime: tk('Bed') } as const;
     return ref.items.map((i) => ({ at: i.at, label: word[i.kind], feed: i.kind === 'feed' }));
   }
   return buildPlan(p).map((i) => ({ at: i.at, label: i.kind === 'feed' ? 'Feed' : i.kind === 'nap' ? 'Nap' : 'Bed', feed: i.kind === 'feed' }));

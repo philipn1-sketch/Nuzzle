@@ -12,9 +12,9 @@ import { amount, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, nextFeedAt, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
 import type { Baby, Entry, Feed, Nappy, Settings, Side } from '../core/types';
-import { checkEntry, entriesOf, nappyWord, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
+import { checkEntry, entriesOf, nappyTitle, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
 import { span } from '../core/format';
-import { activityProps, glanceProps, waitingProps } from '../core/glance';
+import { activityProps, glanceProps, waitingProps, watchWords, widgetWords } from '../core/glance';
 import * as db from '../data/db';
 import * as glance from '../services/glance';
 import * as nuzzleNative from '../../modules/nuzzle-native';
@@ -23,6 +23,7 @@ import { syncAvailable, syncWithServer } from '../services/sync';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
 import { owned } from '../services/purchases';
+import { t } from '../i18n';
 
 export interface SnackAction {
   label: string;
@@ -127,9 +128,9 @@ function clampAt(active: Feed | null, at: number | undefined): number {
 function runningText(f: Feed): string {
   const now = Date.now();
   if (f.status === 'paused') {
-    return `Paused on the ${sideWord(endSide(f))}. Left ${mins(sideMs(f, 'L', now))}m, right ${mins(sideMs(f, 'R', now))}m.`;
+    return t('Paused on the {side}. Left {left}m, right {right}m.', { side: sideWord(endSide(f)), left: mins(sideMs(f, 'L', now)), right: mins(sideMs(f, 'R', now)) });
   }
-  return `Feeding on the ${sideWord(endSide(f))} since ${timeOf(f.segments[f.segments.length - 1].start)}.`;
+  return t('Feeding on the {side} since {time}.', { side: sideWord(endSide(f)), time: timeOf(f.segments[f.segments.length - 1].start) });
 }
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
@@ -227,10 +228,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const others = settings.babies.filter((b) => b.id !== baby.id).map((b) => ({ ...props(b), babyId: b.id }));
     // the home screen widget is part of Nuzzle Plus; in the free week it locks itself when the week ends
     const trialEnd = settings.plus?.owned ? null : trialEndsAt(settings);
-    glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others], locked: !plusNow }, plusNow && trialEnd !== null ? trialEnd : null);
+    glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others], locked: !plusNow, words: widgetWords() }, plusNow && trialEnd !== null ? trialEnd : null);
     glance.offerBabies(settings.babies);
     // the same numbers go to the Watch and to Siri
-    nuzzleNative.setGlance(JSON.stringify(shown));
+    nuzzleNative.setGlance(JSON.stringify({ ...shown, words: { ...watchWords(), startLine: shown.startLine ?? '' } }));
     const timing = [baby, ...settings.babies]
       .map((b) => ({ b, a: activeFeed(feedsOf(allFeeds, settings, b.id)) }))
       .find((x) => x.a !== null);
@@ -289,14 +290,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     tick();
     if (!saved) {
       commit([{ ...before, deletedAt: Date.now() }]);
-      showSnack('That was under five seconds, so it was not saved.');
+      showSnack(t('That was under five seconds, so it was not saved.'));
       return null;
     }
     commit([saved]);
-    showSnack(`Saved. ${mins(totalMs(saved, now))} min, ended on the ${sideWord(endSide(saved))}.`, [
+    showSnack(t('Saved. {n} min, ended on the {side}.', { n: mins(totalMs(saved, now)), side: sideWord(endSide(saved)) }), [
       // puts the feed back exactly as it was when Done was tapped
-      { label: 'Undo', onPress: () => commit([before]) },
-      { label: 'Edit', onPress: () => router.push(`/feed/${saved.id}`) },
+      { label: t('Undo'), onPress: () => commit([before]) },
+      { label: t('Edit'), onPress: () => router.push(`/feed/${saved.id}`) },
     ]);
     return saved;
   }, [commit, showSnack]);
@@ -306,7 +307,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (!before) return;
     commit([{ ...before, deletedAt: Date.now() }]);
     tick();
-    showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([before]) }]);
+    showSnack(t('Feed discarded.'), [{ label: t('Undo'), onPress: () => commit([before]) }]);
   }, [commit, showSnack]);
 
   const keepFeeding = useCallback(() => setStillFeedingAnswered(true), []);
@@ -325,14 +326,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         if (fitted) {
           feed = build(fitted);
           problem = checkDraft(fitted, feed, feedsRef.current, now);
-          moved = ` Start moved to ${timeOf(fitted.start)} so it ends now.`;
+          moved = ` ${t('Start moved to {time} so it ends now.', { time: timeOf(fitted.start) })}`;
         }
       }
       if (problem) return problem;
       commit([feed]);
-      if (original) showSnack(`${feed.bottle ? 'Bottle updated.' : 'Feed updated.'}${moved}`);
-      else if (feed.bottle) showSnack(`Bottle added. ${amount(feed.bottle.amountMl, settings.units)}.`);
-      else showSnack(`Feed added. Ended on the ${sideWord(endSide(feed))}.${moved}`);
+      if (original) showSnack(`${feed.bottle ? t('Bottle updated.') : t('Feed updated.')}${moved}`);
+      else if (feed.bottle) showSnack(t('Bottle added. {amount}.', { amount: amount(feed.bottle.amountMl, settings.units) }));
+      else showSnack(`${t('Feed added. Ended on the {side}.', { side: sideWord(endSide(feed)) })}${moved}`);
       return null;
     },
     [commit, showSnack, settings.units],
@@ -343,7 +344,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const f = feedsRef.current.find((x) => x.id === id);
       if (!f) return;
       commit([{ ...f, deletedAt: Date.now() }]);
-      showSnack('Feed deleted.', [{ label: 'Undo', onPress: () => commit([{ ...f, deletedAt: null }]) }]);
+      showSnack(t('Feed deleted.'), [{ label: t('Undo'), onPress: () => commit([{ ...f, deletedAt: null }]) }]);
     },
     [commit, showSnack],
   );
@@ -450,8 +451,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (problem) return problem;
       const existed = allEntriesRef.current.some((x) => x.id === e.id);
       commitEntries([e]);
-      const words = { nappy: 'Nappy', pump: 'Pumping', growth: 'Measurement', sleep: 'Sleep' }[e.kind];
-      showSnack(`${words} ${existed ? 'updated' : 'saved'}.`);
+      const words = existed
+        ? { nappy: t('Nappy updated.'), pump: t('Pumping updated.'), growth: t('Measurement updated.'), sleep: t('Sleep updated.') }
+        : { nappy: t('Nappy saved.'), pump: t('Pumping saved.'), growth: t('Measurement saved.'), sleep: t('Sleep saved.') };
+      showSnack(words[e.kind]);
       return null;
     },
     [commitEntries, showSnack],
@@ -462,7 +465,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const e = allEntriesRef.current.find((x) => x.id === id);
       if (!e) return;
       commitEntries([{ ...e, deletedAt: Date.now() }]);
-      showSnack('Deleted.', [{ label: 'Undo', onPress: () => commitEntries([{ ...e, deletedAt: null }]) }]);
+      showSnack(t('Deleted.'), [{ label: t('Undo'), onPress: () => commitEntries([{ ...e, deletedAt: null }]) }]);
     },
     [commitEntries, showSnack],
   );
@@ -472,9 +475,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const e: Entry = { id: newId(), type: 'entry', kind: 'nappy', nappy: n, at: Math.min(at ?? Date.now(), Date.now()), deletedAt: null };
       commitEntries([e]);
       tick();
-      showSnack(`${nappyWord(n)} nappy at ${timeOf(e.at)}.`, [
-        { label: 'Undo', onPress: () => commitEntries([{ ...e, deletedAt: Date.now() }]) },
-        { label: 'Edit', onPress: () => router.push(`/entry/${e.id}`) },
+      showSnack(t('{nappy} at {time}.', { nappy: nappyTitle(n), time: timeOf(e.at) }), [
+        { label: t('Undo'), onPress: () => commitEntries([{ ...e, deletedAt: Date.now() }]) },
+        { label: t('Edit'), onPress: () => router.push(`/entry/${e.id}`) },
       ]);
     },
     [commitEntries, showSnack],
@@ -487,14 +490,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     if (running) {
       const woke = wakeUp(running, now);
       commitEntries([woke]);
-      showSnack(`Awake. Slept ${span(sleepMs(woke, now))}.`, [
-        { label: 'Undo', onPress: () => commitEntries([running]) },
-        { label: 'Edit', onPress: () => router.push(`/entry/${woke.id}`) },
+      showSnack(t('Awake. Slept {time}.', { time: span(sleepMs(woke, now)) }), [
+        { label: t('Undo'), onPress: () => commitEntries([running]) },
+        { label: t('Edit'), onPress: () => router.push(`/entry/${woke.id}`) },
       ]);
     } else {
       const s = newSleep(now, newId());
       commitEntries([s]);
-      showSnack('Sleep started.', [{ label: 'Undo', onPress: () => commitEntries([{ ...s, deletedAt: Date.now() }]) }]);
+      showSnack(t('Sleep started.'), [{ label: t('Undo'), onPress: () => commitEntries([{ ...s, deletedAt: Date.now() }]) }]);
     }
   }, [commitEntries, showSnack]);
 

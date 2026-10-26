@@ -47,7 +47,7 @@ const FeedActivity = (props: ActivityProps, env: LiveActivityEnvironment) => {
           <Spacer />
           <VStack alignment="trailing" spacing={0}>
             {since(36, c.ink)}
-            <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>since last feed</Text>
+            <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{props.sinceLabel ?? 'since last feed'}</Text>
           </VStack>
         </HStack>
       ),
@@ -62,7 +62,7 @@ const FeedActivity = (props: ActivityProps, env: LiveActivityEnvironment) => {
       expandedTrailing: (
         <VStack alignment="trailing" spacing={0} modifiers={[padding({ trailing: 8 })]}>
           {since(28, c.ink)}
-          <Text modifiers={[rounded(11, 'medium'), foregroundStyle(c.muted)]}>since last feed</Text>
+          <Text modifiers={[rounded(11, 'medium'), foregroundStyle(c.muted)]}>{props.sinceLabel ?? 'since last feed'}</Text>
         </VStack>
       ),
     };

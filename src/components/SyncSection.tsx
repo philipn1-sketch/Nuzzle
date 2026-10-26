@@ -11,6 +11,7 @@ import { usePalette } from '../state/theme';
 import { radius, space, TAP, type } from '../theme';
 import { PlusCard } from './PlusGate';
 import { QuietButton, SecondaryButton, T } from './ui';
+import { t } from '../i18n';
 
 /**
  * Backup and the second phone. No accounts: one phone starts and gets a family code, the other
@@ -27,14 +28,14 @@ export function SyncSection() {
   const [eraseProblem, setEraseProblem] = useState<string | null>(null);
 
   if (!sync.available) {
-    return <T tone="muted" style={type.label}>Backup and sharing with a second phone aren't set up in this build yet.</T>;
+    return <T tone="muted" style={type.label}>{t("Backup and sharing with a second phone aren't set up in this build yet.")}</T>;
   }
 
   if (!plus && !sync.code) return <PlusCard feature="sharing" />;
   if (!plus) {
     return (
       <View style={{ gap: space.s }}>
-        <T style={type.label}>Sharing is paused. Your feeds are safe on this phone, and sharing picks up again with Nuzzle Plus.</T>
+        <T style={type.label}>{t('Sharing is paused. Your feeds are safe on this phone, and sharing picks up again with Nuzzle Plus.')}</T>
         <PlusCard feature="sharing" />
       </View>
     );
@@ -43,59 +44,60 @@ export function SyncSection() {
   if (sync.code) {
     const status =
       sync.state === 'offline'
-        ? "Can't reach the backup right now. Your feeds are safe here and will go up when there's a signal."
+        ? t("Can't reach the backup right now. Your feeds are safe here and will go up when there's a signal.")
         : sync.state === 'syncing' && !sync.lastOk
-          ? 'Backing up for the first time.'
+          ? t('Backing up for the first time.')
           : sync.lastOk
-            ? `Backed up and in step. Last checked ${now - sync.lastOk < 60_000 ? 'just now' : `${span(now - sync.lastOk)} ago`}.`
-            : 'Backing up.';
+            ? now - sync.lastOk < 60_000
+              ? t('Backed up and in step. Last checked just now.')
+              : t('Backed up and in step. Last checked {time} ago.', { time: span(now - sync.lastOk) })
+            : t('Backing up.');
     return (
       <View style={{ gap: space.s }}>
-        <T tone="muted" style={type.label}>Family code</T>
-        <T testID="family-code" style={[type.title, styles.code]} selectable accessibilityLabel={`Family code ${[...sync.code].join(' ')}`}>
+        <T tone="muted" style={type.label}>{t('Family code')}</T>
+        <T testID="family-code" style={[type.title, styles.code]} selectable accessibilityLabel={t('Family code {code}', { code: [...sync.code].join(' ') })}>
           {showCode(sync.code)}
         </T>
         <T tone="muted" style={type.label} accessibilityLiveRegion="polite">{status}</T>
         <T tone="muted" style={type.label}>
-          On the other phone, open {APP_NAME}, then Settings, then Join with a code. Anyone with this code can see and change these feeds.
+          {t('On the other phone, open {app}, then Settings, then Join with a code. Anyone with this code can see and change these feeds.', { app: APP_NAME })}
         </T>
         {!settings.codeSaved && (
           <View testID="save-code-note" style={[styles.note, { borderColor: p.accent }]}>
             <T style={type.label}>
-              Keep this code somewhere safe, like Notes or a message to your partner. If this phone is lost, the code brings your feeds
-              back.
+              {t('Keep this code somewhere safe, like Notes or a message to your partner. If this phone is lost, the code brings your feeds back.')}
             </T>
-            <QuietButton label="I've saved it" style={styles.left} onPress={() => updateSettings({ codeSaved: true })} testID="code-saved" />
+            <QuietButton label={t("I've saved it")} style={styles.left} onPress={() => updateSettings({ codeSaved: true })} testID="code-saved" />
           </View>
         )}
         <QuietButton
-          label={settings.codeSaved ? 'Send the code ›' : 'Save or send the code ›'}
+          label={settings.codeSaved ? t('Send the code ›') : t('Save or send the code ›')}
           tone="ink"
           style={styles.left}
           testID="send-code"
           onPress={() =>
             Share.share({
-              message: `Our ${APP_NAME} family code: ${showCode(sync.code ?? '')}\n\nKeep this safe. On a new phone, open ${APP_NAME}, then Settings, then Join with a code.`,
+              message: t('Our {app} family code: {code}\n\nKeep this safe. On a new phone, open {app}, then Settings, then Join with a code.', { app: APP_NAME, code: showCode(sync.code ?? '') }),
             })
               .then((r) => r.action === Share.sharedAction && updateSettings({ codeSaved: true }))
               .catch(() => {})
           }
         />
-        <QuietButton label="Check now ›" tone="ink" style={styles.left} onPress={syncNow} testID="sync-now" />
+        <QuietButton label={t('Check now ›')} tone="ink" style={styles.left} onPress={syncNow} testID="sync-now" />
         {sure ? (
           <View style={{ gap: space.xs }}>
-            <T style={type.label}>This phone stops sharing. Its feeds stay on it, and the backup stays for the other phone.</T>
-            <SecondaryButton label="Stop sharing on this phone" onPress={() => { stopSync(); setSure(false); }} />
-            <SecondaryButton label="Keep sharing" strong onPress={() => setSure(false)} />
+            <T style={type.label}>{t('This phone stops sharing. Its feeds stay on it, and the backup stays for the other phone.')}</T>
+            <SecondaryButton label={t('Stop sharing on this phone')} onPress={() => { stopSync(); setSure(false); }} />
+            <SecondaryButton label={t('Keep sharing')} strong onPress={() => setSure(false)} />
           </View>
         ) : erase ? (
           <View style={{ gap: space.xs }}>
             <T style={type.label}>
-              This deletes the online copy for good, for every phone using this code. The feeds on this phone stay, and it stops sharing.
+              {t('This deletes the online copy for good, for every phone using this code. The feeds on this phone stay, and it stops sharing.')}
             </T>
             {eraseProblem && <T tone="muted" style={type.label} accessibilityLiveRegion="polite">{eraseProblem}</T>}
             <SecondaryButton
-              label="Delete the online backup"
+              label={t('Delete the online backup')}
               testID="delete-backup-confirm"
               onPress={() => {
                 const code = sync.code ?? '';
@@ -105,15 +107,15 @@ export function SyncSection() {
                     stopSync();
                     setErase(false);
                   })
-                  .catch(() => setEraseProblem("Couldn't reach the backup. Check the connection and try again."));
+                  .catch(() => setEraseProblem(t("Couldn't reach the backup. Check the connection and try again.")));
               }}
             />
-            <SecondaryButton label="Keep it" strong onPress={() => setErase(false)} />
+            <SecondaryButton label={t('Keep it')} strong onPress={() => setErase(false)} />
           </View>
         ) : (
           <>
-            <QuietButton label="Stop sharing on this phone" style={styles.left} onPress={() => setSure(true)} />
-            <QuietButton label="Delete the online backup" style={styles.left} onPress={() => setErase(true)} testID="delete-backup" />
+            <QuietButton label={t('Stop sharing on this phone')} style={styles.left} onPress={() => setSure(true)} />
+            <QuietButton label={t('Delete the online backup')} style={styles.left} onPress={() => setErase(true)} testID="delete-backup" />
           </>
         )}
       </View>
@@ -124,11 +126,11 @@ export function SyncSection() {
   return (
     <View style={{ gap: space.s }}>
       <T tone="muted" style={type.label}>
-        Keep a backup online and share feeds with a second phone, so both of you see the same timer and history. No account needed.
+        {t('Keep a backup online and share feeds with a second phone, so both of you see the same timer and history. No account needed.')}
       </T>
       {joining ? (
         <View style={{ gap: space.s }}>
-          <T style={type.label}>Type the family code from the other phone.</T>
+          <T style={type.label}>{t('Type the family code from the other phone.')}</T>
           <TextInput
             testID="join-code"
             value={typed}
@@ -137,17 +139,17 @@ export function SyncSection() {
             placeholderTextColor={p.muted}
             autoCapitalize="characters"
             autoCorrect={false}
-            accessibilityLabel="Family code"
+            accessibilityLabel={t('Family code')}
             style={[type.title, styles.input, { color: p.ink, backgroundColor: p.surface }]}
           />
-          {code.length === CODE_LENGTH && !isCode(code) && <T style={type.label}>That doesn't look right. Check it against the other phone.</T>}
-          <SecondaryButton label="Join" strong testID="join" onPress={() => isCode(code) && startSync(code, true)} />
-          <SecondaryButton label="Cancel" onPress={() => { setJoining(false); setTyped(''); }} />
+          {code.length === CODE_LENGTH && !isCode(code) && <T style={type.label}>{t("That doesn't look right. Check it against the other phone.")}</T>}
+          <SecondaryButton label={t('Join')} strong testID="join" onPress={() => isCode(code) && startSync(code, true)} />
+          <SecondaryButton label={t('Cancel')} onPress={() => { setJoining(false); setTyped(''); }} />
         </View>
       ) : (
         <View style={{ gap: space.xs }}>
-          <SecondaryButton label="Start backup and sharing" strong testID="start-sync" onPress={() => startSync(makeCode(getRandomBytes(CODE_LENGTH)), false)} />
-          <SecondaryButton label="Join with a code" testID="join-sync" onPress={() => setJoining(true)} />
+          <SecondaryButton label={t('Start backup and sharing')} strong testID="start-sync" onPress={() => startSync(makeCode(getRandomBytes(CODE_LENGTH)), false)} />
+          <SecondaryButton label={t('Join with a code')} testID="join-sync" onPress={() => setJoining(true)} />
         </View>
       )}
     </View>

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { usePalette } from '../state/theme';
 import { radius, space, TAP, type } from '../theme';
 import { T } from './ui';
+import { t } from '../i18n';
 
 /**
  * Minus, value, plus. The buttons repeat when held (speeding up after a second), and when `onType`
@@ -56,7 +57,7 @@ export function Stepper({
     <Pressable
       testID={testID ? `${testID}-${dir > 0 ? 'more' : 'less'}` : undefined}
       accessibilityRole="button"
-      accessibilityLabel={`${dir > 0 ? 'More' : 'Less'} ${label.toLowerCase()}`}
+      accessibilityLabel={t(dir > 0 ? 'More {what}' : 'Less {what}', { what: label.toLowerCase() })}
       onPress={() => stepRef.current(dir, false)}
       onLongPress={() => {}}
       delayLongPress={350}
@@ -106,14 +107,14 @@ export function Stepper({
             onBlur={() => setTyping(null)}
             onSubmitEditing={() => setTyping(null)}
             style={[type.title, styles.input, { color: p.ink, borderColor: p.accent }]}
-            accessibilityLabel={`Type ${label.toLowerCase()}`}
+            accessibilityLabel={t('Type {what}', { what: label.toLowerCase() })}
           />
         ) : (
           // opens empty (the old value shows as a hint), so what she types replaces it; iPhone won't select the old number
           <Pressable
             disabled={!onType && !onPressValue}
             onPress={() => (onPressValue ? onPressValue() : setTyping(''))}
-            accessibilityHint={onPressValue ? 'Opens a calendar' : undefined}
+            accessibilityHint={onPressValue ? t('Opens a calendar') : undefined}
             testID={testID ? `${testID}-value` : undefined}
           >
             <T style={[type.title, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}>{display}</T>

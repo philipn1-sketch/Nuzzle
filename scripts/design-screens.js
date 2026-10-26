@@ -1,7 +1,8 @@
-// Every screen with three days of sample feeds, for design reviews. Run: npx expo export --platform web, node scripts/serve-web.js 8811, then node scripts/design-screens.js docs/screenshots/design night (or day).
+// Every screen with three days of sample feeds, for design reviews. Run: npx expo export --platform web, node scripts/serve-web.js 8811, then node scripts/design-screens.js docs/screenshots/design night (or day), optionally followed by a phone language such as de-DE.
 const { chromium } = require('playwright');
 const out = process.argv[2];
 const theme = process.argv[3] || 'night';
+const locale = process.argv[4] || 'en-AU'; // a phone language such as de-DE or ja-JP
 const MIN = 60000, H = 60 * MIN;
 (async () => {
   const now = Date.now();
@@ -29,7 +30,7 @@ const MIN = 60000, H = 60 * MIN;
     clockReminders: [{ hour: 21, minute: 0 }], quiet: { on: true, fromMin: 1320, toMin: 360 }, planReminders: ['b1'],
   };
   const b = await chromium.launch();
-  const pg = await b.newPage({ viewport: { width: 402, height: 874 }, deviceScaleFactor: 2 });
+  const pg = await b.newPage({ viewport: { width: 402, height: 874 }, deviceScaleFactor: 2, locale });
   const errs = []; pg.on('pageerror', (e) => errs.push(e.message));
   const seed = async (s = settings, f = feeds, e = entries) => {
     await pg.goto('http://localhost:8811/'); await pg.evaluate(([s, f, e]) => {
@@ -62,8 +63,8 @@ const MIN = 60000, H = 60 * MIN;
   await tap('side-R'); await pg.waitForTimeout(2000); await snap('home-switched-right');
   await tap('side-R'); await pg.waitForTimeout(800); await snap('home-paused');
   await tap('done'); await pg.waitForTimeout(800); await snap('home-just-saved');
-  await seed(); await go('/'); await tap('log-more'); await snap('home-more');
-  await seed(); await go('/'); await tap('log-sleep'); await pg.waitForTimeout(800); await snap('home-asleep');
+  await seed(); await go('/'); await tap('log'); await snap('home-log');
+  await seed(); await go('/'); await tap('log'); await tap('log-sleep'); await pg.waitForTimeout(800); await snap('home-asleep');
   await seed(); await go('/history'); await scrollSnaps('history-list', 3);
   await go('/history'); await tap('choice-week'); await snap('history-week');
   await go('/history'); await tap('choice-summary'); await snap('history-summary');

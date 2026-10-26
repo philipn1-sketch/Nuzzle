@@ -9,6 +9,7 @@ import { buy, restore, storePrices, type Product } from '../services/purchases';
 import { useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, type, wash } from '../theme';
+import { t } from '../i18n';
 
 /** What Nuzzle Plus adds, and how to get it. The feature she tapped comes first. */
 export default function Plus() {
@@ -24,7 +25,7 @@ export default function Plus() {
   useEffect(() => {
     storePrices().then(setPrices).catch(() => {});
   }, []);
-  const price = (k: Product) => (prices[k] ? `${prices[k]} ${k === 'lifetime' ? 'once' : 'a month'}` : PRICES[k]);
+  const price = (k: Product) => (prices[k] ? t(k === 'lifetime' ? '{price} once' : '{price} a month', { price: prices[k]! }) : t(PRICES[k]));
   const owned = settings.plus?.owned !== undefined;
 
   const first = PLUS_FEATURES.find((f) => f.id === (feature as PlusFeature));
@@ -39,38 +40,38 @@ export default function Plus() {
     if (r === 'bought') {
       unlock(product);
       router.back();
-    } else if (r === 'pending') setMessage('Waiting for approval. Nuzzle Plus turns on as soon as it is approved.');
-    else if (r === 'failed') setMessage("The App Store couldn't finish that. Nothing was charged; please try again.");
+    } else if (r === 'pending') setMessage(t('Waiting for approval. Nuzzle Plus turns on as soon as it is approved.'));
+    else if (r === 'failed') setMessage(t("The App Store couldn't finish that. Nothing was charged; please try again."));
   };
   const onRestore = async () => {
     setMessage(null);
     try {
       const r = await restore();
       if (r) unlock(r);
-      setMessage(r ? 'Nuzzle Plus is back on this phone.' : 'No earlier purchase was found for this Apple ID.');
+      setMessage(r ? t('Nuzzle Plus is back on this phone.') : t('No earlier purchase was found for this Apple ID.'));
     } catch {
-      setMessage("Couldn't reach the App Store. Check the connection and try again.");
+      setMessage(t("Couldn't reach the App Store. Check the connection and try again."));
     }
   };
 
   return (
     <Screen>
-      <TopBar left={<PillButton label="Close" onPress={() => router.back()} testID="plus-close" />} title="Nuzzle Plus" />
+      <TopBar left={<PillButton label={t('Close')} onPress={() => router.back()} testID="plus-close" />} title={t('Nuzzle Plus')} />
       <ScrollView contentContainerStyle={styles.body}>
         <T tone="muted" style={type.body}>{plusStatus(settings, now)}</T>
-        {plus && <T tone="muted" style={type.label}>The feed timer, reminders, logging and history are always free.</T>}
+        {plus && <T tone="muted" style={type.label}>{t('The feed timer, reminders, logging and history are always free.')}</T>}
         <View style={{ gap: space.m }}>
           {list.map((f) => (
             <View key={f.id} style={[styles.feature, { backgroundColor: p.surface }]}>
-              <T style={type.body}>{f.title}</T>
-              <T tone="muted" style={type.label}>{f.line}</T>
+              <T style={type.body}>{t(f.title)}</T>
+              <T tone="muted" style={type.label}>{t(f.line)}</T>
             </View>
           ))}
         </View>
       </ScrollView>
       {!owned && (
         <View style={styles.bottom}>
-          <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel="Choose how to pay">
+          <View style={{ flexDirection: 'row', gap: space.s }} accessibilityRole="radiogroup" accessibilityLabel={t('Choose how to pay')}>
             {(['lifetime', 'monthly'] as Product[]).map((k) => {
               const on = product === k;
               return (
@@ -82,7 +83,7 @@ export default function Plus() {
                   onPress={() => setProduct(k)}
                   style={[styles.option, { backgroundColor: on ? wash(p.accent, '26') : p.surface, borderColor: on ? p.accent : 'transparent' }]}
                 >
-                  <T style={type.body}>{k === 'lifetime' ? 'For life' : 'Monthly'}</T>
+                  <T style={type.body}>{k === 'lifetime' ? t('For life') : t('Monthly')}</T>
                   <T tone="muted" style={type.label}>{price(k)}</T>
                 </Pressable>
               );
@@ -90,20 +91,20 @@ export default function Plus() {
           </View>
           {message && <T accessibilityLiveRegion="polite" style={[type.label, { textAlign: 'center' }]}>{message}</T>}
           <PrimaryButton
-            label={busy ? 'Opening the App Store' : product === 'lifetime' ? `Get Nuzzle Plus for ${price('lifetime')}` : `Get Nuzzle Plus for ${price('monthly')}`}
+            label={busy ? t('Opening the App Store') : t('Get Nuzzle Plus for {price}', { price: price(product) })}
             onPress={busy ? () => {} : onBuy}
             testID="plus-buy"
           />
           <T tone="muted" style={[type.small, { textAlign: 'center' }]}>
             {product === 'monthly'
-              ? `Payment is charged to your Apple ID. Monthly renews automatically at ${price('monthly')} unless cancelled at least 24 hours before the month ends, in Settings, your name, Subscriptions.`
-              : 'One payment, charged to your Apple ID. Shared with your Apple family.'}
-            {' '}New phones get {TRIAL_DAYS} days of Plus free.
+              ? t('Payment is charged to your Apple ID. Monthly renews automatically at {price} unless cancelled at least 24 hours before the month ends, in Settings, your name, Subscriptions.', { price: price('monthly') })
+              : t('One payment, charged to your Apple ID. Shared with your Apple family.')}
+            {' '}{t('New phones get {n} days of Plus free.', { n: TRIAL_DAYS })}
           </T>
           <View style={styles.links}>
-            <QuietButton label="Restore" onPress={onRestore} testID="plus-restore" />
-            <QuietButton label="Terms" onPress={() => Linking.openURL(TERMS_URL)} testID="plus-terms" />
-            <QuietButton label="Privacy" onPress={() => Linking.openURL(PRIVACY_URL)} testID="plus-privacy" />
+            <QuietButton label={t('Restore')} onPress={onRestore} testID="plus-restore" />
+            <QuietButton label={t('Terms')} onPress={() => Linking.openURL(TERMS_URL)} testID="plus-terms" />
+            <QuietButton label={t('Privacy')} onPress={() => Linking.openURL(PRIVACY_URL)} testID="plus-privacy" />
           </View>
         </View>
       )}

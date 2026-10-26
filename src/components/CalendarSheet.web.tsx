@@ -5,6 +5,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { usePalette } from '../state/theme';
 import { radius, space, type } from '../theme';
 import { PrimaryButton, QuietButton, T } from './ui';
+import { t } from '../i18n';
 
 const iso = (t: number) => {
   const d = new Date(t);
@@ -29,8 +30,8 @@ export function CalendarSheet({
           },
           style: { fontSize: 20, padding: 12 },
         })}
-        <PrimaryButton label="Done" onPress={() => onDone(picked)} testID="calendar-done" />
-        <QuietButton label="Cancel" onPress={onCancel} />
+        <PrimaryButton label={t('Done')} onPress={() => onDone(picked)} testID="calendar-done" />
+        <QuietButton label={t('Cancel')} onPress={onCancel} />
       </View>
     </Modal>
   );

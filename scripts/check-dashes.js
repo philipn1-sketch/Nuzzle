@@ -17,12 +17,15 @@ walk(path.join(__dirname, '..', 'src'));
 // text only: anything with a space in it (ids, keys and styles have none)
 // markup built for the PDF summary: only the words in it are app text, not its styles or tags
 const visible = (s) => s.replace(/<style>[\s\S]*?<\/style>/g, ' ').replace(/<[^>]*>/g, ' ');
-const bad = (raw) => {
+// Other languages spell some words with a hyphen (Dutch back-up, Portuguese recém-nascido), so
+// translations may keep those; a dash or a spaced hyphen between words is still not allowed.
+const bad = (raw, translation) => {
   const s = visible(raw);
-  return /\s/.test(s) && (/[–—]/.test(s) || /\s-\s/.test(s) || /[A-Za-z]-[A-Za-z]/.test(s));
+  return /\s/.test(s) && (/[–—]/.test(s) || /\s-\s/.test(s) || (!translation && /\p{L}-\p{L}/u.test(s)));
 };
 const problems = [];
 for (const file of files) {
+  const translation = file.includes(`${path.sep}i18n${path.sep}locales${path.sep}`);
   const src = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const visit = (node) => {
     let text = null;
@@ -30,7 +33,7 @@ for (const file of files) {
     else if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) text = node.text;
     else if (ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node)) text = node.text;
     const inImport = !!node.parent && (ts.isImportDeclaration(node.parent) || ts.isExportDeclaration(node.parent));
-    if (text && !inImport && bad(text)) {
+    if (text && !inImport && bad(text, translation)) {
       const { line } = src.getLineAndCharacterOfPosition(node.getStart());
       problems.push(`${path.relative(process.cwd(), file)}:${line + 1}: ${text.trim()}`);
     }

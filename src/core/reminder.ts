@@ -2,6 +2,7 @@ import { activeFeed, endSide, feedStart, isBottle, lastBreast, lastSaved } from 
 import { sideWord, span } from './format';
 import { PLAN_SKIP_MIN, planFeedAlerts, planIsOn } from './plan';
 import type { Baby, Feed, Settings } from './types';
+import { t } from '../i18n';
 
 export interface ReminderPlan {
   at: number;
@@ -37,18 +38,18 @@ export function planReminder(feeds: Feed[], settings: Settings, now: number, nam
   const last = lastSaved(feeds);
   const at = nextFeedAt(feeds, settings, baby, usePlan);
   if (!last || at === null || at <= now) return null;
-  if (followsPlan(baby, usePlan)) return { at, body: `Feed time in ${name}'s plan.` };
+  if (followsPlan(baby, usePlan)) return { at, body: t("Feed time in {name}'s plan.", { name }) };
   const interval = settings.intervalMin * 60_000;
   const breast = lastBreast(feeds);
   const side = !breast
-    ? 'It was a bottle.'
+    ? t('It was a bottle.')
     : isBottle(last)
-      ? `It was a bottle. The last breast feed ended on the ${sideWord(endSide(breast))}.`
-      : `Ended on the ${sideWord(endSide(last))}.`;
-  return { at, body: `It has been ${span(interval)} since ${name}'s last feed started. ${side}` };
+      ? t('It was a bottle. The last breast feed ended on the {side}.', { side: sideWord(endSide(breast)) })
+      : t('Ended on the {side}.', { side: sideWord(endSide(last)) });
+  return { at, body: `${t("It has been {time} since {name}'s last feed started.", { time: span(interval), name })} ${side}` };
 }
 
-export const babyName = (b: Baby | undefined): string => b?.name.trim() || 'Baby';
+export const babyName = (b: Baby | undefined): string => b?.name.trim() || t('Baby');
 
 /** The baby the app is showing, falling back to the first. */
 export const activeBaby = (s: Settings): Baby => s.babies.find((b) => b.id === s.activeBabyId) ?? s.babies[0];

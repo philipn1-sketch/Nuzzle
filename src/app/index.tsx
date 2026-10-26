@@ -18,6 +18,7 @@ import { usePalette } from '../state/theme';
 import { line, radius, sideColor, space, TAP, type, wash } from '../theme';
 import { APP_NAME } from '../config';
 import { showCode as codeText } from '../core/sync';
+import { t } from '../i18n';
 
 function RingOrPlain({ compact, children, ...ring }: React.ComponentProps<typeof Ring> & { compact: boolean }) {
   if (compact) return <View style={{ alignItems: 'center', gap: space.xs, paddingVertical: space.s }}>{children}</View>;
@@ -48,7 +49,7 @@ export default function Home() {
   const nd = new Date(now);
   const step = fromPlan && app.baby.plan ? nextStep(app.baby.plan, nd.getHours() * 60 + nd.getMinutes()) : null;
   const stepAt = step ? new Date(now).setHours(Math.floor(step.at / 60), step.at % 60, 0, 0) : 0;
-  const stepText = step ? `${step.label === 'Bed' ? 'Bedtime' : step.label} at ${timeOf(stepAt)}` : 'Done for today';
+  const stepText = step ? t('{step} at {time}', { step: step.label === 'Bed' ? t('Bedtime') : t(step.label), time: timeOf(stepAt) }) : t('Done for today');
   const [more, setMore] = useState(false);
 
   const sideState = (side: Side): SideState => {
@@ -79,7 +80,7 @@ export default function Home() {
   const ringColor = active ? (active.status === 'paused' ? p.muted : sideColor(p, endSide(active))) : overdue ? p.ink : p.muted;
   // history badge over the side the last breast feed ended on
   const badgeSide = !active && lastSide ? endSide(lastSide) : null;
-  const badgeText = last && lastSide ? (last === lastSide ? `Last feed · ${timeOf(feedStart(last))}` : `Last breast · ${timeOf(feedStart(lastSide))}`) : '';
+  const badgeText = last && lastSide ? (last === lastSide ? t('Last feed · {time}', { time: timeOf(feedStart(last)) }) : t('Last breast · {time}', { time: timeOf(feedStart(lastSide)) })) : '';
 
   // the first launch questions, until they are answered or skipped
   if (!settings.onboarded && app.allFeeds.length === 0) return <Redirect href="/welcome" />;
@@ -88,13 +89,13 @@ export default function Home() {
     <Screen>
       <TopBar
         title={name}
-        left={<PillButton label="History" onPress={() => router.push('/history')} testID="open-history" />}
-        right={<PillButton label="Settings" onPress={() => router.push('/settings')} testID="open-settings" />}
+        left={<PillButton label={t('History')} onPress={() => router.push('/history')} testID="open-history" />}
+        right={<PillButton label={t('Settings')} onPress={() => router.push('/settings')} testID="open-settings" />}
       />
       {settings.babies.length > 1 && (
         <View style={styles.babies}>
           <Choice<string>
-            label="Baby"
+            label={t('Baby')}
             value={app.baby.id}
             onChange={app.switchBaby}
             options={settings.babies.map((b) => ({ value: b.id, label: babyName(b) }))}
@@ -106,14 +107,14 @@ export default function Home() {
         <Pressable
           onPress={() => router.push('/plan')}
           accessibilityRole="button"
-          accessibilityLabel={`Daily plan, next: ${stepText}`}
-          accessibilityHint="Opens the daily plan"
+          accessibilityLabel={t('Daily plan, next: {step}', { step: stepText })}
+          accessibilityHint={t('Opens the daily plan')}
           testID="plan-bar"
           style={({ pressed }) => [styles.planBar, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
         >
           <View style={{ flex: 1 }}>
-            <T tone="muted" style={type.small}>DAILY PLAN</T>
-            <T style={type.body} numberOfLines={1}>Next: {stepText}</T>
+            <T tone="muted" style={type.small}>{t('DAILY PLAN')}</T>
+            <T style={type.body} numberOfLines={1}>{t('Next: {step}', { step: stepText })}</T>
           </View>
           <T tone="muted" style={type.title}>›</T>
         </Pressable>
@@ -122,11 +123,13 @@ export default function Home() {
         <View style={[styles.sleepBar, { backgroundColor: p.surface }]} accessibilityLiveRegion="polite">
           <View style={{ flex: 1 }}>
             <T style={type.body} testID="asleep">
-              {many ? `${name} ` : ''}{now - sleeping.at < 60_000 ? (many ? 'just fell asleep' : 'Just fell asleep') : `${many ? 'asleep' : 'Asleep'} for ${span(now - sleeping.at)}`}
+              {now - sleeping.at < 60_000
+                ? many ? t('{name} just fell asleep', { name }) : t('Just fell asleep')
+                : many ? t('{name} asleep for {time}', { name, time: span(now - sleeping.at) }) : t('Asleep for {time}', { time: span(now - sleeping.at) })}
             </T>
-            <T tone="muted" style={type.label}>Since {timeOf(sleeping.at)}</T>
+            <T tone="muted" style={type.label}>{t('Since {time}', { time: timeOf(sleeping.at) })}</T>
           </View>
-          <PillButton label="Woke up" onPress={app.toggleSleep} testID="woke-up" a11yLabel="She woke up" />
+          <PillButton label={t('Woke up')} onPress={app.toggleSleep} testID="woke-up" a11yLabel={t('She woke up')} />
         </View>
       )}
       {/* it only scrolls when something doesn't fit, such as a question card or very large text */}
@@ -146,60 +149,60 @@ export default function Home() {
                 <>
                   <T testID="timer" numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.3}
                     style={[type.timer, { color: active.status === 'paused' ? p.muted : p.ink }]}
-                    accessibilityLabel={`${active.status === 'paused' ? 'Paused' : `Feeding on the ${sideWord(endSide(active))}`}, fed for ${spanWords(totalMs(active, now))}`}>
+                    accessibilityLabel={t('{state}, fed for {time}', { state: active.status === 'paused' ? t('Paused') : t('Feeding on the {side}', { side: sideWord(endSide(active)) }), time: spanWords(totalMs(active, now)) })}>
                     {clock(totalMs(active, now))}
                   </T>
-                  <T tone="muted" style={[type.body, styles.centreText]} testID="feed-state">{active.status === 'paused' ? 'Paused' : 'this feed'}</T>
+                  <T tone="muted" style={[type.body, styles.centreText]} testID="feed-state">{active.status === 'paused' ? t('Paused') : t('this feed')}</T>
                 </>
               ) : last ? (
                 <>
-                  <T testID="since" accessibilityLabel={`${spanWords(now - feedStart(last))} since the last feed started`} numberOfLines={1}
+                  <T testID="since" accessibilityLabel={t('{time} since the last feed started', { time: spanWords(now - feedStart(last)) })} numberOfLines={1}
                     adjustsFontSizeToFit maxFontSizeMultiplier={1.3} style={[type.timer, { color: p.ink }]}>
                     {cap(span(now - feedStart(last)))}
                   </T>
-                  <T tone="muted" style={[type.body, styles.centreText]}>since last feed</T>
+                  <T tone="muted" style={[type.body, styles.centreText]}>{t('since last feed')}</T>
                   {overdue && dueAt !== null ? (
-                    <View style={[styles.due, { borderColor: p.muted }]} testID="due" accessibilityLabel={`Next feed was due ${spanWords(now - dueAt)} ago`}>
+                    <View style={[styles.due, { borderColor: p.muted }]} testID="due" accessibilityLabel={t('Next feed was due {time} ago', { time: spanWords(now - dueAt) })}>
                       <View style={[styles.dot, { backgroundColor: p.ink }]} />
-                      <T style={[type.label, { fontWeight: '700' }]}>Due {span(now - dueAt)} ago</T>
+                      <T style={[type.label, { fontWeight: '700' }]}>{t('Due {time} ago', { time: span(now - dueAt) })}</T>
                     </View>
                   ) : dueAt !== null ? (
-                    <T testID="reminder-at" style={[type.label, styles.centreText, styles.next]} accessibilityLabel={`Next feed at ${timeOf(dueAt)}${fromPlan ? " in the daily plan" : ""}, in ${spanWords(dueAt - now)}`}>
-                      Next feed {timeOf(dueAt)}{fromPlan ? ' · plan' : ''}
+                    <T testID="reminder-at" style={[type.label, styles.centreText, styles.next]} accessibilityLabel={t(fromPlan ? 'Next feed at {time} in the daily plan, in {wait}' : 'Next feed at {time}, in {wait}', { time: timeOf(dueAt), wait: spanWords(dueAt - now) })}>
+                      {t(fromPlan ? 'Next feed {time} · plan' : 'Next feed {time}', { time: timeOf(dueAt) })}
                     </T>
                   ) : null}
                   {!overdue && (
                     <T tone="muted" style={[type.small, styles.centreText]} accessibilityRole="button" testID="edit-last" onPress={() => router.push(`/feed/${last.id}`)}>
-                      Edit last feed ›
+                      {t('Edit last feed ›')}
                     </T>
                   )}
                 </>
               ) : (
                 <>
-                  <T style={[type.title, styles.centreText]}>No feeds yet</T>
-                  <T tone="muted" style={[type.body, styles.centreText]}>Tap a side to start</T>
+                  <T style={[type.title, styles.centreText]}>{t('No feeds yet')}</T>
+                  <T tone="muted" style={[type.body, styles.centreText]}>{t('Tap a side to start')}</T>
                 </>
               )}
             </RingOrPlain>
           </Pressable>
 
-          {active && <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" />}
+          {active && <QuietButton label={t('Discard this feed')} onPress={app.discard} testID="discard" />}
 
           {!asking && !active && (
             <View style={styles.wide}>
-              <SecondaryButton strong label="+ Log something" onPress={() => setMore(true)} testID="log" />
+              <SecondaryButton strong label={t('+ Log something')} onPress={() => setMore(true)} testID="log" />
             </View>
           )}
           {showCode && !asking && (
             <QuietButton
-              label="Save your family code ›"
+              label={t('Save your family code ›')}
               tone="ink"
               testID="save-code-home"
               onPress={() => {
                 // one tap is enough: it leaves Home straight away, and the code stays in Settings
                 app.updateSettings({ codeSaved: true });
                 Share.share({
-                  message: `Our ${APP_NAME} family code: ${codeText(app.sync.code ?? '')}\n\nKeep this safe. On a new phone, open ${APP_NAME}, then Settings, then Join with a code.`,
+                  message: t('Our {app} family code: {code}\n\nKeep this safe. On a new phone, open {app}, then Settings, then Join with a code.', { app: APP_NAME, code: codeText(app.sync.code ?? '') }),
                 }).catch(() => {});
               }}
             />
@@ -207,12 +210,12 @@ export default function Home() {
 
           {showStill && active && (
             <Card style={styles.wide}>
-              <T style={type.title}>Still feeding?</T>
-              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>This feed has been going for {span(now - feedStart(active))}.</T>
+              <T style={type.title}>{t('Still feeding?')}</T>
+              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>{t('This feed has been going for {time}.', { time: span(now - feedStart(active)) })}</T>
               <View style={styles.cardButtons}>
-                <SecondaryButton label="Yes, still feeding" strong onPress={app.keepFeeding} testID="still-yes" />
+                <SecondaryButton label={t('Yes, still feeding')} strong onPress={app.keepFeeding} testID="still-yes" />
                 <SecondaryButton
-                  label="Save and fix the time"
+                  label={t('Save and fix the time')}
                   testID="still-fix"
                   onPress={() => {
                     const saved = app.done();
@@ -225,11 +228,11 @@ export default function Home() {
 
           {showAsk && (
             <Card style={styles.wide}>
-              <T style={type.body}>Remind you when the next feed is due?</T>
-              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>You can change this in Settings.</T>
+              <T style={type.body}>{t('Remind you when the next feed is due?')}</T>
+              <T tone="muted" style={[type.label, { marginTop: space.xs }]}>{t('You can change this in Settings.')}</T>
               <View style={styles.cardButtons}>
-                <SecondaryButton label="Turn on" strong onPress={app.askReminders} testID="reminders-on" />
-                <SecondaryButton label="Not now" onPress={() => app.updateSettings({ reminderAsked: true, remindersOn: false })} testID="reminders-not-now" />
+                <SecondaryButton label={t('Turn on')} strong onPress={app.askReminders} testID="reminders-on" />
+                <SecondaryButton label={t('Not now')} onPress={() => app.updateSettings({ reminderAsked: true, remindersOn: false })} testID="reminders-not-now" />
               </View>
             </Card>
           )}
@@ -239,7 +242,7 @@ export default function Home() {
 
       <View style={styles.bottom}>
         <SnackbarSlot />
-        {active && <PrimaryButton label="Done" onPress={() => app.done()} testID="done" hint="Stops and saves this feed" />}
+        {active && <PrimaryButton label={t('Done')} onPress={() => app.done()} testID="done" hint={t('Stops and saves this feed')} />}
         <View style={styles.sides}>
           {(['L', 'R'] as const).map((s) => (
             <View key={s} style={{ flex: 1 }}>
@@ -261,20 +264,20 @@ export default function Home() {
       </View>
 
       <Modal visible={more} transparent animationType="fade" onRequestClose={() => setMore(false)}>
-        <Pressable style={[styles.shade, { backgroundColor: wash(p.bg, 'B3') }]} onPress={() => setMore(false)} accessibilityLabel="Close" />
+        <Pressable style={[styles.shade, { backgroundColor: wash(p.bg, 'B3') }]} onPress={() => setMore(false)} accessibilityLabel={t('Close')} />
         <View style={[styles.sheet, { backgroundColor: p.surface }]}>
           <View style={[styles.grabber, { backgroundColor: line(p) }]} />
-          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">Log</T>
+          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">{t('Log')}</T>
           {([
-            ['Bottle', 'log-bottle', () => router.push('/feed/new?kind=bottle')],
-            ['Nappy', 'log-nappy', () => router.push('/entry/new?kind=nappy')],
-            sleeping ? ['Woke up', 'log-sleep', app.toggleSleep] : ['Sleep', 'log-sleep', app.toggleSleep],
-            ['Pumping', 'log-pump', () => router.push('/entry/new?kind=pump')],
-            ['Weight and length', 'add-growth', () => router.push('/entry/new?kind=growth')],
+            [t('Bottle'), 'log-bottle', () => router.push('/feed/new?kind=bottle')],
+            [t('Nappy'), 'log-nappy', () => router.push('/entry/new?kind=nappy')],
+            sleeping ? [t('Woke up'), 'log-sleep', app.toggleSleep] : [t('Sleep'), 'log-sleep', app.toggleSleep],
+            [t('Pumping'), 'log-pump', () => router.push('/entry/new?kind=pump')],
+            [t('Weight and length'), 'add-growth', () => router.push('/entry/new?kind=growth')],
           ] as [string, string, () => void][]).map(([label, id, go]) => (
             <SecondaryButton key={id} strong label={label} testID={id} onPress={() => { setMore(false); go(); }} />
           ))}
-          <QuietButton label="Cancel" onPress={() => setMore(false)} testID="more-cancel" style={{ alignSelf: 'center' }} />
+          <QuietButton label={t('Cancel')} onPress={() => setMore(false)} testID="more-cancel" style={{ alignSelf: 'center' }} />
         </View>
       </Modal>
     </Screen>
