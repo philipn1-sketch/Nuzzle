@@ -15,9 +15,9 @@ import { runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { line, radius, sideColor, space, type, wash } from '../theme';
+import { line, radius, sideColor, space, TAP, type, wash } from '../theme';
 import { APP_NAME } from '../config';
-import { showCode } from '../core/sync';
+import { showCode as codeText } from '../core/sync';
 
 function RingOrPlain({ compact, children, ...ring }: React.ComponentProps<typeof Ring> & { compact: boolean }) {
   if (compact) return <View style={{ alignItems: 'center', gap: space.xs, paddingVertical: space.s }}>{children}</View>;
@@ -63,11 +63,16 @@ export default function Home() {
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
 
   const { width, height } = useWindowDimensions();
-  // the ring makes room when a question card is showing
-  const ring = Math.min(width - 2 * space.side - 40, height * 0.36 - (many ? 56 : 0) - (sleepBar ? 64 : 0), 300);
-  // when a question card needs the room, the same answer shows without the ring
-  // the ring needs room; with the baby switch and sleep bar showing on a small phone, the answer shows as plain text
-  const compact = showStill || showAsk || ring < 240;
+  // Home never scrolls: the ring takes whatever height is left between the top bars and the side
+  // buttons, after the button under it. Measured, so the plan bar, baby switch and sleep bar all fit.
+  const [area, setArea] = useState(0);
+  const showCode = app.sync.code !== null && !settings.codeSaved && !active;
+  const under = active ? TAP : TAP + (showCode ? TAP + space.xl : 0);
+  const room = area > 0 ? area - under - space.xl - 2 * space.l : height * 0.36;
+  const ring = Math.min(width - 2 * space.side - 40, room, 300);
+  // a question card, or a phone too small for the ring, shows the same answer as plain text and may scroll
+  const asking = showStill || showAsk;
+  const compact = asking || ring < 200;
   const ringProgress = active || overdue ? 1 : last && dueAt ? (now - feedStart(last)) / Math.max(1, dueAt - feedStart(last)) : 0;
   // While feeding the ring is a calm full circle in the feeding side's colour. At rest it is neutral
   // and fills as time passes towards the next feed; once that passes it stays full and turns bright.
@@ -96,18 +101,19 @@ export default function Home() {
           />
         </View>
       )}
-      {!active && (
+      {/* only while the plan is on; it is turned back on in Settings */}
+      {!active && fromPlan && (
         <Pressable
           onPress={() => router.push('/plan')}
           accessibilityRole="button"
-          accessibilityLabel={fromPlan ? `Daily plan, next: ${stepText}` : 'Daily plan, off'}
+          accessibilityLabel={`Daily plan, next: ${stepText}`}
           accessibilityHint="Opens the daily plan"
           testID="plan-bar"
           style={({ pressed }) => [styles.planBar, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
         >
           <View style={{ flex: 1 }}>
             <T tone="muted" style={type.small}>DAILY PLAN</T>
-            <T style={type.body} numberOfLines={1}>{fromPlan ? `Next: ${stepText}` : 'Off'}</T>
+            <T style={type.body} numberOfLines={1}>Next: {stepText}</T>
           </View>
           <T tone="muted" style={type.title}>›</T>
         </Pressable>
@@ -124,8 +130,9 @@ export default function Home() {
         </View>
       )}
       {/* it only scrolls when something doesn't fit, such as a question card or very large text */}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
-        <View style={styles.top}>
+      <View style={{ flex: 1 }} onLayout={(e) => setArea(e.nativeEvent.layout.height)}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} scrollEnabled={asking} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
+        <View style={[styles.top, compact && !asking && { gap: space.m }]}>
           <Pressable
             disabled={active !== null || last === null}
             onPress={() => last && router.push(`/feed/${last.id}`)}
@@ -174,23 +181,23 @@ export default function Home() {
 
           {active && <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" />}
 
-          {!compact && !active && (
+          {!asking && !active && (
             <View style={styles.wide}>
               <SecondaryButton strong label="+ Log something" onPress={() => setMore(true)} testID="log" />
             </View>
           )}
-          {app.sync.code && !settings.codeSaved && !compact && !active && (
+          {showCode && !asking && (
             <QuietButton
               label="Save your family code ›"
               tone="ink"
               testID="save-code-home"
-              onPress={() =>
+              onPress={() => {
+                // one tap is enough: it leaves Home straight away, and the code stays in Settings
+                app.updateSettings({ codeSaved: true });
                 Share.share({
-                  message: `Our ${APP_NAME} family code: ${showCode(app.sync.code ?? '')}\n\nKeep this safe. On a new phone, open ${APP_NAME}, then Settings, then Join with a code.`,
-                })
-                  .then((r) => r.action === Share.sharedAction && app.updateSettings({ codeSaved: true }))
-                  .catch(() => {})
-              }
+                  message: `Our ${APP_NAME} family code: ${codeText(app.sync.code ?? '')}\n\nKeep this safe. On a new phone, open ${APP_NAME}, then Settings, then Join with a code.`,
+                }).catch(() => {});
+              }}
             />
           )}
 
@@ -224,6 +231,7 @@ export default function Home() {
           )}
         </View>
       </ScrollView>
+      </View>
 
       <View style={styles.bottom}>
         <SnackbarSlot />
