@@ -5,6 +5,13 @@ appId: com.philipnader.nuzzle
     clearState: true
     permissions:
       all: allow
+- runFlow:
+    when:
+      visible:
+        id: "welcome-skip"
+    commands:
+      - tapOn:
+          id: "welcome-skip"
 - assertVisible: "No feeds yet"
 - takeScreenshot: night-01-home-first-launch
 - tapOn:

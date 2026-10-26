@@ -6,6 +6,7 @@ import {
   activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
+import { planFeedTimes, planIsOn } from '../core/plan';
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
@@ -224,11 +225,21 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-    const clock = settings.clockReminders.map((c) => ({
-      ...c,
-      body: `Your ${clockTime(c.hour, c.minute)} reminder.`,
-      silent: inQuiet(new Date(2000, 0, 1, c.hour, c.minute).getTime(), settings.quiet),
-    }));
+    const clockTimes = new Map<number, string>();
+    for (const c of settings.clockReminders) clockTimes.set(c.hour * 60 + c.minute, `Your ${clockTime(c.hour, c.minute)} reminder.`);
+    // feed times from a plan she follows, unless one of her own reminders already rings then
+    for (const b of settings.babies) {
+      const plan = settings.plans?.[b.id];
+      if (!planIsOn(plan) || !plan.reminders) continue;
+      for (const m of planFeedTimes(plan)) {
+        if (!clockTimes.has(m)) clockTimes.set(m, many ? `Feed time in ${babyName(b)}'s plan.` : 'Feed time in the plan.');
+      }
+    }
+    const clock = [...clockTimes].map(([m, body]) => {
+      const hour = Math.floor(m / 60);
+      const minute = m % 60;
+      return { hour, minute, body, silent: inQuiet(new Date(2000, 0, 1, hour, minute).getTime(), settings.quiet) };
+    });
     notify
       .syncReminders(plans, clock)
       .then(() => notify.pendingReminderAt(baby.id))

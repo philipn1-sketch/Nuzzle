@@ -104,7 +104,9 @@ export interface Settings {
   clockReminders: ClockReminder[];
   quiet: QuietHours;
   /** Each baby's daily plan, by baby id. */
-  plans?: Record<string, { dayStartMin: number; bedtimeMin: number; gapMin: number; awakeMin: number; referenceId?: string }>;
+  plans?: Record<string, { dayStartMin: number; bedtimeMin: number; gapMin: number; awakeMin: number; referenceId?: string; on?: boolean; reminders?: boolean }>;
+  /** The first launch questions were answered or skipped. */
+  onboarded?: boolean;
   remindersOn: boolean;
   intervalMin: number;
   theme: ThemeChoice;

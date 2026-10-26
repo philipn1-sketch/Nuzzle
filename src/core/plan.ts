@@ -176,3 +176,31 @@ export function nextReference(items: ReferenceItem[], nowMin: number): Reference
 
 /** The daytime feed times, for reminders: the start of each feed window. */
 export const referenceFeedTimes = (day: ReferenceDay): number[] => day.items.filter((i) => i.kind === 'feed').map((i) => i.at);
+
+/** A plan as saved for a baby. `on` is missing on plans saved before it could be turned off: they count as on. */
+export type SavedPlan = PlanSettings & { on?: boolean; reminders?: boolean };
+
+export const planIsOn = (p: SavedPlan | undefined): p is SavedPlan => !!p && p.on !== false;
+
+/** One line per thing in the day, whichever kind of plan it is. */
+export interface DayStep {
+  at: number;
+  label: string;
+  feed: boolean;
+}
+
+export function planSteps(p: PlanSettings): DayStep[] {
+  const ref = p.referenceId ? REFERENCE_DAYS.find((r) => r.id === p.referenceId) : undefined;
+  if (ref) {
+    const word = { feed: 'Feed', play: 'Awake time', nap: 'Nap', bath: 'Bath', bedtime: 'Bed' } as const;
+    return ref.items.map((i) => ({ at: i.at, label: word[i.kind], feed: i.kind === 'feed' }));
+  }
+  return buildPlan(p).map((i) => ({ at: i.at, label: i.kind === 'feed' ? 'Feed' : i.kind === 'nap' ? 'Nap' : 'Bed', feed: i.kind === 'feed' }));
+}
+
+/** The plan's feed times, for reminders. */
+export const planFeedTimes = (p: PlanSettings): number[] => planSteps(p).filter((s) => s.feed).map((s) => s.at);
+
+/** The next thing in the plan today, skipping awake time. */
+export const nextStep = (p: PlanSettings, nowMin: number): DayStep | null =>
+  planSteps(p).find((s) => s.at >= nowMin && s.label !== 'Awake time') ?? null;

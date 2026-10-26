@@ -30,7 +30,8 @@ export default function Plan() {
   const band = AGE_BANDS[bandIndex];
   const saved = settings.plans?.[baby.id];
   const plan: PlanSettings = saved ?? defaultPlan(ownBand);
-  const setPlan = (patch: Partial<PlanSettings>) => updateSettings({ plans: { ...settings.plans, [baby.id]: { ...plan, ...patch } } });
+  const setPlan = (patch: Partial<PlanSettings & { on: boolean; reminders: boolean }>) =>
+    updateSettings({ plans: { ...settings.plans, [baby.id]: { ...saved, ...plan, ...patch } } });
   const items = buildPlan(plan);
   const d = new Date(now);
   const next = nextItem(items, d.getHours() * 60 + d.getMinutes());
@@ -40,9 +41,8 @@ export default function Plan() {
   const nowMin = d.getHours() * 60 + d.getMinutes();
   const nextRef = ref ? nextReference(ref.items, nowMin) : null;
   const feedTimes = ref ? referenceFeedTimes(ref) : [];
-  const remindersMatch =
-    ref !== null && feedTimes.length === settings.clockReminders.length &&
-    feedTimes.every((m) => settings.clockReminders.some((c) => c.hour * 60 + c.minute === m));
+  const on = saved ? saved.on !== false : false;
+  const planReminders = saved?.reminders === true;
 
   const rows: [string, string][] = [
     ['Feeds', band.feedsPerDay],
@@ -56,6 +56,28 @@ export default function Plan() {
     <Screen>
       <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Daily plan" />
       <ScrollView contentContainerStyle={styles.body}>
+        <Card style={{ gap: space.m }}>
+          <T style={type.body}>Follow a daily plan</T>
+          <T tone="muted" style={type.label}>When it is on, Home shows what is next in the plan. Turn it off any time; the plan stays saved.</T>
+          <Choice<'on' | 'off'>
+            label="Follow a daily plan"
+            value={on ? 'on' : 'off'}
+            onChange={(v) => setPlan({ on: v === 'on' })}
+            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+          />
+          {on && (
+            <>
+              <T tone="muted" style={type.label}>Remind me at the plan&apos;s feed times</T>
+              <Choice<'on' | 'off'>
+                label="Remind me at the plan's feed times"
+                value={planReminders ? 'on' : 'off'}
+                onChange={(v) => setPlan({ reminders: v === 'on' })}
+                options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
+              />
+            </>
+          )}
+        </Card>
+
         <Card style={{ gap: space.m }}>
           <T tone="muted" style={type.label}>
             {baby.birthday !== null ? `${name}, ${ageText(baby.birthday, now).toLowerCase()}. ` : ''}Typical for this age
@@ -117,15 +139,6 @@ export default function Plan() {
               })}
             </View>
             <T tone="muted" style={type.label}>{ref.night}</T>
-            {!remindersMatch ? (
-              <SecondaryButton
-                label="Remind me at these feed times"
-                onPress={() => updateSettings({ clockReminders: feedTimes.map((m) => ({ hour: Math.floor(m / 60), minute: m % 60 })), reminderAsked: true })}
-                testID="ref-reminders"
-              />
-            ) : (
-              <T tone="muted" style={type.label}>Daily reminders are set for these feed times. Change them in Settings.</T>
-            )}
           </>
         ) : (
           <>

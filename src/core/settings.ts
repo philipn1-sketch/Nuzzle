@@ -23,5 +23,7 @@ export function migrateSettings(raw: Record<string, unknown>): Settings {
     s.babies = [{ id: FIRST_BABY, name: typeof babyName === 'string' ? babyName : '', birthday: null }];
   }
   if (!s.babies.some((b) => b.id === s.activeBabyId)) s.activeBabyId = s.babies[0].id;
+  // anyone who already had settings saved was using the app before the welcome questions existed
+  if (raw.onboarded === undefined) s.onboarded = Object.keys(raw).length > 0;
   return s;
 }

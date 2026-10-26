@@ -1,4 +1,6 @@
-import { AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, REFERENCE_DAYS, referenceFeedTimes } from '../plan';
+import {
+  AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, nextStep, planFeedTimes, planIsOn, REFERENCE_DAYS, referenceFeedTimes,
+} from '../plan';
 
 const DAY = 86_400_000;
 const born = new Date(2026, 9, 8).getTime();
@@ -49,5 +51,23 @@ describe('the reference day', () => {
     expect(nextReference(day.items, 6 * 60 + 30)?.at).toBe(6 * 60);
     expect(nextReference(day.items, 9 * 60 + 50)?.kind).toBe('nap');
     expect(nextReference(day.items, 22 * 60)).toBeNull();
+  });
+});
+
+describe('turning a plan on and off', () => {
+  it('counts an older saved plan as on, and an explicitly stopped one as off', () => {
+    const base = { dayStartMin: 420, bedtimeMin: 1140, gapMin: 180, awakeMin: 75 };
+    expect(planIsOn(base)).toBe(true);
+    expect(planIsOn({ ...base, on: false })).toBe(false);
+    expect(planIsOn(undefined)).toBe(false);
+  });
+
+  it('gives feed times and the next step for either kind of plan', () => {
+    const own = { dayStartMin: 420, bedtimeMin: 1140, gapMin: 180, awakeMin: 75 };
+    expect(planFeedTimes(own).map((m) => m / 60)).toEqual([7, 10, 13, 16]);
+    expect(nextStep(own, 8 * 60)).toEqual({ at: 8 * 60 + 15, label: 'Nap', feed: false });
+    const ref = { ...own, referenceId: 'ref-2-4w' };
+    expect(planFeedTimes(ref).map((m) => m / 60)).toEqual([6, 9, 12, 15, 18, 21]);
+    expect(nextStep(ref, 9 * 60 + 10)).toEqual({ at: 9 * 60 + 45, label: 'Nap', feed: false });
   });
 });

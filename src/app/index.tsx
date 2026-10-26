@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Redirect, router } from 'expo-router';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Ring } from '../components/Ring';
 import { SideButton, type SideState } from '../components/SideButton';
@@ -7,7 +7,8 @@ import { Card, Choice, PillButton, PrimaryButton, QuietButton, Screen, Secondary
 import {
   activeFeed, dayStartOf, endSide, feedStart, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
-import { ageText, amount, clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
+import { ageText, amount, clock, clockTime, mins, sideWord, span, spanWords, timeOf } from '../core/format';
+import { nextStep, planIsOn } from '../core/plan';
 import { babyName } from '../core/reminder';
 import { nappyCount, nappyLine, runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
@@ -39,6 +40,9 @@ export default function Home() {
   // while a feed runs the sleep bar steps aside for the ring; the Woke up button moves to the row below
   const sleepBar = sleeping !== null && !active;
   const nappies = nappyCount(app.entries, dayStartOf(now), dayStartOf(now, -1));
+  const plan = settings.plans?.[app.baby.id];
+  const nowDate = new Date(now);
+  const step = planIsOn(plan) ? nextStep(plan, nowDate.getHours() * 60 + nowDate.getMinutes()) : null;
 
   const sideState = (side: Side): SideState => {
     if (active) {
@@ -63,6 +67,9 @@ export default function Home() {
   // While feeding the ring is a calm full circle in the feeding side's colour. At rest it is neutral
   // and fills as time passes towards her reminder time.
   const ringColor = active ? (active.status === 'paused' ? wash(p.muted, '80') : sideColor(p, endSide(active))) : p.muted;
+
+  // the first launch questions, until they are answered or skipped
+  if (!settings.onboarded && app.allFeeds.length === 0) return <Redirect href="/welcome" />;
 
   return (
     <Screen>
@@ -169,6 +176,13 @@ export default function Home() {
               <PillButton label="Nappy" onPress={() => router.push('/entry/new?kind=nappy')} testID="log-nappy" a11yLabel="Log a nappy" />
               {!sleeping && <PillButton label="Sleep" onPress={app.toggleSleep} testID="log-sleep" a11yLabel="Start a sleep" />}
             </View>
+          )}
+          {step && !compact && !active && (
+            <Pressable onPress={() => router.push('/plan')} accessibilityRole="button" accessibilityHint="Opens the daily plan" testID="plan-next">
+              <T tone="muted" style={[type.label, styles.centreText]}>
+                Next in the plan: {step.label} at {clockTime(Math.floor(step.at / 60), step.at % 60)}
+              </T>
+            </Pressable>
           )}
           {nappies.total > 0 && !compact && (
             <T tone="muted" style={[type.label, styles.centreText]} testID="nappies-today">
