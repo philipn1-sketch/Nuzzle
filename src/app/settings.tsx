@@ -97,6 +97,7 @@ export default function SettingsScreen() {
           );
         })}
         <View style={[styles.section, { borderBottomColor: line(p) }]}>
+          <QuietButton label="Daily plan and examples by age ›" tone="ink" onPress={() => router.push('/plan')} style={styles.left} testID="open-plan" />
           <QuietButton label="Add another baby ›" tone="ink" onPress={addBaby} style={styles.left} testID="add-baby" />
         </View>
 

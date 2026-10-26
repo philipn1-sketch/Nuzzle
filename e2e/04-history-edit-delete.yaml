@@ -85,7 +85,7 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "save-feed"
 - assertVisible: "Bottle added.*"
-- assertVisible: "Bottle, 100 ml"
+- assertVisible: ".*Bottle 100 ml.*"
 - takeScreenshot: day-15-home-after-bottle
 - tapOn:
     id: "log-nappy"

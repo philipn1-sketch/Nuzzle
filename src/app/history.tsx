@@ -168,6 +168,7 @@ export default function History() {
         <PrimaryButton label="Add a feed" onPress={() => router.push('/feed/new')} testID="add-feed" />
         <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' }}>
           <QuietButton label="Add pumping ›" tone="ink" onPress={() => router.push('/entry/new?kind=pump')} testID="log-pump" />
+          <QuietButton label="Daily plan ›" tone="ink" onPress={() => router.push('/plan')} testID="history-plan" />
           <QuietButton label="Add a weight ›" tone="ink" onPress={() => router.push('/entry/new?kind=growth')} testID="add-growth" />
         </View>
       </View>
