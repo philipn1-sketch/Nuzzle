@@ -1,0 +1,38 @@
+/* Nuzzle colour, type and shape tokens, the same values as src/theme.ts. Night is the default;
+   put data-theme="day" on a container for the Day palette. Use these for layout around components. Fonts ship separately (fonts/nunito.css). */
+:root, [data-theme="night"] {
+  --nz-bg: #1A1221;
+  --nz-surface: #2A1E33;
+  --nz-ink: #F4E9EF;
+  --nz-muted: #BBA9C2;
+  --nz-accent: #EBA3B9;
+  --nz-peach: #F4BC9C;
+  --nz-on-accent: #1A1221;
+  --nz-line: #BBA9C240;
+}
+[data-theme="day"] {
+  --nz-bg: #F6EEF3;
+  --nz-surface: #FFF9FB;
+  --nz-ink: #2D1E33;
+  --nz-muted: #6B5872;
+  --nz-accent: #A8456A;
+  --nz-peach: #B0503F;
+  --nz-on-accent: #F6EEF3;
+  --nz-line: #6B587240;
+}
+:root {
+  --nz-font: ui-rounded, 'Nunito', system-ui, sans-serif;
+  --nz-space-xs: 4px;
+  --nz-space-s: 8px;
+  --nz-space-m: 12px;
+  --nz-space-l: 16px;
+  --nz-space-xl: 24px;
+  --nz-space-xxl: 32px;
+  --nz-space-side: 20px;
+  --nz-radius-row: 18px;
+  --nz-radius-card: 28px;
+  --nz-radius-big: 36px;
+  --nz-tap: 56px;
+}
+
+html, body { background: var(--nz-bg); color: var(--nz-ink); font-family: var(--nz-font); }

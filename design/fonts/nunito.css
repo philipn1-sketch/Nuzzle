@@ -1,0 +1,8 @@
+/* Nunito, the open licence (OFL) stand in for Apple's SF Pro Rounded, which only exists on Apple devices. */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 200 1000;
+  font-display: swap;
+  src: url('./Nunito-latin.woff2') format('woff2');
+}

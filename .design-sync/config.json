@@ -1,0 +1,85 @@
+{
+  "projectId": "7c667b77-0a85-455e-aa2a-b48f8e6f1dfd",
+  "shape": "package",
+  "pkg": "nuzzle-design",
+  "globalName": "Nuzzle",
+  "buildCmd": "node design/build.mjs",
+  "entry": "design/dist/index.js",
+  "srcDir": "src",
+  "cssEntry": "styles.css",
+  "docsDir": "docs",
+  "provider": {
+    "component": "NuzzleTheme",
+    "props": {
+      "theme": "night"
+    }
+  },
+  "componentSrcMap": {
+    "TAP": null,
+    "NuzzleTheme": "src/theme-shim.tsx",
+    "T": "../src/components/ui.tsx",
+    "Screen": "../src/components/ui.tsx",
+    "PrimaryButton": "../src/components/ui.tsx",
+    "SecondaryButton": "../src/components/ui.tsx",
+    "QuietButton": "../src/components/ui.tsx",
+    "PillButton": "../src/components/ui.tsx",
+    "TopBar": "../src/components/ui.tsx",
+    "Card": "../src/components/ui.tsx",
+    "Choice": "../src/components/ui.tsx",
+    "Ring": "../src/components/Ring.tsx",
+    "SideButton": "../src/components/SideButton.tsx",
+    "Stepper": "../src/components/Stepper.tsx",
+    "Week": "../src/components/Week.tsx"
+  },
+  "extraFonts": [
+    "fonts/nunito.css"
+  ],
+  "overrides": {
+    "Week": {
+      "cardMode": "single",
+      "primaryStory": "LastSevenDays"
+    },
+    "Screen": {
+      "cardMode": "single",
+      "primaryStory": "EditFeed"
+    },
+    "PillButton": {
+      "cardMode": "column"
+    },
+    "PrimaryButton": {
+      "cardMode": "column"
+    },
+    "QuietButton": {
+      "cardMode": "column"
+    },
+    "SecondaryButton": {
+      "cardMode": "column"
+    },
+    "Ring": {
+      "cardMode": "column"
+    },
+    "SideButton": {
+      "cardMode": "column"
+    },
+    "NuzzleTheme": {
+      "cardMode": "column"
+    },
+    "T": {
+      "cardMode": "column"
+    },
+    "Choice": {
+      "cardMode": "column"
+    },
+    "Stepper": {
+      "cardMode": "column"
+    },
+    "Card": {
+      "cardMode": "column"
+    },
+    "TopBar": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "guidelinesGlob": []
+}
