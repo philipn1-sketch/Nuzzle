@@ -120,8 +120,8 @@ export function nextItem(items: PlanItem[], nowMin: number): PlanItem | null {
 export const defaultPlan = (band: AgeBand): PlanSettings => ({ dayStartMin: 7 * 60, bedtimeMin: 19 * 60, gapMin: band.gapMin, awakeMin: band.awakeMin });
 
 /**
- * A fixed day to follow, from a reference schedule the family follows (2 to 4 weeks), summarised in
- * our own words. Times are minutes after midnight.
+ * Example days to follow, one per age band, written for Nuzzle from public guidance (Raising
+ * Children Network, the NHS, and Red Nose for safe sleep). Times are minutes after midnight.
  */
 export interface ReferenceItem {
   kind: 'feed' | 'play' | 'nap' | 'solids' | 'bath' | 'bedtime';
@@ -146,104 +146,110 @@ export interface ReferenceDay {
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
 
+const SAFE_SLEEP = 'on her back, in her own cot, face and head uncovered';
+
 export const REFERENCE_DAYS: ReferenceDay[] = [
   {
-    id: 'ref-2-4w',
-    label: 'Reference day, 2 to 4 weeks',
-    fromDay: 0, toDay: 28,
-    intro: 'Feeds take about 30 minutes start to finish. Bottles are usually 3 to 4 oz (90 to 120 ml) of breast milk or formula.',
+    id: 'day-0-6w',
+    label: 'Example day, 0 to 6 weeks',
+    fromDay: 0, toDay: 42,
+    intro: 'Newborns feed on cue, often 8 to 12 times in 24 hours, so treat this as a loose shape to hang feeds on rather than a timetable. Awake times are short: 45 minutes to an hour, including the feed.',
     gapMin: 180,
-    night: 'Night feeds on demand, often around midnight to 2 am, and in the first weeks sometimes again around 3 am. Keep night feeds quiet and dim.',
+    night: 'Night feeds whenever she wakes hungry, often every 2 to 4 hours. Keep the light low and talk to a minimum, so night slowly becomes different from day.',
     items: [
-      { kind: 'feed', at: h(6), until: h(7), note: 'First feed of the day, any time between 6 and 7, then back to sleep' },
-      { kind: 'feed', at: h(9), note: 'Feed at 9 whenever the last feed was' },
-      { kind: 'play', at: h(9, 30), note: 'Awake time, 10 to 30 minutes: cuddles and a nappy change' },
-      { kind: 'nap', at: h(9, 45), until: h(10), note: 'Nap, as close to two hours as possible' },
-      { kind: 'feed', at: h(12), note: 'Feed, waking the baby if needed' },
-      { kind: 'play', at: h(12, 30), note: 'Awake time, 10 to 30 minutes' },
-      { kind: 'nap', at: h(12, 45), until: h(13), note: 'Nap, as close to two hours as possible' },
-      { kind: 'feed', at: h(15), note: 'Feed, waking the baby if needed; often more alert and unsettled now' },
-      { kind: 'play', at: h(15, 30), note: 'Awake time, 10 to 30 minutes' },
-      { kind: 'nap', at: h(15, 45), until: h(16), note: 'Nap, as close to two hours as possible' },
-      { kind: 'feed', at: h(18), note: 'Supper feed, then the next feed is the bedtime feed at 9' },
-      { kind: 'play', at: h(18, 30), note: 'Awake time: a few minutes each of bouncer, tummy time and swing' },
-      { kind: 'nap', at: h(18, 45), until: h(19), note: 'Short sleep, about an hour to an hour and a half' },
-      { kind: 'bath', at: h(20, 30), note: 'Bath time' },
-      { kind: 'feed', at: h(21), note: 'Bedtime feed' },
-      { kind: 'bedtime', at: h(21, 30), note: 'Into bed: swaddled, dark room, white noise on' },
+      { kind: 'feed', at: h(7), note: 'Start the day with a feed and open the curtains' },
+      { kind: 'nap', at: h(8), note: 'Sleep once she has been awake about 45 minutes to an hour' },
+      { kind: 'feed', at: h(10), note: 'Feed when she stirs, around now' },
+      { kind: 'play', at: h(10, 30), note: 'A little awake time: nappy change, cuddles, tummy time on your chest' },
+      { kind: 'nap', at: h(11), note: 'Sleep' },
+      { kind: 'feed', at: h(13), note: 'Feed' },
+      { kind: 'nap', at: h(14), note: 'Sleep, in the pram or a carrier if you are out' },
+      { kind: 'feed', at: h(16), note: 'Feed' },
+      { kind: 'nap', at: h(17), note: 'A short sleep if she will take one' },
+      { kind: 'feed', at: h(18), note: 'Evening feeds often bunch together; that is normal at this age' },
+      { kind: 'bath', at: h(19, 30), note: 'Bath or a warm wash, then low light from here' },
+      { kind: 'feed', at: h(20), note: 'Feed in a dim, quiet room' },
+      { kind: 'bedtime', at: h(20, 30), note: `Down for the night ${SAFE_SLEEP}, in your room` },
     ],
   },
   {
-    id: 'ref-4-8w',
-    label: 'Reference day, 4 to 8 weeks',
-    fromDay: 28, toDay: 56,
-    intro: 'Feeds take about 30 minutes start to finish. Bottles are usually 4 to 6 oz (120 to 180 ml) of breast milk or formula.',
+    id: 'day-6-12w',
+    label: 'Example day, 6 to 12 weeks',
+    fromDay: 42, toDay: 84,
+    intro: 'Feeds start to space out to roughly every 3 hours in the day. Awake times stretch to about an hour to an hour and a half, and a longer first stretch of night sleep often appears.',
     gapMin: 180,
-    night: 'Night feeds on demand, often somewhere around 2 to 3 am; one or two a night is still expected. If she settles back to sleep there is no need to wake her. Aim to reach 6:30 or 7 for the next feed, then start the day again.',
+    night: 'Usually one to three night feeds. Feed when she wakes hungry; there is no need to wake her at night unless your nurse has asked you to.',
     items: [
-      { kind: 'feed', at: h(6), until: h(7), note: 'First feed of the day, any time between 6 and 7. A feed from 5:30 counts as this one. Then a nap or quiet awake time until 9' },
-      { kind: 'feed', at: h(9), note: 'Feed at 9 whenever the last feed was' },
-      { kind: 'play', at: h(9, 30), note: 'Awake time, 10 to 30 minutes' },
-      { kind: 'nap', at: h(10), note: 'Nap, as close to two hours as possible' },
-      { kind: 'feed', at: h(12), note: 'Feed, waking the baby if needed' },
-      { kind: 'play', at: h(12, 30), note: 'Awake time, 10 to 30 minutes' },
-      { kind: 'nap', at: h(13), note: 'Nap, as close to two hours as possible' },
-      { kind: 'feed', at: h(15), note: 'Feed, waking the baby if needed; often more alert and fussy than in the morning' },
-      { kind: 'play', at: h(15, 30), note: 'Awake time, 10 to 30 minutes' },
-      { kind: 'nap', at: h(16), note: 'Nap, often closer to an hour and a half' },
-      { kind: 'feed', at: h(17, 30), note: 'Supper feed. After this, the next feed is the bedtime feed at 8:30' },
-      { kind: 'play', at: h(18), note: 'Awake time, often fussy: a few minutes each of bouncer, play mat and swing' },
-      { kind: 'nap', at: h(18, 30), note: 'Short sleep, 45 minutes to an hour and a half' },
-      { kind: 'bath', at: h(20), note: 'Bath time' },
-      { kind: 'feed', at: h(20, 30), note: 'Bedtime feed' },
-      { kind: 'bedtime', at: h(21), note: 'Into bed: swaddled, dark room, white noise on' },
+      { kind: 'feed', at: h(7), note: 'Wake up and feed' },
+      { kind: 'play', at: h(7, 30), note: 'Awake time: chat, songs, a few minutes on her tummy' },
+      { kind: 'nap', at: h(8, 30), note: 'Morning nap' },
+      { kind: 'feed', at: h(10), note: 'Feed' },
+      { kind: 'play', at: h(10, 30), note: 'Awake time; a walk outside helps set her body clock' },
+      { kind: 'nap', at: h(11, 30), note: 'Midday nap, often the longest of the day' },
+      { kind: 'feed', at: h(13), note: 'Feed' },
+      { kind: 'nap', at: h(14, 30), note: 'Afternoon nap' },
+      { kind: 'feed', at: h(16), note: 'Feed' },
+      { kind: 'nap', at: h(17), note: 'A short catnap to make it to bedtime' },
+      { kind: 'bath', at: h(18), note: 'Bath, then a quiet, dim wind down' },
+      { kind: 'feed', at: h(18, 30), note: 'Bedtime feed' },
+      { kind: 'bedtime', at: h(19), note: `Down for the night ${SAFE_SLEEP}` },
     ],
   },
   {
-    id: 'ref-8-16w',
-    label: 'Reference day, 8 to 16 weeks',
-    fromDay: 56, toDay: 112,
-    intro: 'Feeds take about 30 minutes. Bottles are usually 5 to 7 oz (150 to 210 ml). Some babies who are gaining well move to this day from about 6 weeks; if so, start naps about 15 minutes earlier.',
-    gapMin: 180,
-    night: 'Night feeds on demand, often not until after 4 or 5 am now, and more often one a night than two. Some babies sleep through by 8 to 12 weeks. There will still be rough nights.',
+    id: 'day-3-4m',
+    label: 'Example day, 3 to 4 months',
+    fromDay: 84, toDay: 122,
+    intro: 'Feeds are often about 3 to 4 hours apart in the day, and she can stay happily awake for an hour and a half to two hours. Sleep can get unsettled around 4 months for a few weeks; it passes.',
+    gapMin: 210,
+    night: 'Many babies have one or two night feeds now, and some none. Feed when she is hungry.',
     items: [
-      { kind: 'feed', at: h(7), note: 'Feed, then awake and playful until the first nap' },
-      { kind: 'nap', at: h(8, 30), note: 'Nap, close to an hour and a half, up to 10:15 at the latest' },
-      { kind: 'feed', at: h(10), note: 'Feed, then awake and playful until the nap' },
-      { kind: 'nap', at: h(11, 30), note: 'Nap, close to an hour and a half, up to 1:15 at the latest' },
-      { kind: 'feed', at: h(13), note: 'Feed; usually alert and playful, with some fussing' },
-      { kind: 'nap', at: h(14, 30), note: 'Nap, close to an hour and a half' },
-      { kind: 'feed', at: h(16), note: 'Supper feed. After this, the next feed is the bedtime feed at 7' },
-      { kind: 'nap', at: h(17, 30), note: 'Catnap, 45 minutes to an hour; this one often gets harder' },
-      { kind: 'bath', at: h(18, 30), note: 'Bath time' },
+      { kind: 'feed', at: h(7), note: 'Wake up and feed' },
+      { kind: 'play', at: h(7, 30), note: 'Play: floor time, looking at faces and books' },
+      { kind: 'nap', at: h(8, 45), note: 'Morning nap' },
+      { kind: 'feed', at: h(10, 30), note: 'Feed' },
+      { kind: 'nap', at: h(12, 15), note: 'Midday nap' },
+      { kind: 'feed', at: h(14), note: 'Feed' },
+      { kind: 'nap', at: h(15, 45), note: 'A short late afternoon nap' },
+      { kind: 'feed', at: h(17, 30), note: 'Feed' },
+      { kind: 'bath', at: h(18, 30), note: 'Bath and a quiet wind down' },
       { kind: 'feed', at: h(19), note: 'Bedtime feed' },
-      { kind: 'bedtime', at: h(19, 30), note: 'Into bed: dark room, white noise on. Swaddle at night until about 3 months, or sooner if she keeps breaking out' },
+      { kind: 'bedtime', at: h(19, 15), note: `Down for the night ${SAFE_SLEEP}` },
     ],
   },
   {
-    id: 'ref-4-6m',
-    label: 'Reference day, 4 to 6 months',
-    fromDay: 112, toDay: 183,
-    intro: 'Bottles are usually 6 to 8 oz (180 to 240 ml). Solids are optional at this age; if they haven\'t started, skip those times and keep the milk feeds. Amounts of baby food are only a rough guide.',
+    id: 'day-4-6m',
+    label: 'Example day, 4 to 6 months',
+    fromDay: 122, toDay: 183,
+    intro: 'Milk feeds are often about 4 hours apart, with two to three naps. Solids usually start at around 6 months, when she can sit with support and shows interest in food; milk stays her main food.',
     gapMin: 240,
-    night: 'Many babies sleep through the night by now. The swaddle should be off at night from around 3 months.',
+    night: 'Some babies sleep through by now and some still wake once or twice to feed. Both are normal.',
     items: [
-      { kind: 'feed', at: h(7), note: 'Wakes up; breast or bottle feed' },
-      { kind: 'solids', at: h(8), note: 'If solids have started: a little fruit and 1 to 2 tablespoons of baby cereal. A sippy cup can start here' },
-      { kind: 'nap', at: h(9), note: 'Nap' },
-      { kind: 'feed', at: h(11), note: 'Breast or bottle feed' },
-      { kind: 'solids', at: h(12), note: 'If solids have started: some vegetables and fruit, maybe a little cereal and a sippy cup' },
-      { kind: 'nap', at: h(12, 30), until: h(13, 30), note: 'Nap. Pick one time between 12:30 and 1:30 and keep to it each day' },
-      { kind: 'feed', at: h(15), note: 'Breast or bottle feed' },
-      { kind: 'solids', at: h(16), note: 'If solids have started: vegetables and fruit, with a sippy cup of milk' },
-      { kind: 'nap', at: h(17), note: 'A short catnap, if she needs one' },
-      { kind: 'play', at: h(18), note: 'Awake until bath time; 10 minutes of tummy time helps' },
-      { kind: 'bath', at: h(18, 30), note: 'Bath time' },
-      { kind: 'feed', at: h(19), note: 'Bedtime feed; she should be hungry for this one' },
-      { kind: 'bedtime', at: h(19, 30), note: 'Into bed for the night' },
+      { kind: 'feed', at: h(7), note: 'Wake up and feed' },
+      { kind: 'play', at: h(7, 30), note: 'Play time; she can stay awake about two hours now' },
+      { kind: 'nap', at: h(9), note: 'Morning nap' },
+      { kind: 'feed', at: h(11), note: 'Feed' },
+      { kind: 'nap', at: h(13), note: 'Afternoon nap' },
+      { kind: 'feed', at: h(15), note: 'Feed' },
+      { kind: 'nap', at: h(16, 30), note: 'A short catnap, if she needs one' },
+      { kind: 'solids', at: h(17, 30), note: 'If solids have started: a few spoons of a first food, after a milk feed' },
+      { kind: 'bath', at: h(18, 15), note: 'Bath and wind down' },
+      { kind: 'feed', at: h(18, 45), note: 'Bedtime feed' },
+      { kind: 'bedtime', at: h(19, 15), note: `Down for the night ${SAFE_SLEEP}` },
     ],
   },
 ];
+
+/** Days saved before these example days were written point at the closest new one. */
+const RENAMED: Record<string, string> = {
+  'ref-2-4w': 'day-0-6w',
+  'ref-4-8w': 'day-6-12w',
+  'ref-8-16w': 'day-3-4m',
+  'ref-4-6m': 'day-4-6m',
+};
+
+/** The reference day a plan follows, also for ids saved by an older version. */
+export const referenceById = (id: string | undefined): ReferenceDay | null =>
+  id ? REFERENCE_DAYS.find((r) => r.id === (RENAMED[id] ?? id)) ?? null : null;
 
 /** The reference day that suits a baby's age, or the first one when the birthday isn't set. */
 export function referenceFor(birthday: number | null, now: number): ReferenceDay {
@@ -252,14 +258,14 @@ export function referenceFor(birthday: number | null, now: number): ReferenceDay
   return REFERENCE_DAYS.find((r) => days >= r.fromDay && days < r.toDay) ?? REFERENCE_DAYS[REFERENCE_DAYS.length - 1];
 }
 
-/** How to bend a reference day without losing it, from the same guide, in our own words. */
+/** Ways to keep a plan useful on real days. */
 export const FLEXIBILITY_TIPS: string[] = [
-  'Any single time can move 15 minutes earlier or later without moving the rest of the day.',
-  'The whole day can shift up to an hour earlier or later. Bath and bed can move up to an hour later on their own.',
-  'If the day goes sideways, aim for the supper feed and the bedtime feed. Any feed time is a fresh start.',
-  'Out at a feed time? Wake, change and feed early, head out, then pick up again at the next feed time.',
-  'Nap on the go: if more than half the nap is left when you get home, try putting her down; if not, wait for the next feed.',
-  'Late night out: give the bedtime feed wherever you are, then at home a quick change, a top up feed and into bed.',
+  'These times are a guide. If she shows hunger cues, feed her, whatever the plan says.',
+  'Keeping the first feed and bedtime about the same each day matters more than any single time in between.',
+  'A short nap or an early feed is fine: pick the plan up again at the next feed.',
+  'Days out and visitors happen. Feed and sleep wherever you are, and start fresh tomorrow.',
+  'Safe sleep, every sleep: on her back, in her own cot, face and head uncovered, in a smoke free home.',
+  'Worried about feeds, weight or wet nappies? Your child health nurse or GP can help.',
 ];
 
 /** The first item still to come, given the minutes after midnight now. A window counts until it closes. */
@@ -283,7 +289,7 @@ export interface DayStep {
 }
 
 export function planSteps(p: PlanSettings): DayStep[] {
-  const ref = p.referenceId ? REFERENCE_DAYS.find((r) => r.id === p.referenceId) : undefined;
+  const ref = referenceById(p.referenceId);
   if (ref) {
     const word = { feed: 'Feed', play: 'Awake time', nap: 'Nap', solids: 'Solids', bath: 'Bath', bedtime: 'Bed' } as const;
     return ref.items.map((i) => ({ at: i.at, label: word[i.kind], feed: i.kind === 'feed' }));

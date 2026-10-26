@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Week } from '../components/Week';
+import { PlusCard } from '../components/PlusGate';
 import { Choice, PillButton, PrimaryButton, QuietButton, Screen, SnackbarSlot, T, TopBar } from '../components/ui';
 import { dayKey, dayStartOf, feedStart, groupByDay, sideRuns, totalMs, type DayGroup } from '../core/feeds';
 import { entryDetail, entryTitle, nappyCount, nappyLine, sortedEntries, type NappyCount } from '../core/entries';
@@ -17,7 +18,7 @@ type Row = { kind: 'day'; day: Day } | { kind: 'feed'; feed: Feed } | { kind: 'e
 
 /** Every saved feed, grouped by the day it started, newest first. */
 export default function History() {
-  const { feeds, entries, settings } = useApp();
+  const { feeds, entries, settings, plus } = useApp();
   const [view, setView] = useState<'list' | 'week'>('list');
   const now = useNow(30_000);
   const p = usePalette();
@@ -56,7 +57,7 @@ export default function History() {
       </View>
       {view === 'week' ? (
         <ScrollView contentContainerStyle={styles.list}>
-          <Week feeds={feeds} now={now} units={settings.units} />
+          {plus ? <Week feeds={feeds} now={now} units={settings.units} /> : <PlusCard feature="insights" />}
         </ScrollView>
       ) : (
       <FlatList

@@ -25,6 +25,7 @@ function Themed() {
         <Stack.Screen name="settings" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="entry/[id]" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="welcome" options={{ animation: 'fade', gestureEnabled: false }} />
+        <Stack.Screen name="plus" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
         <Stack.Screen name="plan" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="summary" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="action" options={{ animation: 'none' }} />

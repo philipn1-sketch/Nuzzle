@@ -8,6 +8,7 @@ import { CODE_LENGTH, cleanCode, isCode, makeCode, showCode } from '../core/sync
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, TAP, type } from '../theme';
+import { PlusCard } from './PlusGate';
 import { QuietButton, SecondaryButton, T } from './ui';
 
 /**
@@ -15,7 +16,7 @@ import { QuietButton, SecondaryButton, T } from './ui';
  * types it in. Both then keep the same feeds, and the online copy is the backup.
  */
 export function SyncSection() {
-  const { sync, startSync, stopSync, syncNow, settings, updateSettings } = useApp();
+  const { sync, startSync, stopSync, syncNow, settings, updateSettings, plus } = useApp();
   const p = usePalette();
   const now = useNow(30_000);
   const [joining, setJoining] = useState(false);
@@ -24,6 +25,16 @@ export function SyncSection() {
 
   if (!sync.available) {
     return <T tone="muted" style={type.label}>Backup and sharing with a second phone aren't set up in this build yet.</T>;
+  }
+
+  if (!plus && !sync.code) return <PlusCard feature="sharing" />;
+  if (!plus) {
+    return (
+      <View style={{ gap: space.s }}>
+        <T style={type.label}>Sharing is paused. Your feeds are safe on this phone, and sharing picks up again with Nuzzle Plus.</T>
+        <PlusCard feature="sharing" />
+      </View>
+    );
   }
 
   if (sync.code) {

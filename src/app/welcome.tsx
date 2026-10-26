@@ -219,7 +219,7 @@ export default function Welcome() {
               )}
               {!waitingForFamily && (
                 <>
-                  <PlanOption label="Follow the reference day" detail={`An example day for ${forAge.label.replace('Reference day, ', '')}. Feeds around ${feedWords}, with naps between.`} on={pick === 'ref'} onPress={() => setPick('ref')} testID="welcome-plan-ref" />
+                  <PlanOption label="Follow an example day" detail={`An example day for ${forAge.label.replace('Example day, ', '')}. Feeds around ${feedWords}, with naps between.`} on={pick === 'ref'} onPress={() => setPick('ref')} testID="welcome-plan-ref" />
                   <PlanOption label="Build my own" detail="Set the first feed, bedtime and the time between feeds. Starts from typical times for the age." on={pick === 'own'} onPress={() => setPick('own')} testID="welcome-plan-own" />
                   <PlanOption label="No plan for now" detail="Just track feeds. Turn a plan on later in Settings, under Daily plan and examples by age." on={pick === 'none'} onPress={() => setPick('none')} testID="welcome-plan-none" />
                   <T tone="muted" style={type.label}>These are examples, not advice. Feeding when {name} shows hunger comes first.</T>

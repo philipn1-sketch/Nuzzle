@@ -11,6 +11,7 @@ import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from 
 import { feedsToCsv } from '../core/csv';
 import { dayStartOf } from '../core/feeds';
 import { ageText, clockTime, span } from '../core/format';
+import { plusStatus } from '../core/plus';
 import { babyName } from '../core/reminder';
 import type { ClockReminder, ThemeChoice, Units } from '../core/types';
 import { hasData, useApp } from '../state/AppState';
@@ -20,7 +21,7 @@ import { line, radius, space, TAP, type } from '../theme';
 const wrapMin = (m: number) => ((m % 1440) + 1440) % 1440;
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync } = useApp();
+  const { settings, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync, plus } = useApp();
   const p = usePalette();
   const now = Date.now();
   const [calendarFor, setCalendarFor] = useState<string | null>(null);
@@ -51,6 +52,10 @@ export default function SettingsScreen() {
     <Screen>
       <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Settings" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Section label="Nuzzle Plus">
+          <T tone="muted" style={type.label}>{plusStatus(settings, now)}</T>
+          <QuietButton label={settings.plus?.owned ? 'What Nuzzle Plus includes ›' : 'See Nuzzle Plus ›'} tone="ink" onPress={() => router.push('/plus')} style={styles.left} testID="open-plus" />
+        </Section>
         {settings.babies.map((b, i) => {
           const many = settings.babies.length > 1;
           const canRemove = many && !hasData(allFeeds, allEntries, settings, b.id);
@@ -98,7 +103,7 @@ export default function SettingsScreen() {
         })}
         <View style={[styles.section, { borderBottomColor: line(p) }]}>
           <QuietButton label="Daily plan and examples by age ›" tone="ink" onPress={() => router.push('/plan')} style={styles.left} testID="open-plan" />
-          <QuietButton label="Add another baby ›" tone="ink" onPress={addBaby} style={styles.left} testID="add-baby" />
+          <QuietButton label={plus ? 'Add another baby ›' : 'Add another baby (Nuzzle Plus) ›'} tone="ink" onPress={plus ? addBaby : () => router.push('/plus?feature=babies')} style={styles.left} testID="add-baby" />
           <QuietButton label="Go through the setup questions again ›" tone="ink" onPress={() => router.push('/welcome')} style={styles.left} testID="open-welcome" />
         </View>
 
@@ -126,7 +131,10 @@ export default function SettingsScreen() {
             </View>
           )}
           <T style={{ marginTop: space.s }}>Also remind me every day at</T>
-          {settings.clockReminders.map((c, i) => (
+          {!plus && (
+            <QuietButton label="Daily reminders at set times (Nuzzle Plus) ›" tone="ink" onPress={() => router.push('/plus?feature=clock')} style={styles.left} testID="add-clock" />
+          )}
+          {plus && settings.clockReminders.map((c, i) => (
             <View key={i} style={styles.clockRow}>
               <View style={{ flex: 1 }}>
                 <Stepper
@@ -139,7 +147,7 @@ export default function SettingsScreen() {
               <QuietButton label="Remove" onPress={() => setClock(i, null)} />
             </View>
           ))}
-          {settings.clockReminders.length < 8 && (
+          {plus && settings.clockReminders.length < 8 && (
             <QuietButton label="Add a time ›" tone="ink" onPress={addClock} style={styles.left} testID="add-clock" />
           )}
           <T style={{ marginTop: space.s }}>Quiet hours</T>

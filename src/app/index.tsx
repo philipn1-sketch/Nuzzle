@@ -44,7 +44,7 @@ export default function Home() {
   const nappies = nappyCount(app.entries, dayStartOf(now), dayStartOf(now, -1));
   const plan = app.baby.plan;
   const nowDate = new Date(now);
-  const step = planIsOn(plan) ? nextStep(plan, nowDate.getHours() * 60 + nowDate.getMinutes()) : null;
+  const step = app.plus && planIsOn(plan) ? nextStep(plan, nowDate.getHours() * 60 + nowDate.getMinutes()) : null;
 
   const sideState = (side: Side): SideState => {
     if (active) {

@@ -2,11 +2,12 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { PlusCard } from '../components/PlusGate';
 import { Stepper } from '../components/Stepper';
 import { Card, Choice, PillButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import { ageText, clockTime, span } from '../core/format';
 import {
-  AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, nextReference, FLEXIBILITY_TIPS, REFERENCE_DAYS, referenceFeedTimes, referenceFor, type PlanSettings,
+  AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, nextReference, FLEXIBILITY_TIPS, REFERENCE_DAYS, referenceById, referenceFeedTimes, referenceFor, type PlanSettings,
 } from '../core/plan';
 import { babyName } from '../core/reminder';
 import { useApp, useNow } from '../state/AppState';
@@ -21,7 +22,7 @@ const at = (m: number) => clockTime(Math.floor(m / 60), m % 60);
  * common published guides and are a starting point only.
  */
 export default function Plan() {
-  const { baby, settings, updateSettings, updateBaby, permission, askNotifications } = useApp();
+  const { baby, settings, updateSettings, updateBaby, permission, askNotifications, plus } = useApp();
   const now = useNow(60_000);
   const p = usePalette();
   const name = babyName(baby);
@@ -36,7 +37,7 @@ export default function Plan() {
   const items = buildPlan(plan);
   const d = new Date(now);
   const next = nextItem(items, d.getHours() * 60 + d.getMinutes());
-  const ref = plan.referenceId ? REFERENCE_DAYS.find((r) => r.id === plan.referenceId) ?? null : null;
+  const ref = referenceById(plan.referenceId);
   const gapMin = ref ? ref.gapMin : plan.gapMin;
   const usingGap = settings.intervalMin === gapMin;
   const nowMin = d.getHours() * 60 + d.getMinutes();
@@ -46,7 +47,7 @@ export default function Plan() {
   const planReminders = settings.planReminders?.includes(baby.id) === true;
   const forAge = referenceFor(baby.birthday, now);
   const refIndex = ref ? REFERENCE_DAYS.indexOf(ref) : -1;
-  const ageWord = (r: { label: string }) => r.label.replace('Reference day, ', '');
+  const ageWord = (r: { label: string }) => r.label.replace('Example day, ', '');
 
   const rows: [string, string][] = [
     ['Feeds', band.feedsPerDay],
@@ -55,6 +56,15 @@ export default function Plan() {
     ['Naps', band.naps],
     ['Sleep', band.sleep],
   ];
+
+  if (!plus) {
+    return (
+      <Screen>
+        <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Daily plan" />
+        <View style={{ paddingHorizontal: space.side }}><PlusCard feature="plan" /></View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -115,14 +125,14 @@ export default function Plan() {
           label="Plan"
           value={ref ? 'ref' : 'own'}
           onChange={(v) => setPlan({ referenceId: v === 'ref' ? forAge.id : undefined })}
-          options={[{ value: 'own', label: 'Build my own' }, { value: 'ref', label: 'Reference day' }]}
+          options={[{ value: 'own', label: 'Build my own' }, { value: 'ref', label: 'Example day' }]}
         />
 
         {ref ? (
           <>
-            <Row label="Reference day for">
+            <Row label="Example day for">
               <Stepper
-                label="Reference day for age"
+                label="Example day for age"
                 testID="ref-age"
                 display={ageWord(ref)}
                 onStep={(dir) => {
@@ -168,7 +178,7 @@ export default function Plan() {
               })}
             </View>
             <T tone="muted" style={type.label}>{ref.night}</T>
-            <T style={type.title} accessibilityRole="header">Bending the day</T>
+            <T style={type.title} accessibilityRole="header">Making it work</T>
             <View style={{ gap: space.s }}>
               {FLEXIBILITY_TIPS.map((t) => (
                 <T key={t} tone="muted" style={type.label}>{t}</T>

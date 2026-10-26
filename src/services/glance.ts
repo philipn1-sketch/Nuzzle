@@ -7,9 +7,12 @@ import NuzzleWidget, { type WidgetProps } from '../widgets/NuzzleWidget';
 
 let lastWidget = '';
 
-/** Sends the latest numbers to the home screen widget, only when they changed. */
-export function updateWidget(props: WidgetProps): void {
-  const key = JSON.stringify(props);
+/**
+ * Sends the latest numbers to the home screen widget, only when they changed. `lockAt` is when the
+ * free week ends: the widget switches to its locked face then, even if the app isn't opened.
+ */
+export function updateWidget(props: WidgetProps, lockAt: number | null = null): void {
+  const key = JSON.stringify([props, lockAt]);
   if (key === lastWidget || Platform.OS !== 'ios') return;
   lastWidget = key;
   try {
@@ -17,7 +20,10 @@ export function updateWidget(props: WidgetProps): void {
     // "Past your 2h window" right on time even if the app is never opened
     const now = Date.now();
     const ends = [...new Set(props.babies.map((b) => b.dueAt).filter((t) => t > now))].sort((a, b) => a - b);
-    NuzzleWidget.updateTimeline([{ date: new Date(now), props }, ...ends.map((t) => ({ date: new Date(t), props }))]);
+    const open = lockAt !== null && lockAt > now ? ends.filter((t) => t < lockAt) : ends;
+    const entries = [{ date: new Date(now), props }, ...open.map((t) => ({ date: new Date(t), props }))];
+    if (lockAt !== null && lockAt > now) entries.push({ date: new Date(lockAt), props: { ...props, locked: true } });
+    NuzzleWidget.updateTimeline(entries);
   } catch {
     // no widget support on this phone: the app works the same without it
   }

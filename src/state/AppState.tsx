@@ -7,6 +7,7 @@ import {
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
 import { planFeedAlerts, planIsOn } from '../core/plan';
+import { hasPlus, trialEndsAt } from '../core/plus';
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
@@ -74,6 +75,8 @@ interface AppStateValue {
   /** Only a baby with no feeds can be removed, so nothing is ever lost. */
   removeBaby: (id: string) => void;
   askReminders: () => Promise<void>;
+  /** Nuzzle Plus is on: bought, a gift, or in the free week. */
+  plus: boolean;
   /** Asks for notifications without changing which reminders are on. */
   askNotifications: () => Promise<void>;
   sync: SyncStatus;
@@ -133,7 +136,13 @@ function runningText(f: Feed): string {
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [allFeeds, setAllFeeds] = useState<Feed[]>(() => db.loadFeeds());
-  const [settings, setSettings] = useState<Settings>(() => migrateSettings(db.loadSettings()));
+  const [settings, setSettings] = useState<Settings>(() => {
+    const raw = db.loadSettings();
+    const s = migrateSettings(raw);
+    // the free week starts on first launch; saved now so a restart can't start it again
+    if (raw.plus === undefined) db.putSettings(s);
+    return s;
+  });
   const baby = activeBaby(settings);
   const feeds = useMemo(() => feedsOf(allFeeds, settings, baby.id), [allFeeds, settings, baby.id]);
   const [allEntries, setAllEntries] = useState<Entry[]>(() => db.loadEntries());
@@ -214,7 +223,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const others = settings.babies
       .filter((b) => b.id !== baby.id)
       .map((b) => ({ ...glanceProps(feedsOf(allFeeds, settings, b.id), babyName(b), settings.units, now, settings.intervalMin), babyId: b.id }));
-    glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others] });
+    // the home screen widget is part of Nuzzle Plus; in the free week it locks itself when the week ends
+    const plusNow = hasPlus(settings, now);
+    const trialEnd = settings.plus?.owned ? null : trialEndsAt(settings);
+    glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others], locked: !plusNow }, plusNow && trialEnd !== null ? trialEnd : null);
     glance.offerBabies(settings.babies);
     // the same numbers go to the Watch and to Siri
     nuzzleNative.setGlance(JSON.stringify(shown));
@@ -230,7 +242,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-    const clock = settings.clockReminders.map((c) => ({
+    const clock = (plusNow ? settings.clockReminders : []).map((c) => ({
       ...c,
       body: `Your ${clockTime(c.hour, c.minute)} reminder.`,
       silent: inQuiet(new Date(2000, 0, 1, c.hour, c.minute).getTime(), settings.quiet),
@@ -240,7 +252,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const planFeeds: notify.Planned[] = [];
     for (const b of settings.babies) {
       const plan = b.plan;
-      if (!planIsOn(plan) || !settings.planReminders?.includes(b.id)) continue;
+      if (!plusNow || !planIsOn(plan) || !settings.planReminders?.includes(b.id)) continue;
       const mine = feedsOf(allFeeds, settings, b.id);
       const latest = activeFeed(mine) ?? lastSaved(mine);
       const interval = plans.find((x) => x.babyId === b.id)?.at;
@@ -530,7 +542,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const runSync = useCallback(async () => {
     const p = progressRef.current;
-    if (!p || !syncAvailable) return;
+    // sharing is part of Nuzzle Plus; without it the feeds stay safe here and sharing picks up when it returns
+    if (!p || !syncAvailable || !hasPlus(settingsRef.current, Date.now())) return;
     if (busy.current) {
       again.current = true;
       return;
@@ -621,14 +634,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     updateSettings({ reminderAsked: true, remindersOn: true });
   }, [updateSettings]);
 
+  const plus = hasPlus(settings, Date.now());
+
   const value = useMemo<AppStateValue>(
     () => ({
-      feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
+      plus, feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
       tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, askNotifications, hideSnack,
       sync, startSync, stopSync, syncNow: runSync,
       entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep,
     }),
-    [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
+    [plus, feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
       updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, askNotifications, hideSnack, sync, startSync, stopSync, runSync,
       entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep],
   );

@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { PlusCard } from '../components/PlusGate';
 import { Choice, PillButton, PrimaryButton, Screen, SnackbarSlot, T, TopBar } from '../components/ui';
 import { ageText, amount, mins, span } from '../core/format';
 import { babyName } from '../core/reminder';
@@ -13,7 +14,7 @@ import { shareSummaryPdf } from '../services/summary';
 
 /** A page to show at a check up: what was logged, day by day. Only what she recorded, never advice. */
 export default function Summary() {
-  const { feeds, entries, settings, baby } = useApp();
+  const { feeds, entries, settings, baby, plus } = useApp();
   const now = useNow(60_000);
   const p = usePalette();
   const [days, setDays] = useState<'7' | '14'>('7');
@@ -29,6 +30,15 @@ export default function Summary() {
     setBusy(false);
   };
   const dayName = (t: number) => new Date(t).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+
+  if (!plus) {
+    return (
+      <Screen>
+        <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Summary" />
+        <View style={{ paddingHorizontal: space.side }}><PlusCard feature="insights" /></View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>

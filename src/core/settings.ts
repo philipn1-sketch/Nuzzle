@@ -35,6 +35,8 @@ export function migrateSettings(raw: Record<string, unknown>): Settings {
   if (s.planReminders === undefined) {
     s.planReminders = s.babies.filter((b) => b.plan?.reminders).map((b) => b.id);
   }
+  // families here before Nuzzle Plus keep everything; a new install starts its free week now
+  if (raw.plus === undefined) s.plus = Object.keys(raw).length > 0 ? { owned: 'gift' } : { trialStartedAt: Date.now() };
   // anyone who already had settings saved was using the app before the welcome questions existed
   if (raw.onboarded === undefined) s.onboarded = Object.keys(raw).length > 0;
   return s;

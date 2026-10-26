@@ -126,6 +126,8 @@ export interface Settings {
   plans?: Record<string, BabyPlan>;
   /** Babies whose plan feed times ring on this phone. Each phone chooses for itself. */
   planReminders?: string[];
+  /** Nuzzle Plus: the free week and anything bought. */
+  plus?: import('./plus').PlusState;
   /** She has sent or saved the family code somewhere off this phone. */
   codeSaved?: boolean;
   /** The first launch questions were answered or skipped. */

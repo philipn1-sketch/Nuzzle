@@ -9,6 +9,8 @@ import type { GlanceProps } from '../core/glance';
 /** Every baby's numbers, the baby on screen first; each widget shows the baby picked when it was set up. */
 export interface WidgetProps {
   babies: (GlanceProps & { babyId: string })[];
+  /** Without Nuzzle Plus the widget shows a short note instead of the numbers. */
+  locked?: boolean;
 }
 type WidgetConfig = { baby: string };
 
@@ -31,6 +33,18 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   const sideColor = props.next === 'Left' ? c.left : c.right;
   const rounded = (size: number, weight: 'medium' | 'semibold' | 'bold' = 'semibold') => font({ size, weight, design: 'rounded' });
   const family = env.widgetFamily ?? 'systemSmall';
+  if (all.locked) {
+    if (family === 'accessoryInline' || family === 'accessoryCircular' || family === 'accessoryRectangular') {
+      return <Text modifiers={[rounded(13, 'semibold'), widgetURL('nuzzle://plus')]}>Nuzzle Plus</Text>;
+    }
+    return (
+      <VStack alignment="leading" spacing={6} modifiers={[frame({ maxWidth: 2000, maxHeight: 2000, alignment: 'topLeading' }), containerBackground(c.bg, 'widget'), widgetURL('nuzzle://plus')]}>
+        <Text modifiers={[rounded(17, 'bold'), foregroundStyle(c.ink)]}>Nuzzle</Text>
+        <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted)]}>The widget is part of Nuzzle Plus. Tap to open the app.</Text>
+        <Spacer />
+      </VStack>
+    );
+  }
   const feeding = props.feeding !== '';
   const hasLast = props.lastStart > 0;
   const day = 86_400_000;
