@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { CalendarSheet } from '../../components/CalendarSheet';
 import { Stepper } from '../../components/Stepper';
 import { Choice, PillButton, PrimaryButton, QuietButton, Screen, T, TopBar } from '../../components/ui';
 import { draftFrom, effectiveEndSide, feedStart, lastBreast, other, type FeedDraft } from '../../core/feeds';
@@ -33,6 +34,7 @@ export default function FeedEditor() {
     };
   });
   const [problem, setProblem] = useState<string | null>(null);
+  const [calendar, setCalendar] = useState(false);
 
   const set = (patch: Partial<FeedDraft>) => {
     setProblem(null);
@@ -88,6 +90,22 @@ export default function FeedEditor() {
               d.setDate(d.getDate() + dir); // a calendar day, so daylight saving changes don't move the time
               if (d.getTime() <= now + MIN) set({ start: d.getTime() });
             }}
+            onPressValue={() => setCalendar(true)}
+          />
+          <CalendarSheet
+            visible={calendar}
+            title="Which day?"
+            value={day0}
+            max={today0}
+            onDone={(day) => {
+              // the chosen day at the same clock time
+              const t = new Date(draft.start);
+              const d = new Date(day);
+              d.setHours(t.getHours(), t.getMinutes(), 0, 0);
+              set({ start: Math.min(d.getTime(), now) });
+              setCalendar(false);
+            }}
+            onCancel={() => setCalendar(false)}
           />
         </Row>
         <Row label={isBottle ? 'At' : 'Started at'}>

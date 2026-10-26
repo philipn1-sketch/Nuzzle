@@ -1,9 +1,11 @@
 import Constants from 'expo-constants';
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { Linking, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { Stepper } from '../components/Stepper';
 import { SyncSection } from '../components/SyncSection';
+import { CalendarSheet } from '../components/CalendarSheet';
 import { Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from '../config';
 import { feedsToCsv } from '../core/csv';
@@ -21,6 +23,7 @@ export default function SettingsScreen() {
   const { settings, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync } = useApp();
   const p = usePalette();
   const now = Date.now();
+  const [calendarFor, setCalendarFor] = useState<string | null>(null);
 
   const exportCsv = () => {
     const first = settings.babies[0];
@@ -76,6 +79,18 @@ export default function SettingsScreen() {
                   const next = b.birthday === null ? today : dayStartOf(b.birthday, -dir * (fast ? 7 : 1));
                   if (next <= today) updateBaby(b.id, { birthday: next });
                 }}
+                onPressValue={() => setCalendarFor(b.id)}
+              />
+              <CalendarSheet
+                visible={calendarFor === b.id}
+                title={`${b.name.trim() || 'Baby'}'s birthday`}
+                value={b.birthday ?? dayStartOf(now)}
+                max={dayStartOf(now)}
+                onDone={(day) => {
+                  updateBaby(b.id, { birthday: dayStartOf(day) });
+                  setCalendarFor(null);
+                }}
+                onCancel={() => setCalendarFor(null)}
               />
               {canRemove && <QuietButton label="Remove this baby" onPress={() => removeBaby(b.id)} style={styles.left} />}
             </Section>

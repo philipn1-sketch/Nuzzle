@@ -10,12 +10,14 @@ import { T } from './ui';
  * is given the number itself can be tapped to type. Works as an adjustable control for VoiceOver and TalkBack.
  */
 export function Stepper({
-  label, display, onStep, onType, numeric, testID,
+  label, display, onStep, onType, onPressValue, numeric, testID,
 }: {
   label: string;
   display: string;
   onStep: (dir: 1 | -1, fast: boolean) => void;
   onType?: (n: number) => void;
+  /** Tapping the value itself, for example to open a calendar. */
+  onPressValue?: () => void;
   numeric?: number;
   testID?: string;
 }) {
@@ -108,7 +110,12 @@ export function Stepper({
           />
         ) : (
           // opens empty (the old value shows as a hint), so what she types replaces it; iPhone won't select the old number
-          <Pressable disabled={!onType} onPress={() => setTyping('')} testID={testID ? `${testID}-value` : undefined}>
+          <Pressable
+            disabled={!onType && !onPressValue}
+            onPress={() => (onPressValue ? onPressValue() : setTyping(''))}
+            accessibilityHint={onPressValue ? 'Opens a calendar' : undefined}
+            testID={testID ? `${testID}-value` : undefined}
+          >
             <T style={[type.title, { textAlign: 'center', fontVariant: ['tabular-nums'] }]}>{display}</T>
           </Pressable>
         )}
