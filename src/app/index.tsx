@@ -40,7 +40,7 @@ export default function Home() {
   // while a feed runs the sleep bar steps aside for the ring; the Woke up button moves to the row below
   const sleepBar = sleeping !== null && !active;
   const nappies = nappyCount(app.entries, dayStartOf(now), dayStartOf(now, -1));
-  const plan = settings.plans?.[app.baby.id];
+  const plan = app.baby.plan;
   const nowDate = new Date(now);
   const step = planIsOn(plan) ? nextStep(plan, nowDate.getHours() * 60 + nowDate.getMinutes()) : null;
 
@@ -183,6 +183,9 @@ export default function Home() {
                 Next in the plan: {step.label} at {clockTime(Math.floor(step.at / 60), step.at % 60)}
               </T>
             </Pressable>
+          )}
+          {app.sync.code && !settings.codeSaved && !compact && !active && (
+            <QuietButton label="Save your family code somewhere safe ›" tone="ink" onPress={() => router.push('/settings')} testID="save-code-home" />
           )}
           {nappies.total > 0 && !compact && (
             <T tone="muted" style={[type.label, styles.centreText]} testID="nappies-today">

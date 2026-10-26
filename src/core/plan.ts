@@ -1,3 +1,5 @@
+import type { BabyPlan } from './types';
+
 /**
  * Example rhythms by age, from common published baby care guides (child health services, NHS and
  * similar). They are typical ranges to start from, not advice for any one baby: newborns are fed
@@ -177,8 +179,8 @@ export function nextReference(items: ReferenceItem[], nowMin: number): Reference
 /** The daytime feed times, for reminders: the start of each feed window. */
 export const referenceFeedTimes = (day: ReferenceDay): number[] => day.items.filter((i) => i.kind === 'feed').map((i) => i.at);
 
-/** A plan as saved for a baby. `on` is missing on plans saved before it could be turned off: they count as on. */
-export type SavedPlan = PlanSettings & { on?: boolean; reminders?: boolean };
+/** A plan as saved for a baby. */
+export type SavedPlan = BabyPlan;
 
 export const planIsOn = (p: SavedPlan | undefined): p is SavedPlan => !!p && p.on !== false;
 
@@ -200,6 +202,32 @@ export function planSteps(p: PlanSettings): DayStep[] {
 
 /** The plan's feed times, for reminders. */
 export const planFeedTimes = (p: PlanSettings): number[] => planSteps(p).filter((s) => s.feed).map((s) => s.at);
+
+/** A plan feed time this soon after a feed started is skipped: she has just fed. */
+export const PLAN_SKIP_MIN = 60;
+
+/**
+ * When to ring for the plan's feeds over the next `days` days, as times in ms. A plan time is
+ * skipped when the last feed started within an hour before it, so a feed that came a little early
+ * doesn't get a second reminder.
+ */
+export function planFeedAlerts(p: PlanSettings, now: number, lastStart: number | null, days = 2): number[] {
+  const out: number[] = [];
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+  for (let d = 0; d < days; d += 1) {
+    for (const m of planFeedTimes(p)) {
+      const day = new Date(midnight);
+      day.setDate(day.getDate() + d);
+      day.setHours(Math.floor(m / 60), m % 60, 0, 0);
+      const t = day.getTime();
+      if (t <= now) continue;
+      if (lastStart !== null && t >= lastStart && t - lastStart < PLAN_SKIP_MIN * 60_000) continue;
+      out.push(t);
+    }
+  }
+  return out;
+}
 
 /** The next thing in the plan today, skipping awake time. */
 export const nextStep = (p: PlanSettings, nowMin: number): DayStep | null =>

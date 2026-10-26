@@ -9,6 +9,8 @@ export type Permission = 'granted' | 'denied' | 'undetermined';
 const REMINDER = 'feed-reminder';
 const RUNNING = 'feed-running';
 const CLOCK = 'clock-reminder';
+// one per plan feed time still to come: `plan-feed:b1:1730000000000`
+const PLAN_FEED = 'plan-feed';
 
 /** Reminders ring and show as a banner; the running feed notice sits quietly on the lock screen. */
 export async function setUpNotifications(): Promise<void> {
@@ -59,12 +61,20 @@ export interface Planned {
 let queue: Promise<void> = Promise.resolve();
 
 /** One at a time, so an older call can never finish after a newer one and leave a stale reminder. */
-export function syncReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
-  queue = queue.catch(() => {}).then(() => applyReminders(plans, clock));
+export function syncReminders(
+  plans: Planned[],
+  clock: { hour: number; minute: number; body: string; silent?: boolean }[],
+  planFeeds: Planned[] = [],
+): Promise<void> {
+  queue = queue.catch(() => {}).then(() => applyReminders(plans, clock, planFeeds));
   return queue;
 }
 
-async function applyReminders(plans: Planned[], clock: { hour: number; minute: number; body: string; silent?: boolean }[]): Promise<void> {
+async function applyReminders(
+  plans: Planned[],
+  clock: { hour: number; minute: number; body: string; silent?: boolean }[],
+  planFeeds: Planned[],
+): Promise<void> {
   const queued = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
   const granted = (await permission()) === 'granted';
   const keep = new Set<string>();
@@ -90,8 +100,19 @@ async function applyReminders(plans: Planned[], clock: { hour: number; minute: n
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: c.hour, minute: c.minute, channelId: 'reminders' },
     });
   }
+  for (const p of planFeeds) {
+    if (!granted || p.at <= Date.now()) continue;
+    const identifier = `${PLAN_FEED}:${p.babyId}:${p.at}`;
+    keep.add(identifier);
+    if (queued.some((n) => n.identifier === identifier && n.content.body === p.body && Boolean(n.content.sound) === !p.silent)) continue;
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
+    });
+  }
   for (const n of queued) {
-    const ours = n.identifier.startsWith(REMINDER) || n.identifier.startsWith(CLOCK);
+    const ours = n.identifier.startsWith(REMINDER) || n.identifier.startsWith(CLOCK) || n.identifier.startsWith(PLAN_FEED);
     if (ours && !keep.has(n.identifier)) await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {});
   }
 }

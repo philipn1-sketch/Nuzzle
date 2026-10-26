@@ -21,17 +21,17 @@ const at = (m: number) => clockTime(Math.floor(m / 60), m % 60);
  * common published guides and are a starting point only.
  */
 export default function Plan() {
-  const { baby, settings, updateSettings } = useApp();
+  const { baby, settings, updateSettings, updateBaby } = useApp();
   const now = useNow(60_000);
   const p = usePalette();
   const name = babyName(baby);
   const ownBand = bandFor(baby.birthday, now);
   const [bandIndex, setBandIndex] = useState(AGE_BANDS.indexOf(ownBand));
   const band = AGE_BANDS[bandIndex];
-  const saved = settings.plans?.[baby.id];
+  const saved = baby.plan;
   const plan: PlanSettings = saved ?? defaultPlan(ownBand);
   const setPlan = (patch: Partial<PlanSettings & { on: boolean; reminders: boolean }>) =>
-    updateSettings({ plans: { ...settings.plans, [baby.id]: { ...saved, ...plan, ...patch } } });
+    updateBaby(baby.id, { plan: { ...saved, ...plan, ...patch } });
   const items = buildPlan(plan);
   const d = new Date(now);
   const next = nextItem(items, d.getHours() * 60 + d.getMinutes());

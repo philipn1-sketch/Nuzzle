@@ -11,3 +11,12 @@ describe('the first launch questions', () => {
     expect(migrateSettings({ units: 'ml', onboarded: false }).onboarded).toBe(false);
   });
 });
+
+describe('plans saved before they moved onto the babies', () => {
+  it('move onto the baby they belong to', () => {
+    const plan = { dayStartMin: 420, bedtimeMin: 1140, gapMin: 180, awakeMin: 60 };
+    const s = migrateSettings({ babies: [{ id: 'b1', name: 'Daphne', birthday: null }], activeBabyId: 'b1', plans: { b1: plan } });
+    expect(s.babies[0].plan).toEqual(plan);
+    expect(s.plans).toBeUndefined();
+  });
+});

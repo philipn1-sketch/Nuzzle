@@ -3,10 +3,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState as RNAppState } from 'react-native';
 
 import {
-  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
+  activeFeed, applyDraft, feedStart, lastSaved, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
-import { planFeedTimes, planIsOn } from '../core/plan';
+import { planFeedAlerts, planIsOn } from '../core/plan';
 import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
 import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
@@ -225,23 +225,27 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-    const clockTimes = new Map<number, string>();
-    for (const c of settings.clockReminders) clockTimes.set(c.hour * 60 + c.minute, `Your ${clockTime(c.hour, c.minute)} reminder.`);
-    // feed times from a plan she follows, unless one of her own reminders already rings then
+    const clock = settings.clockReminders.map((c) => ({
+      ...c,
+      body: `Your ${clockTime(c.hour, c.minute)} reminder.`,
+      silent: inQuiet(new Date(2000, 0, 1, c.hour, c.minute).getTime(), settings.quiet),
+    }));
+    // feed times from a plan she follows, for the next two days, skipping any she has just fed for
+    // and any where one of her own daily reminders already rings
+    const planFeeds: notify.Planned[] = [];
     for (const b of settings.babies) {
-      const plan = settings.plans?.[b.id];
+      const plan = b.plan;
       if (!planIsOn(plan) || !plan.reminders) continue;
-      for (const m of planFeedTimes(plan)) {
-        if (!clockTimes.has(m)) clockTimes.set(m, many ? `Feed time in ${babyName(b)}'s plan.` : 'Feed time in the plan.');
+      const mine = feedsOf(allFeeds, settings, b.id);
+      const latest = activeFeed(mine) ?? lastSaved(mine);
+      for (const at of planFeedAlerts(plan, now, latest ? feedStart(latest) : null)) {
+        const d = new Date(at);
+        if (settings.clockReminders.some((c) => c.hour === d.getHours() && c.minute === d.getMinutes())) continue;
+        planFeeds.push({ babyId: b.id, at, body: many ? `Feed time in ${babyName(b)}'s plan.` : 'Feed time in the plan.', silent: inQuiet(at, settings.quiet) });
       }
     }
-    const clock = [...clockTimes].map(([m, body]) => {
-      const hour = Math.floor(m / 60);
-      const minute = m % 60;
-      return { hour, minute, body, silent: inQuiet(new Date(2000, 0, 1, hour, minute).getTime(), settings.quiet) };
-    });
     notify
-      .syncReminders(plans, clock)
+      .syncReminders(plans, clock, planFeeds)
       .then(() => notify.pendingReminderAt(baby.id))
       .then(setScheduledAt)
       .catch(() => setScheduledAt(null));
@@ -576,7 +580,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     // A new family takes this phone's babies. A phone joining takes the family's babies instead,
     // so a blank "Baby" here never overwrites her name there.
     setSettings((cur) => {
-      const next = { ...cur, babiesUpdatedAt: joining ? 0 : Date.now() };
+      // a phone joining got the code from somewhere it is already written down
+      const next = { ...cur, babiesUpdatedAt: joining ? 0 : Date.now(), codeSaved: joining };
       db.putSettings(next);
       settingsRef.current = next;
       return next;

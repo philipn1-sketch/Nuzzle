@@ -1,5 +1,5 @@
 import {
-  AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, nextStep, planFeedTimes, planIsOn, REFERENCE_DAYS, referenceFeedTimes,
+  AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, nextStep, planFeedTimes, planIsOn, REFERENCE_DAYS, referenceFeedTimes, planFeedAlerts, defaultPlan,
 } from '../plan';
 
 const DAY = 86_400_000;
@@ -69,5 +69,19 @@ describe('turning a plan on and off', () => {
     const ref = { ...own, referenceId: 'ref-2-4w' };
     expect(planFeedTimes(ref).map((m) => m / 60)).toEqual([6, 9, 12, 15, 18, 21]);
     expect(nextStep(ref, 9 * 60 + 10)).toEqual({ at: 9 * 60 + 45, label: 'Nap', feed: false });
+  });
+});
+
+describe('plan feed reminders', () => {
+  const day = (h: number, m = 0, d = 0) => new Date(2026, 9, 20 + d, h, m).getTime();
+  const ref = { ...defaultPlan(AGE_BANDS[0]), referenceId: 'ref-2-4w' };
+  const times = (xs: number[]) => xs.map((t) => { const d = new Date(t); return `${d.getDate()} ${d.getHours()}:${d.getMinutes()}`; });
+
+  it('rings at the plan feed times still to come over two days', () => {
+    expect(times(planFeedAlerts(ref, day(19, 30), null))).toEqual(['20 21:0', '21 6:0', '21 9:0', '21 12:0', '21 15:0', '21 18:0', '21 21:0']);
+  });
+  it('skips a feed time when a feed started within the hour before it', () => {
+    expect(times(planFeedAlerts(ref, day(8, 50), day(8, 40)))).not.toContain('20 9:0');
+    expect(times(planFeedAlerts(ref, day(8, 50), day(7, 50)))).toContain('20 9:0');
   });
 });

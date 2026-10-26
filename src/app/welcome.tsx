@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, Vie
 import { CalendarSheet } from '../components/CalendarSheet';
 import { Stepper } from '../components/Stepper';
 import { SyncSection } from '../components/SyncSection';
-import { Choice, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, T, TopBar } from '../components/ui';
+import { Choice, PillButton, PrimaryButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from '../config';
 import { dayStartOf } from '../core/feeds';
 import { ageText, span } from '../core/format';
@@ -29,7 +29,7 @@ export default function Welcome() {
   const now = Date.now();
   const [step, setStep] = useState<Step>('hello');
   const [calendar, setCalendar] = useState(false);
-  const saved = settings.plans?.[baby.id];
+  const saved = baby.plan;
   const [pick, setPick] = useState<PlanPick>(saved ? (saved.referenceId ? 'ref' : 'own') : 'none');
   const [planReminders, setPlanReminders] = useState(saved?.reminders === true);
   const name = baby.name.trim() || 'your baby';
@@ -43,17 +43,17 @@ export default function Welcome() {
   const next = async () => {
     if (step === 'reminders' && settings.remindersOn && permission === 'undetermined') await askReminders();
     if (step === 'plan') {
-      const plans = { ...settings.plans };
       if (pick === 'none') {
-        if (plans[baby.id]) plans[baby.id] = { ...plans[baby.id], on: false };
+        if (baby.plan) updateBaby(baby.id, { plan: { ...baby.plan, on: false } });
       } else {
-        const base = { ...defaultPlan(bandFor(baby.birthday, now)), ...plans[baby.id] };
+        const base = { ...defaultPlan(bandFor(baby.birthday, now)), ...baby.plan };
         const { referenceId: _r, ...own } = base;
-        plans[baby.id] = pick === 'ref'
-          ? { ...base, referenceId: REFERENCE_DAYS[0].id, on: true, reminders: planReminders }
-          : { ...own, on: true, reminders: planReminders };
+        updateBaby(baby.id, {
+          plan: pick === 'ref'
+            ? { ...base, referenceId: REFERENCE_DAYS[0].id, on: true, reminders: planReminders }
+            : { ...own, on: true, reminders: planReminders },
+        });
       }
-      updateSettings({ plans });
     }
     setStep(STEPS[i + 1]);
   };
@@ -99,11 +99,19 @@ export default function Welcome() {
                 style={[type.body, styles.input, { color: p.ink, backgroundColor: p.surface }]}
               />
               <T tone="muted" style={type.label}>Birthday{baby.birthday !== null ? ` · ${ageText(baby.birthday, now)}` : ''}</T>
-              <SecondaryButton
-                label={baby.birthday === null ? 'Pick the birthday' : new Date(baby.birthday).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
-                onPress={() => setCalendar(true)}
+              <Pressable
                 testID="welcome-birthday"
-              />
+                accessibilityRole="button"
+                accessibilityLabel={baby.birthday === null ? 'Pick the birthday' : `Birthday ${new Date(baby.birthday).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}`}
+                accessibilityHint="Opens a calendar"
+                onPress={() => setCalendar(true)}
+                style={({ pressed }) => [styles.input, styles.pick, { backgroundColor: p.surface, borderColor: wash(p.muted, '80'), opacity: pressed ? 0.8 : 1 }]}
+              >
+                <T tone={baby.birthday === null ? 'muted' : 'ink'} style={type.body}>
+                  {baby.birthday === null ? 'Pick the birthday' : new Date(baby.birthday).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+                </T>
+                <T tone="muted" style={type.label}>Calendar ›</T>
+              </Pressable>
               <T tone="muted" style={type.label}>The birthday sets the age shown on Home and the examples in the daily plan.</T>
               <CalendarSheet
                 visible={calendar}
@@ -241,6 +249,7 @@ const styles = StyleSheet.create({
   block: { gap: space.m },
   dots: { flexDirection: 'row', gap: space.xs, justifyContent: 'center', paddingVertical: space.s },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  pick: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1.5 },
   input: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l },
   bottom: { paddingHorizontal: space.side, gap: space.xs, paddingBottom: space.s },
   option: { borderRadius: radius.row, borderWidth: 2, paddingHorizontal: space.l, paddingVertical: space.m, gap: space.xs },

@@ -83,6 +83,22 @@ export interface Baby {
   name: string;
   /** Local midnight of the day she was born, or null until it is set. */
   birthday: number | null;
+  /** Her daily plan for this baby. It travels with the babies list, so both phones share it. */
+  plan?: BabyPlan;
+}
+
+/** Minutes after midnight, except gaps and awake time, which are lengths in minutes. */
+export interface BabyPlan {
+  dayStartMin: number;
+  bedtimeMin: number;
+  gapMin: number;
+  awakeMin: number;
+  /** Set when she follows a reference day instead of building her own. */
+  referenceId?: string;
+  /** Missing on plans saved before the plan could be turned off: they count as on. */
+  on?: boolean;
+  /** Ring at the plan's feed times every day. */
+  reminders?: boolean;
 }
 
 /** A reminder that rings every day at the same clock time. */
@@ -104,7 +120,10 @@ export interface Settings {
   clockReminders: ClockReminder[];
   quiet: QuietHours;
   /** Each baby's daily plan, by baby id. */
-  plans?: Record<string, { dayStartMin: number; bedtimeMin: number; gapMin: number; awakeMin: number; referenceId?: string; on?: boolean; reminders?: boolean }>;
+  /** Plans saved before they moved onto each baby. Only read when settings are loaded. */
+  plans?: Record<string, BabyPlan>;
+  /** She has sent or saved the family code somewhere off this phone. */
+  codeSaved?: boolean;
   /** The first launch questions were answered or skipped. */
   onboarded?: boolean;
   remindersOn: boolean;
