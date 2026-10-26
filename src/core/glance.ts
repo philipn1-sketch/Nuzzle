@@ -37,6 +37,11 @@ export interface ActivityProps {
   startedAt: string;
   timerFrom: number;
   pausedAt: number;
+  /** 'waiting' between feeds: the lock screen counts down to the next feed, then up from the last one. */
+  mode?: 'feeding' | 'waiting';
+  /** Between feeds: the last feed's start and when the next one is due, in ms. */
+  lastStart?: number;
+  dueAt?: number;
 }
 
 function timer(f: Feed, now: number) {
@@ -64,6 +69,27 @@ export function glanceProps(feeds: Feed[], name: string, units: Units, now: numb
   };
 }
 
+/**
+ * The lock screen between feeds: how long until the next feed, and once it is due, how long since the
+ * last one started. Null before the first feed.
+ */
+export function waitingProps(feeds: Feed[], name: string, dueAt: number | null): ActivityProps | null {
+  const last = lastSaved(feeds);
+  if (!last || activeFeed(feeds) || dueAt === null) return null;
+  const next = lastBreast(feeds) ? suggestedSide(feeds) : null;
+  return {
+    name,
+    mode: 'waiting',
+    letter: next ?? '',
+    status: next ? `Start on the ${sideWord(next)}` : 'Next feed',
+    startedAt: `Next feed ${timeOf(dueAt)}`,
+    timerFrom: 0,
+    pausedAt: 0,
+    lastStart: feedStart(last),
+    dueAt,
+  };
+}
+
 export function activityProps(f: Feed, name: string, now: number): ActivityProps {
   const side = endSide(f);
   return {
@@ -71,6 +97,7 @@ export function activityProps(f: Feed, name: string, now: number): ActivityProps
     letter: side,
     status: `${f.status === 'paused' ? 'Paused' : 'Feeding'} on the ${sideWord(side)}`,
     startedAt: `Started at ${timeOf(feedStart(f))}`,
+    mode: 'feeding',
     ...timer(f, now),
   };
 }

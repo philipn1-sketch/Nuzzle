@@ -32,15 +32,16 @@ export function updateWidget(props: WidgetProps, lockAt: number | null = null): 
 let lastActivity = '';
 
 /**
- * Keeps one lock screen timer in step with the feed being timed: starts it, updates it on switch or pause,
- * and ends it when there is no feed. Live Activities can be turned off in iPhone Settings; then this does nothing.
+ * Keeps one lock screen timer in step: the feed being timed, or between feeds the countdown to the next
+ * one. `staleAt` is when the countdown runs out, so the lock screen switches to the time since the last
+ * feed by itself. Live Activities can be turned off in iPhone Settings; then this does nothing.
  */
 let shown = false;
 
 /** Resolves true when the timer is on the lock screen. */
-export async function syncActivity(props: ActivityProps | null): Promise<boolean> {
+export async function syncActivity(props: ActivityProps | null, staleAt?: number): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
-  const key = JSON.stringify(props);
+  const key = JSON.stringify([props, staleAt]);
   if (key === lastActivity) return shown;
   lastActivity = key;
   try {
@@ -52,8 +53,9 @@ export async function syncActivity(props: ActivityProps | null): Promise<boolean
     }
     const [first, ...extra] = running;
     await Promise.all(extra.map((a) => a.end('immediate')));
-    if (first) await first.update(props);
-    else FeedActivity.start(props, 'nuzzle://');
+    const stale = staleAt ? new Date(staleAt) : undefined;
+    if (first) await first.update(props, stale);
+    else FeedActivity.start(props, 'nuzzle://', stale);
     shown = true;
   } catch {
     lastActivity = '';

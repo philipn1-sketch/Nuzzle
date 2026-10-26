@@ -14,7 +14,7 @@ import { migrateSettings } from '../core/settings';
 import type { Baby, Entry, Feed, Nappy, Settings, Side } from '../core/types';
 import { checkEntry, entriesOf, nappyWord, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
 import { span } from '../core/format';
-import { activityProps, glanceProps } from '../core/glance';
+import { activityProps, glanceProps, waitingProps } from '../core/glance';
 import * as db from '../data/db';
 import * as glance from '../services/glance';
 import * as nuzzleNative from '../../modules/nuzzle-native';
@@ -234,7 +234,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       .map((b) => ({ b, a: activeFeed(feedsOf(allFeeds, settings, b.id)) }))
       .find((x) => x.a !== null);
     glance
-      .syncActivity(timing?.a ? activityProps(timing.a, babyName(timing.b), now) : null)
+      .syncActivity(
+        // a feed being timed, or between feeds the countdown for the baby on screen
+        timing?.a ? activityProps(timing.a, babyName(timing.b), now) : waitingProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), shown.dueAt || null),
+        timing?.a ? undefined : shown.dueAt || undefined,
+      )
       .then((shown) => {
         // the lock screen timer replaces the plain notice; the notice stays for when Live Activities are off
         for (const n of notices) {

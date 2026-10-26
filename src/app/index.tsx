@@ -9,6 +9,7 @@ import {
   activeFeed, endSide, feedStart, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, suggestedSide, totalMs,
 } from '../core/feeds';
 import { clock, sideWord, span, spanWords, timeOf } from '../core/format';
+import { nextStep } from '../core/plan';
 import { babyName, followsPlan, nextFeedAt } from '../core/reminder';
 import { runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
@@ -44,6 +45,10 @@ export default function Home() {
   const dueAt = nextFeedAt(feeds, settings, app.baby, app.plus);
   const overdue = !active && dueAt !== null && now >= dueAt;
   const fromPlan = followsPlan(app.baby, app.plus);
+  const nd = new Date(now);
+  const step = fromPlan && app.baby.plan ? nextStep(app.baby.plan, nd.getHours() * 60 + nd.getMinutes()) : null;
+  const stepAt = step ? new Date(now).setHours(Math.floor(step.at / 60), step.at % 60, 0, 0) : 0;
+  const stepText = step ? `${step.label === 'Bed' ? 'Bedtime' : step.label} at ${timeOf(stepAt)}` : 'Done for today';
   const [more, setMore] = useState(false);
 
   const sideState = (side: Side): SideState => {
@@ -90,6 +95,22 @@ export default function Home() {
             options={settings.babies.map((b) => ({ value: b.id, label: babyName(b) }))}
           />
         </View>
+      )}
+      {!active && (
+        <Pressable
+          onPress={() => router.push('/plan')}
+          accessibilityRole="button"
+          accessibilityLabel={fromPlan ? `Daily plan, next: ${stepText}` : 'Daily plan, off'}
+          accessibilityHint="Opens the daily plan"
+          testID="plan-bar"
+          style={({ pressed }) => [styles.planBar, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <View style={{ flex: 1 }}>
+            <T tone="muted" style={type.small}>DAILY PLAN</T>
+            <T style={type.body} numberOfLines={1}>{fromPlan ? `Next: ${stepText}` : 'Off'}</T>
+          </View>
+          <T tone="muted" style={type.title}>›</T>
+        </Pressable>
       )}
       {sleepBar && sleeping && (
         <View style={[styles.sleepBar, { backgroundColor: p.surface }]} accessibilityLiveRegion="polite">
@@ -154,11 +175,8 @@ export default function Home() {
           {active && <QuietButton label="Discard this feed" onPress={app.discard} testID="discard" />}
 
           {!compact && !active && (
-            <View style={styles.quick} accessibilityLabel="Log something else">
-              <PillButton label="Bottle" onPress={() => router.push('/feed/new?kind=bottle')} testID="log-bottle" a11yLabel="Log a bottle" />
-              <PillButton label="Nappy" onPress={() => router.push('/entry/new?kind=nappy')} testID="log-nappy" a11yLabel="Log a nappy" />
-              {!sleeping && <PillButton label="Sleep" onPress={app.toggleSleep} testID="log-sleep" a11yLabel="Start a sleep" />}
-              <PillButton label="More" onPress={() => setMore(true)} testID="log-more" a11yLabel="Pumping, weight and the daily plan" />
+            <View style={styles.wide}>
+              <SecondaryButton strong label="+ Log something" onPress={() => setMore(true)} testID="log" />
             </View>
           )}
           {app.sync.code && !settings.codeSaved && !compact && !active && (
@@ -234,10 +252,16 @@ export default function Home() {
         <Pressable style={[styles.shade, { backgroundColor: wash(p.bg, 'B3') }]} onPress={() => setMore(false)} accessibilityLabel="Close" />
         <View style={[styles.sheet, { backgroundColor: p.surface }]}>
           <View style={[styles.grabber, { backgroundColor: line(p) }]} />
-          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">More</T>
-          <SecondaryButton strong label="Pumping" testID="log-pump" onPress={() => { setMore(false); router.push('/entry/new?kind=pump'); }} />
-          <SecondaryButton strong label="Weight and length" testID="add-growth" onPress={() => { setMore(false); router.push('/entry/new?kind=growth'); }} />
-          <SecondaryButton label={fromPlan ? 'Daily plan (on)' : 'Daily plan'} testID="more-plan" onPress={() => { setMore(false); router.push('/plan'); }} />
+          <T style={[type.title, { paddingHorizontal: space.xs, paddingBottom: space.xs }]} accessibilityRole="header">Log</T>
+          {([
+            ['Bottle', 'log-bottle', () => router.push('/feed/new?kind=bottle')],
+            ['Nappy', 'log-nappy', () => router.push('/entry/new?kind=nappy')],
+            sleeping ? ['Woke up', 'log-sleep', app.toggleSleep] : ['Sleep', 'log-sleep', app.toggleSleep],
+            ['Pumping', 'log-pump', () => router.push('/entry/new?kind=pump')],
+            ['Weight and length', 'add-growth', () => router.push('/entry/new?kind=growth')],
+          ] as [string, string, () => void][]).map(([label, id, go]) => (
+            <SecondaryButton key={id} strong label={label} testID={id} onPress={() => { setMore(false); go(); }} />
+          ))}
           <QuietButton label="Cancel" onPress={() => setMore(false)} testID="more-cancel" style={{ alignSelf: 'center' }} />
         </View>
       </Modal>
@@ -250,11 +274,11 @@ const styles = StyleSheet.create({
   top: { gap: space.xl, alignItems: 'center' },
   centreText: { textAlign: 'center' },
   babies: { paddingHorizontal: space.side, paddingTop: space.s },
-  quick: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.s },
   sleepBar: { flexDirection: 'row', alignItems: 'center', gap: space.m, marginHorizontal: space.side, marginTop: space.s, paddingLeft: space.l, paddingRight: space.xs, paddingVertical: space.xs, borderRadius: radius.row },
   next: { fontWeight: '700', marginTop: space.s },
   due: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.s, paddingVertical: 4, paddingLeft: 10, paddingRight: space.m, borderRadius: 8, borderWidth: 1.5 },
   dot: { width: 7, height: 7, borderRadius: 4 },
+  planBar: { flexDirection: 'row', alignItems: 'center', gap: space.m, marginHorizontal: space.side, marginTop: space.s, paddingHorizontal: space.l, paddingVertical: space.s + 2, borderRadius: radius.row },
   badgeRow: { position: 'absolute', top: -14, left: -space.s, right: -space.s, alignItems: 'center' },
   badgeWrap: { padding: 3, borderRadius: 999 },
   badge: { borderRadius: 999, borderWidth: 2, paddingHorizontal: space.m, paddingVertical: 2, overflow: 'hidden' },

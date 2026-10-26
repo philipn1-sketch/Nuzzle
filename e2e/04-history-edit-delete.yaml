@@ -81,6 +81,8 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "back"
 - tapOn:
+    id: "log"
+- tapOn:
     id: "log-bottle"
 - assertVisible:
     id: "amount-more"
@@ -91,10 +93,14 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Bottle added.*"
 - takeScreenshot: day-15-home-after-bottle
 - tapOn:
+    id: "log"
+- tapOn:
     id: "log-nappy"
 - tapOn:
     id: "nappy-both"
 - assertVisible: "Wet and dirty nappy at.*"
+- tapOn:
+    id: "log"
 - tapOn:
     id: "log-sleep"
 - assertVisible:

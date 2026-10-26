@@ -33,9 +33,12 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   const sideColor = props.next === 'Left' ? c.left : c.right;
   const rounded = (size: number, weight: 'medium' | 'semibold' | 'bold' = 'semibold') => font({ size, weight, design: 'rounded' });
   const family = env.widgetFamily ?? 'systemSmall';
+  // iOS 17 and later shows an error instead of any widget, lock screen ones included, that sets no
+  // container background. On the lock screen iOS draws its own, so this colour only shows elsewhere.
+  const lock = (url = 'nuzzle://') => [containerBackground(c.bg, 'widget'), widgetURL(url)];
   if (all.locked) {
     if (family === 'accessoryInline' || family === 'accessoryCircular' || family === 'accessoryRectangular') {
-      return <Text modifiers={[rounded(13, 'semibold'), widgetURL('nuzzle://plus')]}>Nuzzle Plus</Text>;
+      return <Text modifiers={[rounded(13, 'semibold'), ...lock('nuzzle://plus')]}>Nuzzle Plus</Text>;
     }
     return (
       <VStack alignment="leading" spacing={6} modifiers={[frame({ maxWidth: 2000, maxHeight: 2000, alignment: 'topLeading' }), containerBackground(c.bg, 'widget'), widgetURL('nuzzle://plus')]}>
@@ -78,11 +81,11 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
 
   // lock screen: iOS draws these in one tint, so no colours
   if (family === 'accessoryInline') {
-    return <Text>{feeding ? props.feeding : props.next ? `Next: ${props.next}` : 'Nuzzle'}</Text>;
+    return <Text modifiers={lock()}>{feeding ? props.feeding : props.next ? `Next: ${props.next}` : 'Nuzzle'}</Text>;
   }
   if (family === 'accessoryCircular') {
     return (
-      <VStack spacing={0}>
+      <VStack spacing={0} modifiers={lock()}>
         <Text modifiers={[rounded(20, 'bold')]}>{props.letter || 'L R'}</Text>
         {!feeding && waiting ? (
           <Text timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.dueAt) }} countsDown modifiers={[rounded(11, 'semibold'), monospacedDigit(), minimumScaleFactor(0.6), lineLimit(1)]} />
@@ -94,7 +97,7 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   }
   if (family === 'accessoryRectangular') {
     return (
-      <VStack alignment="leading" spacing={1}>
+      <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: 2000, alignment: 'leading' }), ...lock()]}>
         <Text modifiers={[rounded(13, 'semibold')]}>
           {feeding ? props.feeding : waiting ? 'Next feed in' : hasLast ? 'Since last feed started' : props.name}
         </Text>
