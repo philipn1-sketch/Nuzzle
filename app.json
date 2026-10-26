@@ -84,7 +84,7 @@
               }
             }
           ],
-          "bundleIdentifier": "com.philipnader.nuzzle.ExpoWidgetsTarget"
+          "bundleIdentifier": "com.philipnader.nuzzle.widgets"
         }
       ],
       "@bacons/apple-targets",

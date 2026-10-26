@@ -3,7 +3,7 @@ module.exports = {
   type: 'watch',
   name: 'NuzzleWatch',
   displayName: 'Nuzzle',
-  bundleIdentifier: '.watchkitapp',
+  bundleIdentifier: '.watch',
   deploymentTarget: '10.0',
   icon: '../../assets/icon.png',
   frameworks: ['SwiftUI', 'WatchConnectivity'],
