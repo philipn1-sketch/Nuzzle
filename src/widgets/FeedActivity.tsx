@@ -7,8 +7,8 @@ import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 import type { ActivityProps } from '../core/glance';
 
 /**
- * The feed timer on the lock screen and in the Dynamic Island, and between feeds the countdown to the
- * next one. iOS keeps the timers counting by itself, so they stay right with the app closed.
+ * The feed timer on the lock screen and in the Dynamic Island, and between feeds the time since the last
+ * feed with the side to start on. iOS keeps the timers counting by itself, so they stay right with the app closed.
  */
 const FeedActivity = (props: ActivityProps, env: LiveActivityEnvironment) => {
   'widget';
@@ -30,48 +30,39 @@ const FeedActivity = (props: ActivityProps, env: LiveActivityEnvironment) => {
   const letter = <Text modifiers={[rounded(17, 'bold'), foregroundStyle(side)]}>{props.letter}</Text>;
 
   if (props.mode === 'waiting') {
-    // Between feeds: count down to the next feed. iOS marks the activity stale when that time comes,
-    // and it then counts up from the start of the last feed, so it is never left showing 0:00.
+    // Between feeds: the time since the last feed started, counting up, and the side to start on.
     const lastStart = props.lastStart ?? 0;
-    const dueAt = props.dueAt ?? lastStart;
-    const due = env.isStale === true || dueAt <= lastStart;
     const nextColor = props.letter === 'L' ? c.left : props.letter === 'R' ? c.right : c.muted;
-    const big = (size: number, color: string) =>
-      due ? (
-        <Text timerInterval={{ lower: new Date(lastStart), upper: new Date(lastStart + day) }} countsDown={false} modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(color), lineLimit(1)]} />
-      ) : (
-        <Text timerInterval={{ lower: new Date(lastStart), upper: new Date(dueAt) }} countsDown modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(color), lineLimit(1)]} />
-      );
-    const caption = due ? 'since last feed' : 'until next feed';
+    const since = (size: number, color: string) => (
+      <Text timerInterval={{ lower: new Date(lastStart), upper: new Date(lastStart + day) }} countsDown={false} modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(color), lineLimit(1)]} />
+    );
     const nextLetter = <Text modifiers={[rounded(17, 'bold'), foregroundStyle(nextColor)]}>{props.letter || 'N'}</Text>;
     return {
       banner: (
         <HStack spacing={12} modifiers={[padding({ all: 16 }), activityBackgroundTint(c.bg)]}>
           <VStack alignment="leading" spacing={2}>
             <Text modifiers={[rounded(15, 'bold'), foregroundStyle(c.ink), lineLimit(1)]}>{props.name}</Text>
-            <Text modifiers={[rounded(15, 'semibold'), foregroundStyle(due ? c.ink : c.muted), lineLimit(1)]}>{due ? 'Feed due' : props.startedAt}</Text>
-            <Text modifiers={[rounded(13, 'semibold'), foregroundStyle(nextColor), lineLimit(1)]}>{props.status}</Text>
+            <Text modifiers={[rounded(17, 'bold'), foregroundStyle(nextColor), lineLimit(1)]}>{props.status}</Text>
           </VStack>
           <Spacer />
           <VStack alignment="trailing" spacing={0}>
-            {big(36, c.ink)}
-            <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{caption}</Text>
+            {since(36, c.ink)}
+            <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>since last feed</Text>
           </VStack>
         </HStack>
       ),
       compactLeading: nextLetter,
-      compactTrailing: <VStack modifiers={[frame({ width: 56 })]}>{big(15, due ? c.ink : nextColor)}</VStack>,
+      compactTrailing: <VStack modifiers={[frame({ width: 56 })]}>{since(15, c.ink)}</VStack>,
       minimal: nextLetter,
       expandedLeading: (
         <VStack alignment="leading" spacing={2} modifiers={[padding({ leading: 8 })]}>
           <Text modifiers={[rounded(15, 'bold'), foregroundStyle(nextColor)]}>{props.status}</Text>
-          <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted)]}>{due ? 'Feed due' : props.startedAt}</Text>
         </VStack>
       ),
       expandedTrailing: (
         <VStack alignment="trailing" spacing={0} modifiers={[padding({ trailing: 8 })]}>
-          {big(28, c.ink)}
-          <Text modifiers={[rounded(11, 'medium'), foregroundStyle(c.muted)]}>{caption}</Text>
+          {since(28, c.ink)}
+          <Text modifiers={[rounded(11, 'medium'), foregroundStyle(c.muted)]}>since last feed</Text>
         </VStack>
       ),
     };

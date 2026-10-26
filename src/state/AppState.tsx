@@ -235,9 +235,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       .find((x) => x.a !== null);
     glance
       .syncActivity(
-        // a feed being timed, or between feeds the countdown for the baby on screen
-        timing?.a ? activityProps(timing.a, babyName(timing.b), now) : waitingProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), shown.dueAt || null),
-        timing?.a ? undefined : shown.dueAt || undefined,
+        // a feed being timed, or between feeds the time since the last one for the baby on screen
+        timing?.a ? activityProps(timing.a, babyName(timing.b), now) : waitingProps(feedsOf(allFeeds, settings, baby.id), babyName(baby)),
       )
       .then((shown) => {
         // the lock screen timer replaces the plain notice; the notice stays for when Live Activities are off

@@ -81,14 +81,14 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
 
   // lock screen: iOS draws these in one tint, so no colours
   if (family === 'accessoryInline') {
-    return <Text modifiers={lock()}>{feeding ? props.feeding : props.next ? `Next: ${props.next}` : 'Nuzzle'}</Text>;
+    return <Text modifiers={lock()}>{feeding ? props.feeding : props.next ? `Start on the ${props.next.toLowerCase()}` : 'Nuzzle'}</Text>;
   }
   if (family === 'accessoryCircular') {
     return (
       <VStack spacing={0} modifiers={lock()}>
         <Text modifiers={[rounded(20, 'bold')]}>{props.letter || 'L R'}</Text>
-        {!feeding && waiting ? (
-          <Text timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.dueAt) }} countsDown modifiers={[rounded(11, 'semibold'), monospacedDigit(), minimumScaleFactor(0.6), lineLimit(1)]} />
+        {!feeding && hasLast ? (
+          <Text timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.lastStart + day) }} countsDown={false} modifiers={[rounded(11, 'semibold'), monospacedDigit(), minimumScaleFactor(0.6), lineLimit(1)]} />
         ) : (
           <Text modifiers={[rounded(11, 'medium')]}>{feeding ? 'Feeding' : 'Next'}</Text>
         )}
@@ -99,10 +99,10 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
     return (
       <VStack alignment="leading" spacing={1} modifiers={[frame({ maxWidth: 2000, alignment: 'leading' }), ...lock()]}>
         <Text modifiers={[rounded(13, 'semibold')]}>
-          {feeding ? props.feeding : waiting ? 'Next feed in' : hasLast ? 'Since last feed started' : props.name}
+          {feeding ? props.feeding : hasLast ? 'Since last feed' : props.name}
         </Text>
-        {feeding ? timerText(20) : waiting ? countdown(20) : hasLast ? sinceText(20) : <Text>No feeds yet</Text>}
-        {!feeding && props.next !== '' && <Text modifiers={[rounded(13, 'medium')]}>Next: {props.next}</Text>}
+        {feeding ? timerText(20) : hasLast ? sinceText(20) : <Text>No feeds yet</Text>}
+        {!feeding && props.next !== '' && <Text modifiers={[rounded(13, 'medium')]}>Start on the {props.next.toLowerCase()}</Text>}
       </VStack>
     );
   }

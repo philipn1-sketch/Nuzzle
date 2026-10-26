@@ -33,17 +33,15 @@ describe('widget and lock screen', () => {
 });
 
 describe('the lock screen between feeds', () => {
-  it('counts down to the next feed and names the side to start on', () => {
+  it('counts up from the last feed and names the side to start on', () => {
     const start = new Date(2026, 9, 20, 9, 0).getTime();
     const feeds: Feed[] = [{ id: 'a', status: 'saved', deletedAt: null, segments: [{ side: 'L', start, end: start + 10 * 60_000 }] }];
-    const due = start + 3 * 3_600_000;
-    const w = waitingProps(feeds, 'Daphne', due);
-    expect(w).toMatchObject({ mode: 'waiting', lastStart: start, dueAt: due, letter: 'R', status: 'Start on the right' });
-    expect(w?.startedAt).toMatch(/^Next feed /);
+    const w = waitingProps(feeds, 'Daphne');
+    expect(w).toMatchObject({ mode: 'waiting', lastStart: start, letter: 'R', status: 'Start on the right' });
   });
   it('shows nothing before the first feed or while one is running', () => {
-    expect(waitingProps([], 'Daphne', null)).toBeNull();
+    expect(waitingProps([], 'Daphne')).toBeNull();
     const running: Feed[] = [{ id: 'b', status: 'running', deletedAt: null, segments: [{ side: 'L', start: 1, end: null }] }];
-    expect(waitingProps(running, 'Daphne', 5)).toBeNull();
+    expect(waitingProps(running, 'Daphne')).toBeNull();
   });
 });
