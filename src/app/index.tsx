@@ -101,7 +101,8 @@ export default function Home() {
           <PillButton label="Woke up" onPress={app.toggleSleep} testID="woke-up" a11yLabel="She woke up" />
         </View>
       )}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll}>
+      {/* it only scrolls when something doesn't fit, such as a question card or very large text */}
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scroll} alwaysBounceVertical={false} showsVerticalScrollIndicator={false}>
         <View style={styles.top}>
           <Pressable
             disabled={active !== null || last === null}
