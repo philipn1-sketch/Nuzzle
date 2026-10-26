@@ -136,8 +136,8 @@ export default function Home() {
           <Pressable
             disabled={active !== null || last === null}
             onPress={() => last && router.push(`/feed/${last.id}`)}
-            accessibilityRole={active || !last ? undefined : 'button'}
-            accessibilityHint={active || !last ? undefined : 'Edit the last feed'}
+            // the numbers inside stay separate for VoiceOver; the Edit last feed line below is the button
+            accessible={false}
             testID="ring"
             style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.97 : 1 }], alignSelf: 'stretch', alignItems: 'center' })}
           >
@@ -168,7 +168,11 @@ export default function Home() {
                       Next feed {timeOf(dueAt)}{fromPlan ? ' · plan' : ''}
                     </T>
                   ) : null}
-                  {!overdue && <T tone="muted" style={[type.small, styles.centreText]}>Edit last feed ›</T>}
+                  {!overdue && (
+                    <T tone="muted" style={[type.small, styles.centreText]} accessibilityRole="button" testID="edit-last" onPress={() => router.push(`/feed/${last.id}`)}>
+                      Edit last feed ›
+                    </T>
+                  )}
                 </>
               ) : (
                 <>
