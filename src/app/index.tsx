@@ -1,5 +1,5 @@
 import { Redirect, router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { Ring } from '../components/Ring';
 import { SideButton, type SideState } from '../components/SideButton';
@@ -14,7 +14,9 @@ import { nappyCount, nappyLine, runningSleep } from '../core/entries';
 import type { Side } from '../core/types';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { chipStyle, radius, sideColor, space, type, wash } from '../theme';
+import { chipStyle, radius, sideColor, space, TAP, type, wash } from '../theme';
+import { APP_NAME } from '../config';
+import { showCode } from '../core/sync';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -178,14 +180,32 @@ export default function Home() {
             </View>
           )}
           {step && !compact && !active && (
-            <Pressable onPress={() => router.push('/plan')} accessibilityRole="button" accessibilityHint="Opens the daily plan" testID="plan-next">
+            <Pressable
+              onPress={() => router.push('/plan')}
+              accessibilityRole="button"
+              accessibilityLabel={`The plan says ${step.label.toLowerCase()} at ${clockTime(Math.floor(step.at / 60), step.at % 60)}`}
+              accessibilityHint="Opens the daily plan"
+              testID="plan-next"
+              style={{ minHeight: TAP, justifyContent: 'center' }}
+            >
               <T tone="muted" style={[type.label, styles.centreText]}>
-                Next in the plan: {step.label} at {clockTime(Math.floor(step.at / 60), step.at % 60)}
+                The plan says {step.label === 'Bed' ? 'bedtime' : step.label.toLowerCase()} at {clockTime(Math.floor(step.at / 60), step.at % 60)} ›
               </T>
             </Pressable>
           )}
           {app.sync.code && !settings.codeSaved && !compact && !active && (
-            <QuietButton label="Save your family code somewhere safe ›" tone="ink" onPress={() => router.push('/settings')} testID="save-code-home" />
+            <QuietButton
+              label="Save your family code ›"
+              tone="ink"
+              testID="save-code-home"
+              onPress={() =>
+                Share.share({
+                  message: `Our ${APP_NAME} family code: ${showCode(app.sync.code ?? '')}\n\nKeep this safe. On a new phone, open ${APP_NAME}, then Settings, then Join with a code.`,
+                })
+                  .then((r) => r.action === Share.sharedAction && app.updateSettings({ codeSaved: true }))
+                  .catch(() => {})
+              }
+            />
           )}
           {nappies.total > 0 && !compact && (
             <T tone="muted" style={[type.label, styles.centreText]} testID="nappies-today">

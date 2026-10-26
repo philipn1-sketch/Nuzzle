@@ -77,43 +77,46 @@ async function applyReminders(
 ): Promise<void> {
   const queued = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
   const granted = (await permission()) === 'granted';
-  const keep = new Set<string>();
-  for (const p of plans) {
-    if (!granted || p.at <= Date.now()) continue;
-    const identifier = `${REMINDER}:${p.babyId}`;
-    keep.add(identifier);
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
-    });
-  }
-  for (const c of clock) {
-    if (!granted) continue;
-    const identifier = `${CLOCK}:${c.hour}:${c.minute}`;
-    keep.add(identifier);
-    const sound = c.silent ? false : 'default';
-    if (queued.some((n) => n.identifier === identifier && n.content.body === c.body && Boolean(n.content.sound) === !c.silent)) continue;
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: { title: APP_NAME, body: c.body, sound },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: c.hour, minute: c.minute, channelId: 'reminders' },
-    });
-  }
-  for (const p of planFeeds) {
-    if (!granted || p.at <= Date.now()) continue;
-    const identifier = `${PLAN_FEED}:${p.babyId}:${p.at}`;
-    keep.add(identifier);
-    if (queued.some((n) => n.identifier === identifier && n.content.body === p.body && Boolean(n.content.sound) === !p.silent)) continue;
-    await Notifications.scheduleNotificationAsync({
-      identifier,
-      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
-    });
-  }
+  const now = Date.now();
+  const due = granted ? plans.filter((p) => p.at > now) : [];
+  const dueFeeds = granted ? planFeeds.filter((p) => p.at > now) : [];
+  const daily = granted ? clock : [];
+  const keep = new Set<string>([
+    ...due.map((p) => `${REMINDER}:${p.babyId}`),
+    ...daily.map((c) => `${CLOCK}:${c.hour}:${c.minute}`),
+    ...dueFeeds.map((p) => `${PLAN_FEED}:${p.babyId}:${p.at}`),
+  ]);
+  // stale ones go first, so the queue never runs past the phone's limit while new ones are added
   for (const n of queued) {
     const ours = n.identifier.startsWith(REMINDER) || n.identifier.startsWith(CLOCK) || n.identifier.startsWith(PLAN_FEED);
     if (ours && !keep.has(n.identifier)) await Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {});
+  }
+  const same = (identifier: string, body: string, silent?: boolean) =>
+    queued.some((n) => n.identifier === identifier && n.content.body === body && Boolean(n.content.sound) === !silent);
+  for (const p of due) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${REMINDER}:${p.babyId}`,
+      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
+    });
+  }
+  for (const c of daily) {
+    const identifier = `${CLOCK}:${c.hour}:${c.minute}`;
+    if (same(identifier, c.body, c.silent)) continue;
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title: APP_NAME, body: c.body, sound: c.silent ? false : 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: c.hour, minute: c.minute, channelId: 'reminders' },
+    });
+  }
+  for (const p of dueFeeds) {
+    const identifier = `${PLAN_FEED}:${p.babyId}:${p.at}`;
+    if (same(identifier, p.body, p.silent)) continue;
+    await Notifications.scheduleNotificationAsync({
+      identifier,
+      content: { title: APP_NAME, body: p.body, sound: p.silent ? false : 'default' },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.at, channelId: 'reminders' },
+    });
   }
 }
 

@@ -48,8 +48,8 @@ export function SyncSection() {
         {!settings.codeSaved && (
           <View testID="save-code-note" style={[styles.note, { borderColor: p.accent }]}>
             <T style={type.label}>
-              Save this code somewhere safe, like Notes or a message to your partner. If this phone is lost or replaced, the code is the
-              only way to get your feeds back.
+              Keep this code somewhere safe, like Notes or a message to your partner. If this phone is lost, the code brings your feeds
+              back.
             </T>
             <QuietButton label="I've saved it" style={styles.left} onPress={() => updateSettings({ codeSaved: true })} testID="code-saved" />
           </View>

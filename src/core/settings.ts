@@ -26,8 +26,14 @@ export function migrateSettings(raw: Record<string, unknown>): Settings {
   // plans used to be kept apart from the babies; they now travel with them so a second phone gets them
   if (s.plans) {
     const old = s.plans;
-    s.babies = s.babies.map((b) => (b.plan || !old[b.id] ? b : { ...b, plan: old[b.id] }));
+    s.babies = s.babies.map((b) => (b.plan || !old[b.id] ? b : { ...b, plan: { ...old[b.id], updatedAt: old[b.id].updatedAt ?? 1 } }));
     delete s.plans;
+    // so the moved plans go up to the backup on the next sync
+    s.babiesUpdatedAt = Date.now();
+  }
+  // plan reminders are each phone's own choice
+  if (s.planReminders === undefined) {
+    s.planReminders = s.babies.filter((b) => b.plan?.reminders).map((b) => b.id);
   }
   // anyone who already had settings saved was using the app before the welcome questions existed
   if (raw.onboarded === undefined) s.onboarded = Object.keys(raw).length > 0;

@@ -97,8 +97,10 @@ export interface BabyPlan {
   referenceId?: string;
   /** Missing on plans saved before the plan could be turned off: they count as on. */
   on?: boolean;
-  /** Ring at the plan's feed times every day. */
+  /** Only on plans saved before this choice moved to each phone's own settings. */
   reminders?: boolean;
+  /** When the plan was last changed, so the newer plan wins when two phones meet. */
+  updatedAt?: number;
 }
 
 /** A reminder that rings every day at the same clock time. */
@@ -122,6 +124,8 @@ export interface Settings {
   /** Each baby's daily plan, by baby id. */
   /** Plans saved before they moved onto each baby. Only read when settings are loaded. */
   plans?: Record<string, BabyPlan>;
+  /** Babies whose plan feed times ring on this phone. Each phone chooses for itself. */
+  planReminders?: string[];
   /** She has sent or saved the family code somewhere off this phone. */
   codeSaved?: boolean;
   /** The first launch questions were answered or skipped. */

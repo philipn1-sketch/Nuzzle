@@ -37,6 +37,24 @@ export function mergeFeeds<T extends { id: string; updatedAt?: number }>(local: 
 export const unsent = <T extends { updatedAt?: number }>(feeds: T[], sentAt: number): T[] =>
   sentAt <= 0 ? feeds : feeds.filter((f) => (f.updatedAt ?? 0) > sentAt);
 
+/**
+ * The babies from the other phone, keeping this phone's plan for a baby when it was changed more
+ * recently, since the plan and the name can be edited on different phones. `kept` says a plan from
+ * here survived, so the list should go back up.
+ */
+export function withNewerPlans(remote: Baby[], local: Baby[]): { list: Baby[]; kept: boolean } {
+  let kept = false;
+  const list = remote.map((r) => {
+    const mine = local.find((b) => b.id === r.id)?.plan;
+    if (mine && (mine.updatedAt ?? 0) > (r.plan?.updatedAt ?? 0)) {
+      kept = true;
+      return { ...r, plan: mine };
+    }
+    return r;
+  });
+  return { list, kept };
+}
+
 /** The babies list from the other phone, when it is newer. */
 export function mergeBabies(localAt: number, remote: Baby[] | null, remoteAt: number): Baby[] | null {
   if (!remote || remote.length === 0 || remoteAt <= localAt) return null;

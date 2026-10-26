@@ -1,5 +1,5 @@
 import {
-  AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, nextStep, planFeedTimes, planIsOn, REFERENCE_DAYS, referenceFeedTimes, planFeedAlerts, defaultPlan,
+  AGE_BANDS, bandFor, buildPlan, nextItem, nextReference, nextStep, planFeedTimes, planIsOn, REFERENCE_DAYS, referenceFeedTimes, planFeedAlerts, defaultPlan, referenceFor,
 } from '../plan';
 
 const DAY = 86_400_000;
@@ -78,10 +78,33 @@ describe('plan feed reminders', () => {
   const times = (xs: number[]) => xs.map((t) => { const d = new Date(t); return `${d.getDate()} ${d.getHours()}:${d.getMinutes()}`; });
 
   it('rings at the plan feed times still to come over two days', () => {
-    expect(times(planFeedAlerts(ref, day(19, 30), null))).toEqual(['20 21:0', '21 6:0', '21 9:0', '21 12:0', '21 15:0', '21 18:0', '21 21:0']);
+    expect(times(planFeedAlerts(ref, day(19, 30), null, 2))).toEqual(['20 21:0', '21 6:0', '21 9:0', '21 12:0', '21 15:0', '21 18:0', '21 21:0']);
   });
   it('skips a feed time when a feed started within the hour before it', () => {
     expect(times(planFeedAlerts(ref, day(8, 50), day(8, 40)))).not.toContain('20 9:0');
     expect(times(planFeedAlerts(ref, day(8, 50), day(7, 50)))).toContain('20 9:0');
+  });
+});
+
+describe('reference days from the book', () => {
+  const born = new Date(2026, 9, 8).getTime();
+  const at = (days: number) => born + days * 86_400_000 + 3_600_000;
+  it('picks the day that fits her age', () => {
+    expect(referenceFor(born, at(18)).id).toBe('ref-2-4w');
+    expect(referenceFor(born, at(30)).id).toBe('ref-4-8w');
+    expect(referenceFor(born, at(70)).id).toBe('ref-8-16w');
+    expect(referenceFor(born, at(130)).id).toBe('ref-4-6m');
+    expect(referenceFor(born, at(400)).id).toBe('ref-4-6m');
+    expect(referenceFor(null, at(30)).id).toBe('ref-2-4w');
+  });
+  it('lists every day in time order with no gaps in age', () => {
+    REFERENCE_DAYS.forEach((d, k) => {
+      expect(d.items.map((i) => i.at)).toEqual([...d.items.map((i) => i.at)].sort((a, b) => a - b));
+      if (k > 0) expect(d.fromDay).toBe(REFERENCE_DAYS[k - 1].toDay);
+    });
+  });
+  it('counts only milk feeds as feed times, not solids', () => {
+    const day = REFERENCE_DAYS.find((d) => d.id === 'ref-4-6m')!;
+    expect(referenceFeedTimes(day)).toEqual([420, 660, 900, 1140]);
   });
 });

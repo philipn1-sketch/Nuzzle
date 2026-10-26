@@ -17,10 +17,13 @@ import { activityProps, glanceProps } from '../core/glance';
 import * as db from '../data/db';
 import * as glance from '../services/glance';
 import * as nuzzleNative from '../../modules/nuzzle-native';
-import { mergeBabies, mergeFeeds, unsent } from '../core/sync';
+import { mergeBabies, mergeFeeds, unsent, withNewerPlans } from '../core/sync';
 import { syncAvailable, syncWithServer } from '../services/sync';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
+
+/** Keeps plan reminders well inside the 64 notifications an iPhone holds, even with twins. */
+const PLAN_ALERTS_PER_BABY = 20;
 
 export interface SnackAction {
   label: string;
@@ -71,6 +74,8 @@ interface AppStateValue {
   /** Only a baby with no feeds can be removed, so nothing is ever lost. */
   removeBaby: (id: string) => void;
   askReminders: () => Promise<void>;
+  /** Asks for notifications without changing which reminders are on. */
+  askNotifications: () => Promise<void>;
   sync: SyncStatus;
   /** Starts sharing with a new family code, or joins one typed in from the other phone. */
   startSync: (code: string, joining: boolean) => void;
@@ -235,12 +240,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     const planFeeds: notify.Planned[] = [];
     for (const b of settings.babies) {
       const plan = b.plan;
-      if (!planIsOn(plan) || !plan.reminders) continue;
+      if (!planIsOn(plan) || !settings.planReminders?.includes(b.id)) continue;
       const mine = feedsOf(allFeeds, settings, b.id);
       const latest = activeFeed(mine) ?? lastSaved(mine);
-      for (const at of planFeedAlerts(plan, now, latest ? feedStart(latest) : null)) {
+      const interval = plans.find((x) => x.babyId === b.id)?.at;
+      for (const at of planFeedAlerts(plan, now, latest ? feedStart(latest) : null).slice(0, PLAN_ALERTS_PER_BABY)) {
         const d = new Date(at);
         if (settings.clockReminders.some((c) => c.hour === d.getHours() && c.minute === d.getMinutes())) continue;
+        // the feed reminder already rings about then
+        if (interval !== undefined && Math.abs(interval - at) < 15 * 60_000) continue;
         planFeeds.push({ babyId: b.id, at, body: many ? `Feed time in ${babyName(b)}'s plan.` : 'Feed time in the plan.', silent: inQuiet(at, settings.quiet) });
       }
     }
@@ -541,9 +549,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       if (babies) {
         setSettings((cur) => {
           const kept = cur.babies.filter((b) => !babies.some((r) => r.id === b.id) && hasData(allRef.current, allEntriesRef.current, cur, b.id));
-          const list = [...babies, ...kept];
+          const merged = withNewerPlans(babies, cur.babies);
+          const list = [...merged.list, ...kept];
           const next = {
-            ...cur, babies: list, babiesUpdatedAt: kept.length ? Date.now() : reply.babiesUpdated,
+            ...cur, babies: list, babiesUpdatedAt: kept.length || merged.kept ? Date.now() : reply.babiesUpdated,
             activeBabyId: list.some((b) => b.id === cur.activeBabyId) ? cur.activeBabyId : list[0].id,
           };
           db.putSettings(next);
@@ -601,6 +610,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     [progress, syncState],
   );
 
+  const askNotifications = useCallback(async () => {
+    const p = await notify.askPermission().catch(() => 'denied' as const);
+    setPermission(p);
+  }, []);
+
   const askReminders = useCallback(async () => {
     const p = await notify.askPermission().catch(() => 'denied' as const);
     setPermission(p);
@@ -610,12 +624,12 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppStateValue>(
     () => ({
       feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered,
-      tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack,
+      tap, startOn, done, discard, keepFeeding, saveDraft, remove, updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, askNotifications, hideSnack,
       sync, startSync, stopSync, syncNow: runSync,
       entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep,
     }),
     [feeds, allFeeds, settings, baby, permission, scheduledAt, snack, stillFeedingAnswered, tap, startOn, done, discard, keepFeeding, saveDraft, remove,
-      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, hideSnack, sync, startSync, stopSync, runSync,
+      updateSettings, switchBaby, addBaby, updateBaby, removeBaby, askReminders, askNotifications, hideSnack, sync, startSync, stopSync, runSync,
       entries, allEntries, saveEntry, removeEntry, logNappy, toggleSleep],
   );
 

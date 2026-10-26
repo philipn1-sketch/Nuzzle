@@ -6,7 +6,7 @@ import { Stepper } from '../components/Stepper';
 import { Card, Choice, PillButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import { ageText, clockTime, span } from '../core/format';
 import {
-  AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, nextReference, REFERENCE_DAYS, referenceFeedTimes, type PlanSettings,
+  AGE_BANDS, bandFor, buildPlan, defaultPlan, nextItem, nextReference, FLEXIBILITY_TIPS, REFERENCE_DAYS, referenceFeedTimes, referenceFor, type PlanSettings,
 } from '../core/plan';
 import { babyName } from '../core/reminder';
 import { useApp, useNow } from '../state/AppState';
@@ -21,7 +21,7 @@ const at = (m: number) => clockTime(Math.floor(m / 60), m % 60);
  * common published guides and are a starting point only.
  */
 export default function Plan() {
-  const { baby, settings, updateSettings, updateBaby } = useApp();
+  const { baby, settings, updateSettings, updateBaby, permission, askNotifications } = useApp();
   const now = useNow(60_000);
   const p = usePalette();
   const name = babyName(baby);
@@ -30,8 +30,9 @@ export default function Plan() {
   const band = AGE_BANDS[bandIndex];
   const saved = baby.plan;
   const plan: PlanSettings = saved ?? defaultPlan(ownBand);
-  const setPlan = (patch: Partial<PlanSettings & { on: boolean; reminders: boolean }>) =>
-    updateBaby(baby.id, { plan: { ...saved, ...plan, ...patch } });
+  // a plan made just by looking at the examples stays off until she turns it on
+  const setPlan = (patch: Partial<PlanSettings & { on: boolean }>) =>
+    updateBaby(baby.id, { plan: { on: saved?.on ?? false, ...saved, ...plan, ...patch, updatedAt: Date.now() } });
   const items = buildPlan(plan);
   const d = new Date(now);
   const next = nextItem(items, d.getHours() * 60 + d.getMinutes());
@@ -42,7 +43,10 @@ export default function Plan() {
   const nextRef = ref ? nextReference(ref.items, nowMin) : null;
   const feedTimes = ref ? referenceFeedTimes(ref) : [];
   const on = saved ? saved.on !== false : false;
-  const planReminders = saved?.reminders === true;
+  const planReminders = settings.planReminders?.includes(baby.id) === true;
+  const forAge = referenceFor(baby.birthday, now);
+  const refIndex = ref ? REFERENCE_DAYS.indexOf(ref) : -1;
+  const ageWord = (r: { label: string }) => r.label.replace('Reference day, ', '');
 
   const rows: [string, string][] = [
     ['Feeds', band.feedsPerDay],
@@ -57,7 +61,7 @@ export default function Plan() {
       <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Daily plan" />
       <ScrollView contentContainerStyle={styles.body}>
         <Card style={{ gap: space.m }}>
-          <T style={type.body}>Follow a daily plan</T>
+          <T style={type.body} accessibilityRole="header">Follow a daily plan</T>
           <T tone="muted" style={type.label}>When it is on, Home shows what is next in the plan. Turn it off any time; the plan stays saved.</T>
           <Choice<'on' | 'off'>
             label="Follow a daily plan"
@@ -67,11 +71,17 @@ export default function Plan() {
           />
           {on && (
             <>
-              <T tone="muted" style={type.label}>Remind me at the plan&apos;s feed times</T>
+              <T tone="muted" style={type.label} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                Remind me at the plan&apos;s feed times
+              </T>
               <Choice<'on' | 'off'>
                 label="Remind me at the plan's feed times"
                 value={planReminders ? 'on' : 'off'}
-                onChange={(v) => setPlan({ reminders: v === 'on' })}
+                onChange={(v) => {
+                  const others = (settings.planReminders ?? []).filter((id) => id !== baby.id);
+                  updateSettings({ planReminders: v === 'on' ? [...others, baby.id] : others });
+                  if (v === 'on' && permission === 'undetermined') askNotifications();
+                }}
                 options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
               />
             </>
@@ -104,13 +114,32 @@ export default function Plan() {
         <Choice<'own' | 'ref'>
           label="Plan"
           value={ref ? 'ref' : 'own'}
-          onChange={(v) => setPlan({ referenceId: v === 'ref' ? REFERENCE_DAYS[0].id : undefined })}
+          onChange={(v) => setPlan({ referenceId: v === 'ref' ? forAge.id : undefined })}
           options={[{ value: 'own', label: 'Build my own' }, { value: 'ref', label: 'Reference day' }]}
         />
 
         {ref ? (
           <>
-            <T style={type.title} accessibilityRole="header">{ref.label}</T>
+            <Row label="Reference day for">
+              <Stepper
+                label="Reference day for age"
+                testID="ref-age"
+                display={ageWord(ref)}
+                onStep={(dir) => {
+                  const nextRef = REFERENCE_DAYS[refIndex + dir];
+                  if (nextRef) setPlan({ referenceId: nextRef.id });
+                }}
+              />
+            </Row>
+            {ref !== forAge && baby.birthday !== null && (
+              <QuietButton
+                label={`${name} is ${ageText(baby.birthday, now)} now. Switch to the ${ageWord(forAge)} day ›`}
+                tone="ink"
+                style={styles.left}
+                onPress={() => setPlan({ referenceId: forAge.id })}
+                testID="ref-switch"
+              />
+            )}
             <T tone="muted" style={type.label}>{ref.intro}</T>
             <View style={{ gap: space.s }}>
               {ref.items.map((i, k) => {
@@ -139,6 +168,12 @@ export default function Plan() {
               })}
             </View>
             <T tone="muted" style={type.label}>{ref.night}</T>
+            <T style={type.title} accessibilityRole="header">Bending the day</T>
+            <View style={{ gap: space.s }}>
+              {FLEXIBILITY_TIPS.map((t) => (
+                <T key={t} tone="muted" style={type.label}>{t}</T>
+              ))}
+            </View>
           </>
         ) : (
           <>

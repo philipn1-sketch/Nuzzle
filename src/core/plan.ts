@@ -124,7 +124,7 @@ export const defaultPlan = (band: AgeBand): PlanSettings => ({ dayStartMin: 7 * 
  * our own words. Times are minutes after midnight.
  */
 export interface ReferenceItem {
-  kind: 'feed' | 'play' | 'nap' | 'bath' | 'bedtime';
+  kind: 'feed' | 'play' | 'nap' | 'solids' | 'bath' | 'bedtime';
   at: number;
   /** For a window such as "between 6 and 7". */
   until?: number;
@@ -139,6 +139,9 @@ export interface ReferenceDay {
   night: string;
   /** The usual gap between daytime feeds, in minutes. */
   gapMin: number;
+  /** Ages this day suits, in days from birth. */
+  fromDay: number;
+  toDay: number;
 }
 
 const h = (hours: number, minutes = 0) => hours * 60 + minutes;
@@ -147,6 +150,7 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
   {
     id: 'ref-2-4w',
     label: 'Reference day, 2 to 4 weeks',
+    fromDay: 0, toDay: 28,
     intro: 'Feeds take about 30 minutes start to finish. Bottles are usually 3 to 4 oz (90 to 120 ml) of breast milk or formula.',
     gapMin: 180,
     night: 'Night feeds on demand, often around midnight to 2 am, and in the first weeks sometimes again around 3 am. Keep night feeds quiet and dim.',
@@ -169,6 +173,93 @@ export const REFERENCE_DAYS: ReferenceDay[] = [
       { kind: 'bedtime', at: h(21, 30), note: 'Into bed: swaddled, dark room, white noise on' },
     ],
   },
+  {
+    id: 'ref-4-8w',
+    label: 'Reference day, 4 to 8 weeks',
+    fromDay: 28, toDay: 56,
+    intro: 'Feeds take about 30 minutes start to finish. Bottles are usually 4 to 6 oz (120 to 180 ml) of breast milk or formula.',
+    gapMin: 180,
+    night: 'Night feeds on demand, often somewhere around 2 to 3 am; one or two a night is still expected. If she settles back to sleep there is no need to wake her. Aim to reach 6:30 or 7 for the next feed, then start the day again.',
+    items: [
+      { kind: 'feed', at: h(6), until: h(7), note: 'First feed of the day, any time between 6 and 7. A feed from 5:30 counts as this one. Then a nap or quiet awake time until 9' },
+      { kind: 'feed', at: h(9), note: 'Feed at 9 whenever the last feed was' },
+      { kind: 'play', at: h(9, 30), note: 'Awake time, 10 to 30 minutes' },
+      { kind: 'nap', at: h(10), note: 'Nap, as close to two hours as possible' },
+      { kind: 'feed', at: h(12), note: 'Feed, waking the baby if needed' },
+      { kind: 'play', at: h(12, 30), note: 'Awake time, 10 to 30 minutes' },
+      { kind: 'nap', at: h(13), note: 'Nap, as close to two hours as possible' },
+      { kind: 'feed', at: h(15), note: 'Feed, waking the baby if needed; often more alert and fussy than in the morning' },
+      { kind: 'play', at: h(15, 30), note: 'Awake time, 10 to 30 minutes' },
+      { kind: 'nap', at: h(16), note: 'Nap, often closer to an hour and a half' },
+      { kind: 'feed', at: h(17, 30), note: 'Supper feed. After this, the next feed is the bedtime feed at 8:30' },
+      { kind: 'play', at: h(18), note: 'Awake time, often fussy: a few minutes each of bouncer, play mat and swing' },
+      { kind: 'nap', at: h(18, 30), note: 'Short sleep, 45 minutes to an hour and a half' },
+      { kind: 'bath', at: h(20), note: 'Bath time' },
+      { kind: 'feed', at: h(20, 30), note: 'Bedtime feed' },
+      { kind: 'bedtime', at: h(21), note: 'Into bed: swaddled, dark room, white noise on' },
+    ],
+  },
+  {
+    id: 'ref-8-16w',
+    label: 'Reference day, 8 to 16 weeks',
+    fromDay: 56, toDay: 112,
+    intro: 'Feeds take about 30 minutes. Bottles are usually 5 to 7 oz (150 to 210 ml). Some babies who are gaining well move to this day from about 6 weeks; if so, start naps about 15 minutes earlier.',
+    gapMin: 180,
+    night: 'Night feeds on demand, often not until after 4 or 5 am now, and more often one a night than two. Some babies sleep through by 8 to 12 weeks. There will still be rough nights.',
+    items: [
+      { kind: 'feed', at: h(7), note: 'Feed, then awake and playful until the first nap' },
+      { kind: 'nap', at: h(8, 30), note: 'Nap, close to an hour and a half, up to 10:15 at the latest' },
+      { kind: 'feed', at: h(10), note: 'Feed, then awake and playful until the nap' },
+      { kind: 'nap', at: h(11, 30), note: 'Nap, close to an hour and a half, up to 1:15 at the latest' },
+      { kind: 'feed', at: h(13), note: 'Feed; usually alert and playful, with some fussing' },
+      { kind: 'nap', at: h(14, 30), note: 'Nap, close to an hour and a half' },
+      { kind: 'feed', at: h(16), note: 'Supper feed. After this, the next feed is the bedtime feed at 7' },
+      { kind: 'nap', at: h(17, 30), note: 'Catnap, 45 minutes to an hour; this one often gets harder' },
+      { kind: 'bath', at: h(18, 30), note: 'Bath time' },
+      { kind: 'feed', at: h(19), note: 'Bedtime feed' },
+      { kind: 'bedtime', at: h(19, 30), note: 'Into bed: dark room, white noise on. Swaddle at night until about 3 months, or sooner if she keeps breaking out' },
+    ],
+  },
+  {
+    id: 'ref-4-6m',
+    label: 'Reference day, 4 to 6 months',
+    fromDay: 112, toDay: 183,
+    intro: 'Bottles are usually 6 to 8 oz (180 to 240 ml). Solids are optional at this age; if they haven\'t started, skip those times and keep the milk feeds. Amounts of baby food are only a rough guide.',
+    gapMin: 240,
+    night: 'Many babies sleep through the night by now. The swaddle should be off at night from around 3 months.',
+    items: [
+      { kind: 'feed', at: h(7), note: 'Wakes up; breast or bottle feed' },
+      { kind: 'solids', at: h(8), note: 'If solids have started: a little fruit and 1 to 2 tablespoons of baby cereal. A sippy cup can start here' },
+      { kind: 'nap', at: h(9), note: 'Nap' },
+      { kind: 'feed', at: h(11), note: 'Breast or bottle feed' },
+      { kind: 'solids', at: h(12), note: 'If solids have started: some vegetables and fruit, maybe a little cereal and a sippy cup' },
+      { kind: 'nap', at: h(12, 30), until: h(13, 30), note: 'Nap. Pick one time between 12:30 and 1:30 and keep to it each day' },
+      { kind: 'feed', at: h(15), note: 'Breast or bottle feed' },
+      { kind: 'solids', at: h(16), note: 'If solids have started: vegetables and fruit, with a sippy cup of milk' },
+      { kind: 'nap', at: h(17), note: 'A short catnap, if she needs one' },
+      { kind: 'play', at: h(18), note: 'Awake until bath time; 10 minutes of tummy time helps' },
+      { kind: 'bath', at: h(18, 30), note: 'Bath time' },
+      { kind: 'feed', at: h(19), note: 'Bedtime feed; she should be hungry for this one' },
+      { kind: 'bedtime', at: h(19, 30), note: 'Into bed for the night' },
+    ],
+  },
+];
+
+/** The reference day that suits a baby's age, or the first one when the birthday isn't set. */
+export function referenceFor(birthday: number | null, now: number): ReferenceDay {
+  if (birthday === null) return REFERENCE_DAYS[0];
+  const days = Math.floor((now - birthday) / 86_400_000);
+  return REFERENCE_DAYS.find((r) => days >= r.fromDay && days < r.toDay) ?? REFERENCE_DAYS[REFERENCE_DAYS.length - 1];
+}
+
+/** How to bend a reference day without losing it, from the same guide, in our own words. */
+export const FLEXIBILITY_TIPS: string[] = [
+  'Any single time can move 15 minutes earlier or later without moving the rest of the day.',
+  'The whole day can shift up to an hour earlier or later. Bath and bed can move up to an hour later on their own.',
+  'If the day goes sideways, aim for the supper feed and the bedtime feed. Any feed time is a fresh start.',
+  'Out at a feed time? Wake, change and feed early, head out, then pick up again at the next feed time.',
+  'Nap on the go: if more than half the nap is left when you get home, try putting her down; if not, wait for the next feed.',
+  'Late night out: give the bedtime feed wherever you are, then at home a quick change, a top up feed and into bed.',
 ];
 
 /** The first item still to come, given the minutes after midnight now. A window counts until it closes. */
@@ -194,7 +285,7 @@ export interface DayStep {
 export function planSteps(p: PlanSettings): DayStep[] {
   const ref = p.referenceId ? REFERENCE_DAYS.find((r) => r.id === p.referenceId) : undefined;
   if (ref) {
-    const word = { feed: 'Feed', play: 'Awake time', nap: 'Nap', bath: 'Bath', bedtime: 'Bed' } as const;
+    const word = { feed: 'Feed', play: 'Awake time', nap: 'Nap', solids: 'Solids', bath: 'Bath', bedtime: 'Bed' } as const;
     return ref.items.map((i) => ({ at: i.at, label: word[i.kind], feed: i.kind === 'feed' }));
   }
   return buildPlan(p).map((i) => ({ at: i.at, label: i.kind === 'feed' ? 'Feed' : i.kind === 'nap' ? 'Nap' : 'Bed', feed: i.kind === 'feed' }));
@@ -207,11 +298,12 @@ export const planFeedTimes = (p: PlanSettings): number[] => planSteps(p).filter(
 export const PLAN_SKIP_MIN = 60;
 
 /**
- * When to ring for the plan's feeds over the next `days` days, as times in ms. A plan time is
+ * When to ring for the plan's feeds over the next `days` days, as times in ms. They are booked again
+ * every time the app opens or a feed changes, so only a phone left unopened for days runs out. A plan time is
  * skipped when the last feed started within an hour before it, so a feed that came a little early
  * doesn't get a second reminder.
  */
-export function planFeedAlerts(p: PlanSettings, now: number, lastStart: number | null, days = 2): number[] {
+export function planFeedAlerts(p: PlanSettings, now: number, lastStart: number | null, days = 3): number[] {
   const out: number[] = [];
   const midnight = new Date(now);
   midnight.setHours(0, 0, 0, 0);
