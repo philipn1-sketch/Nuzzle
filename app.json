@@ -14,7 +14,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "appleTeamId": "9QLBWXC74X"
+      "appleTeamId": "9QLBWXC74X",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.philipnader.nuzzle",
@@ -88,7 +91,8 @@
         }
       ],
       "@bacons/apple-targets",
-      "./plugins/with-nuzzle-intents"
+      "./plugins/with-nuzzle-intents",
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": false

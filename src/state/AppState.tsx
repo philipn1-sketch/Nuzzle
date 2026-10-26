@@ -22,6 +22,7 @@ import { mergeBabies, mergeFeeds, unsent, withNewerPlans } from '../core/sync';
 import { syncAvailable, syncWithServer } from '../services/sync';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
+import { owned } from '../services/purchases';
 
 export interface SnackAction {
   label: string;
@@ -390,6 +391,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  // Plus follows the App Store: a purchase, a restore on a new phone, or a monthly subscription that
+  // lapsed. Families here before Plus keep their gift, and an offline phone changes nothing.
+  useEffect(() => {
+    owned()
+      .then((store) => {
+        const cur = settingsRef.current.plus;
+        if (cur?.owned === 'gift' || (cur?.owned ?? null) === store) return;
+        if (store === null && cur?.owned === 'lifetime') return; // a lifetime purchase never lapses
+        updateSettings({ plus: { ...cur, owned: store ?? undefined } });
+      })
+      .catch(() => {});
+  }, [foreground, updateSettings]);
 
   // a daily plan follows the baby's age: when she grows into the next example day, the plan moves with her
   useEffect(() => {

@@ -1,10 +1,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { PillButton, PrimaryButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { PLUS_FEATURES, plusStatus, PRICES, TRIAL_DAYS, type PlusFeature } from '../core/plus';
-import { buy, restore, type Product } from '../services/purchases';
+import { PRIVACY_URL, TERMS_URL } from '../config';
+import { buy, restore, storePrices, type Product } from '../services/purchases';
 import { useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, type, wash } from '../theme';
@@ -17,6 +18,13 @@ export default function Plus() {
   const now = Date.now();
   const [product, setProduct] = useState<Product>('lifetime');
   const [message, setMessage] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // the App Store's own prices for her country; the Australian prices show until they arrive
+  const [prices, setPrices] = useState<Partial<Record<Product, string>>>({});
+  useEffect(() => {
+    storePrices().then(setPrices).catch(() => {});
+  }, []);
+  const price = (k: Product) => (prices[k] ? `${prices[k]} ${k === 'lifetime' ? 'once' : 'a month'}` : PRICES[k]);
   const owned = settings.plus?.owned !== undefined;
 
   const first = PLUS_FEATURES.find((f) => f.id === (feature as PlusFeature));
@@ -24,16 +32,25 @@ export default function Plus() {
 
   const unlock = (what: Product) => updateSettings({ plus: { ...settings.plus, owned: what } });
   const onBuy = async () => {
+    setMessage(null);
+    setBusy(true);
     const r = await buy(product);
+    setBusy(false);
     if (r === 'bought') {
       unlock(product);
       router.back();
-    } else if (r === 'unavailable') setMessage('Nuzzle Plus can be bought once Nuzzle is in the App Store.');
+    } else if (r === 'pending') setMessage('Waiting for approval. Nuzzle Plus turns on as soon as it is approved.');
+    else if (r === 'failed') setMessage("The App Store couldn't finish that. Nothing was charged; please try again.");
   };
   const onRestore = async () => {
-    const r = await restore();
-    if (r) unlock(r);
-    setMessage(r ? 'Nuzzle Plus is back on this phone.' : 'No earlier purchase was found for this Apple ID.');
+    setMessage(null);
+    try {
+      const r = await restore();
+      if (r) unlock(r);
+      setMessage(r ? 'Nuzzle Plus is back on this phone.' : 'No earlier purchase was found for this Apple ID.');
+    } catch {
+      setMessage("Couldn't reach the App Store. Check the connection and try again.");
+    }
   };
 
   return (
@@ -66,17 +83,28 @@ export default function Plus() {
                   style={[styles.option, { backgroundColor: on ? wash(p.accent, '26') : p.surface, borderColor: on ? p.accent : 'transparent' }]}
                 >
                   <T style={type.body}>{k === 'lifetime' ? 'For life' : 'Monthly'}</T>
-                  <T tone="muted" style={type.label}>{PRICES[k]}</T>
+                  <T tone="muted" style={type.label}>{price(k)}</T>
                 </Pressable>
               );
             })}
           </View>
           {message && <T accessibilityLiveRegion="polite" style={[type.label, { textAlign: 'center' }]}>{message}</T>}
-          <PrimaryButton label={product === 'lifetime' ? 'Get Nuzzle Plus for life' : 'Get Nuzzle Plus'} onPress={onBuy} testID="plus-buy" />
+          <PrimaryButton
+            label={busy ? 'Opening the App Store' : product === 'lifetime' ? `Get Nuzzle Plus for ${price('lifetime')}` : `Get Nuzzle Plus for ${price('monthly')}`}
+            onPress={busy ? () => {} : onBuy}
+            testID="plus-buy"
+          />
           <T tone="muted" style={[type.small, { textAlign: 'center' }]}>
-            New phones get {TRIAL_DAYS} days free. Monthly renews until you cancel in your Apple ID settings.
+            {product === 'monthly'
+              ? `Payment is charged to your Apple ID. Monthly renews automatically at ${price('monthly')} unless cancelled at least 24 hours before the month ends, in Settings, your name, Subscriptions.`
+              : 'One payment, charged to your Apple ID. Shared with your Apple family.'}
+            {' '}New phones get {TRIAL_DAYS} days of Plus free.
           </T>
-          <QuietButton label="Restore an earlier purchase" onPress={onRestore} testID="plus-restore" />
+          <View style={styles.links}>
+            <QuietButton label="Restore" onPress={onRestore} testID="plus-restore" />
+            <QuietButton label="Terms" onPress={() => Linking.openURL(TERMS_URL)} testID="plus-terms" />
+            <QuietButton label="Privacy" onPress={() => Linking.openURL(PRIVACY_URL)} testID="plus-privacy" />
+          </View>
         </View>
       )}
     </Screen>
@@ -87,5 +115,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: space.side, paddingBottom: space.xl, gap: space.l },
   feature: { borderRadius: radius.row, paddingHorizontal: space.l, paddingVertical: space.m, gap: 2 },
   bottom: { paddingHorizontal: space.side, gap: space.s },
+  links: { flexDirection: 'row', justifyContent: 'center', gap: space.l },
   option: { flex: 1, borderRadius: radius.row, borderWidth: 2, paddingHorizontal: space.l, paddingVertical: space.m, gap: 2 },
 });
