@@ -3,16 +3,16 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { AppState as RNAppState } from 'react-native';
 
 import {
-  activeFeed, applyDraft, feedStart, lastSaved, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
+  activeFeed, applyDraft, checkDraft, endSide, feedFromDraft, finishFeed, fitToNow, runningSide, sideMs, tapSide, totalMs,
   type DraftProblem, type FeedDraft,
 } from '../core/feeds';
-import { planFeedAlerts, planIsOn } from '../core/plan';
+import { planIsOn, referenceById, referenceFor } from '../core/plan';
 import { hasPlus, trialEndsAt } from '../core/plus';
-import { amount, clockTime, mins, sideWord, timeOf } from '../core/format';
-import { activeBaby, babyName, feedsOf, planReminder } from '../core/reminder';
+import { amount, mins, sideWord, timeOf } from '../core/format';
+import { activeBaby, babyName, feedsOf, nextFeedAt, planReminder } from '../core/reminder';
 import { migrateSettings } from '../core/settings';
 import type { Baby, Entry, Feed, Nappy, Settings, Side } from '../core/types';
-import { checkEntry, entriesOf, inQuiet, nappyWord, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
+import { checkEntry, entriesOf, nappyWord, runningSleep, sleepMs, startSleep as newSleep, wakeUp, type EntryProblem } from '../core/entries';
 import { span } from '../core/format';
 import { activityProps, glanceProps } from '../core/glance';
 import * as db from '../data/db';
@@ -22,9 +22,6 @@ import { mergeBabies, mergeFeeds, unsent, withNewerPlans } from '../core/sync';
 import { syncAvailable, syncWithServer } from '../services/sync';
 import { tick } from '../services/haptics';
 import * as notify from '../services/notify';
-
-/** Keeps plan reminders well inside the 64 notifications an iPhone holds, even with twins. */
-const PLAN_ALERTS_PER_BABY = 20;
 
 export interface SnackAction {
   label: string;
@@ -209,22 +206,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const now = Date.now();
     const many = settings.babies.length > 1;
+    // the daily plan, and so its feed times, is part of Nuzzle Plus
+    const plusNow = hasPlus(settings, now);
     const plans: notify.Planned[] = [];
     const notices: { babyId: string; text: string | null }[] = [];
     for (const b of settings.babies) {
       const mine = feedsOf(allFeeds, settings, b.id);
-      const plan = planReminder(mine, settings, now, babyName(b));
-      if (plan) plans.push({ babyId: b.id, ...plan, silent: inQuiet(plan.at, settings.quiet) });
+      const plan = planReminder(mine, settings, now, babyName(b), b, plusNow);
+      if (plan) plans.push({ babyId: b.id, ...plan });
       const a = activeFeed(mine);
       notices.push({ babyId: b.id, text: a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null });
     }
     // the home screen widget follows the baby on screen; the lock screen timer follows a running feed
-    const shown = glanceProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), settings.units, now, settings.intervalMin);
-    const others = settings.babies
-      .filter((b) => b.id !== baby.id)
-      .map((b) => ({ ...glanceProps(feedsOf(allFeeds, settings, b.id), babyName(b), settings.units, now, settings.intervalMin), babyId: b.id }));
+    const props = (b: Baby) => {
+      const mine = feedsOf(allFeeds, settings, b.id);
+      return glanceProps(mine, babyName(b), settings.units, now, settings.intervalMin, nextFeedAt(mine, settings, b, plusNow));
+    };
+    const shown = props(baby);
+    const others = settings.babies.filter((b) => b.id !== baby.id).map((b) => ({ ...props(b), babyId: b.id }));
     // the home screen widget is part of Nuzzle Plus; in the free week it locks itself when the week ends
-    const plusNow = hasPlus(settings, now);
     const trialEnd = settings.plus?.owned ? null : trialEndsAt(settings);
     glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others], locked: !plusNow }, plusNow && trialEnd !== null ? trialEnd : null);
     glance.offerBabies(settings.babies);
@@ -242,30 +242,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {});
-    const clock = (plusNow ? settings.clockReminders : []).map((c) => ({
-      ...c,
-      body: `Your ${clockTime(c.hour, c.minute)} reminder.`,
-      silent: inQuiet(new Date(2000, 0, 1, c.hour, c.minute).getTime(), settings.quiet),
-    }));
-    // feed times from a plan she follows, for the next two days, skipping any she has just fed for
-    // and any where one of her own daily reminders already rings
-    const planFeeds: notify.Planned[] = [];
-    for (const b of settings.babies) {
-      const plan = b.plan;
-      if (!plusNow || !planIsOn(plan) || !settings.planReminders?.includes(b.id)) continue;
-      const mine = feedsOf(allFeeds, settings, b.id);
-      const latest = activeFeed(mine) ?? lastSaved(mine);
-      const interval = plans.find((x) => x.babyId === b.id)?.at;
-      for (const at of planFeedAlerts(plan, now, latest ? feedStart(latest) : null).slice(0, PLAN_ALERTS_PER_BABY)) {
-        const d = new Date(at);
-        if (settings.clockReminders.some((c) => c.hour === d.getHours() && c.minute === d.getMinutes())) continue;
-        // the feed reminder already rings about then
-        if (interval !== undefined && Math.abs(interval - at) < 15 * 60_000) continue;
-        planFeeds.push({ babyId: b.id, at, body: many ? `Feed time in ${babyName(b)}'s plan.` : 'Feed time in the plan.', silent: inQuiet(at, settings.quiet) });
-      }
-    }
+    // one reminder rule: set time daily reminders and separate plan alerts are gone, so passing none
+    // also clears any an older version queued
     notify
-      .syncReminders(plans, clock, planFeeds)
+      .syncReminders(plans, [], [])
       .then(() => notify.pendingReminderAt(baby.id))
       .then(setScheduledAt)
       .catch(() => setScheduledAt(null));
@@ -282,24 +262,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const next = tapSide(before, side, clampAt(before, at), newId);
       commit([next]);
       tick();
-      if (!before) {
-        showSnack(`Started on the ${sideWord(side)}.`, [
-          {
-            label: 'Undo',
-            onPress: () => {
-              const current = feedsRef.current.find((f) => f.id === next.id) ?? next;
-              // kept as deleted, not erased, so the other phone hears it was thrown away
-              commit([{ ...current, deletedAt: Date.now() }]);
-              showSnack('Feed discarded.', [{ label: 'Undo', onPress: () => commit([{ ...current, deletedAt: null }]) }]);
-            },
-          },
-        ]);
-      } else {
-        // a switch or pause makes the "Started" snackbar out of date
-        setSnack(null);
-      }
+      // no toast on start: the ring and the side button already say what happened, and Discard is the way out
+      setSnack(null);
     },
-    [commit, showSnack],
+    [commit],
   );
 
   const startOn = useCallback(
@@ -421,6 +387,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  // a daily plan follows the baby's age: when she grows into the next example day, the plan moves with her
+  useEffect(() => {
+    const now = Date.now();
+    for (const b of settings.babies) {
+      const day = referenceFor(b.birthday, now);
+      if (planIsOn(b.plan) && referenceById(b.plan.referenceId)?.id !== day.id) {
+        updateBaby(b.id, { plan: { ...b.plan, referenceId: day.id, gapMin: day.gapMin, updatedAt: now } });
+      }
+    }
+  }, [settings.babies, foreground, updateBaby]);
 
   const removeBaby = useCallback((id: string) => {
     setSettings((s) => {

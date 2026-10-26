@@ -1,4 +1,4 @@
-import { migrateSettings } from '../settings';
+import { migrateSettings, unitsForRegion } from '../settings';
 import { withNewerPlans } from '../sync';
 
 describe('the first launch questions', () => {
@@ -38,5 +38,13 @@ describe('plans on two phones', () => {
   it('send a moved plan up to the backup', () => {
     const s = migrateSettings({ babies: [{ id: 'b1', name: '', birthday: null }], activeBabyId: 'b1', babiesUpdatedAt: 5, plans: { b1: plan(1) } });
     expect(s.babiesUpdatedAt).toBeGreaterThan(5);
+  });
+});
+
+describe('units from the region', () => {
+  it('uses ounces in the US and millilitres elsewhere', () => {
+    expect(unitsForRegion('en-US')).toBe('oz');
+    expect(unitsForRegion('en-AU')).toBe('ml');
+    expect(unitsForRegion('en')).toBe('ml');
   });
 });

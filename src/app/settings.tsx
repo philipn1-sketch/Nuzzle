@@ -1,91 +1,69 @@
 import Constants from 'expo-constants';
 import { useState } from 'react';
 import { router } from 'expo-router';
-import { Linking, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { Stepper } from '../components/Stepper';
-import { SyncSection } from '../components/SyncSection';
 import { CalendarSheet } from '../components/CalendarSheet';
-import { Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
+import { Stepper } from '../components/Stepper';
+import { Card, Choice, PillButton, QuietButton, Screen, T, TopBar } from '../components/ui';
 import { APP_NAME, REMINDER_MAX_MIN, REMINDER_MIN_MIN, REMINDER_STEP_MIN } from '../config';
-import { feedsToCsv } from '../core/csv';
 import { dayStartOf } from '../core/feeds';
-import { ageText, clockTime, span } from '../core/format';
-import { plusStatus } from '../core/plus';
-import { babyName } from '../core/reminder';
-import type { ClockReminder, ThemeChoice, Units } from '../core/types';
+import { span, spanWords } from '../core/format';
+import { planIsOn } from '../core/plan';
+import { trialDaysLeft } from '../core/plus';
+import type { ThemeChoice } from '../core/types';
 import { hasData, useApp } from '../state/AppState';
 import { usePalette } from '../state/theme';
-import { line, radius, space, TAP, type } from '../theme';
-
-const wrapMin = (m: number) => ((m % 1440) + 1440) % 1440;
+import { space, TAP, type } from '../theme';
 
 export default function SettingsScreen() {
-  const { settings, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync, plus } = useApp();
+  const { settings, baby, updateSettings, permission, askReminders, allFeeds, allEntries, addBaby, updateBaby, removeBaby, sync, plus } = useApp();
   const p = usePalette();
   const now = Date.now();
   const [calendarFor, setCalendarFor] = useState<string | null>(null);
-
-  const exportCsv = () => {
-    const first = settings.babies[0];
-    const nameOf = (f: { babyId?: string }) => babyName(settings.babies.find((b) => b.id === (f.babyId ?? first.id)));
-    Share.share({ title: `${APP_NAME} feeds`, message: feedsToCsv(allFeeds, Date.now(), nameOf, allEntries, settings.units) }).catch(() => {});
-  };
-
-  const setClock = (i: number, c: ClockReminder | null) => {
-    const list = settings.clockReminders.slice();
-    if (c) list[i] = c;
-    else list.splice(i, 1);
-    updateSettings({ clockReminders: list, reminderAsked: true });
-  };
-  const addClock = () => {
-    const prev = settings.clockReminders[settings.clockReminders.length - 1];
-    const hour = prev ? (prev.hour + 3) % 24 : 21;
-    updateSettings({ clockReminders: [...settings.clockReminders, { hour, minute: prev?.minute ?? 0 }], reminderAsked: true });
-  };
-  const moveClock = (c: ClockReminder, by: number): ClockReminder => {
-    const t = (((c.hour * 60 + c.minute + by) % 1440) + 1440) % 1440;
-    return { hour: Math.floor(t / 60), minute: t % 60 };
-  };
+  const planOn = plus && planIsOn(baby.plan);
+  const remindNote = !settings.remindersOn
+    ? 'No reminders.'
+    : planOn
+      ? 'Uses the daily plan times while the plan is on.'
+      : `${cap(spanWords(settings.intervalMin * 60_000))} after a feed starts.`;
+  const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
   return (
     <Screen>
       <TopBar left={<PillButton label="Back" onPress={() => router.back()} testID="back" />} title="Settings" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Section label="Nuzzle Plus">
-          <T tone="muted" style={type.label}>{plusStatus(settings, now)}</T>
-          <QuietButton label={settings.plus?.owned ? 'What Nuzzle Plus includes ›' : 'See Nuzzle Plus ›'} tone="ink" onPress={() => router.push('/plus')} style={styles.left} testID="open-plus" />
-        </Section>
         {settings.babies.map((b, i) => {
           const many = settings.babies.length > 1;
           const canRemove = many && !hasData(allFeeds, allEntries, settings, b.id);
           return (
-            <Section key={b.id} label={many ? `Baby ${i + 1}` : 'Baby'}>
-              <TextInput
-                testID={i === 0 ? 'baby-name' : `baby-name-${i}`}
-                value={b.name}
-                onChangeText={(t) => updateBaby(b.id, { name: t.slice(0, 30) })}
-                placeholder="Baby"
-                placeholderTextColor={p.muted}
-                autoCapitalize="words"
-                autoCorrect={false}
-                returnKeyType="done"
-                accessibilityLabel={many ? `Name of baby ${i + 1}` : "Baby's name"}
-                style={[type.body, styles.input, { color: p.ink, backgroundColor: p.surface }]}
-              />
-              <T tone="muted" style={type.label}>Birthday{b.birthday !== null ? ` · ${ageText(b.birthday, now)}` : ''}</T>
-              <Stepper
-                label="Birthday"
+            <Card key={b.id} style={{ gap: space.s }}>
+              <View style={styles.pair}>
+                <T tone="muted">Name</T>
+                <TextInput
+                  testID={i === 0 ? 'baby-name' : `baby-name-${i}`}
+                  value={b.name}
+                  onChangeText={(t) => updateBaby(b.id, { name: t.slice(0, 30) })}
+                  placeholder="Baby"
+                  placeholderTextColor={p.muted}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  accessibilityLabel={many ? `Name of baby ${i + 1}` : "Baby's name"}
+                  style={[type.body, styles.name, { color: p.ink }]}
+                />
+              </View>
+              <Pressable
                 testID={i === 0 ? 'birthday' : `birthday-${i}`}
-                display={b.birthday === null ? 'Not set' : new Date(b.birthday).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
-                onStep={(dir, fast) => {
-                  const today = dayStartOf(now);
-                  // the first tap sets today; after that it moves by a day, or a week while held
-                  const next = b.birthday === null ? today : dayStartOf(b.birthday, -dir * (fast ? 7 : 1));
-                  if (next <= today) updateBaby(b.id, { birthday: next });
-                }}
-                onPressValue={() => setCalendarFor(b.id)}
-              />
+                accessibilityRole="button"
+                accessibilityLabel={`Birthday, ${b.birthday === null ? 'not set' : date(b.birthday)}`}
+                accessibilityHint="Opens a calendar"
+                onPress={() => setCalendarFor(b.id)}
+                style={styles.pair}
+              >
+                <T tone="muted">Birthday</T>
+                <T style={styles.value}>{b.birthday === null ? 'Set ›' : `${date(b.birthday)} ›`}</T>
+              </Pressable>
               <CalendarSheet
                 visible={calendarFor === b.id}
                 title={`${b.name.trim() || 'Baby'}'s birthday`}
@@ -98,132 +76,71 @@ export default function SettingsScreen() {
                 onCancel={() => setCalendarFor(null)}
               />
               {canRemove && <QuietButton label="Remove this baby" onPress={() => removeBaby(b.id)} style={styles.left} />}
-            </Section>
+            </Card>
           );
         })}
-        <View style={[styles.section, { borderBottomColor: line(p) }]}>
-          <QuietButton label="Daily plan and examples by age ›" tone="ink" onPress={() => router.push('/plan')} style={styles.left} testID="open-plan" />
-          <QuietButton label={plus ? 'Add another baby ›' : 'Add another baby (Nuzzle Plus) ›'} tone="ink" onPress={plus ? addBaby : () => router.push('/plus?feature=babies')} style={styles.left} testID="add-baby" />
-          <QuietButton label="Go through the setup questions again ›" tone="ink" onPress={() => router.push('/welcome')} style={styles.left} testID="open-welcome" />
-        </View>
 
-        <Section label="Reminder">
-          <T>Remind me after a feed starts</T>
+        <Card style={{ gap: space.m }}>
+          <T tone="muted" style={type.label}>Remind me when the next feed is due</T>
           <Choice<'on' | 'off'>
             label="Reminder"
             value={settings.remindersOn ? 'on' : 'off'}
-            onChange={(v) => updateSettings({ remindersOn: v === 'on', reminderAsked: true })}
+            onChange={(v) => {
+              updateSettings({ remindersOn: v === 'on', reminderAsked: true });
+              if (v === 'on' && permission === 'undetermined') askReminders();
+            }}
             options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
           />
-          {settings.remindersOn && (
-            <View style={{ gap: space.s }}>
-              <T tone="muted" style={type.label}>After</T>
-              <Stepper
-                label="Reminder time"
-                testID="interval"
-                display={span(settings.intervalMin * 60_000)}
-                onStep={(dir) =>
-                  updateSettings({
-                    intervalMin: Math.max(REMINDER_MIN_MIN, Math.min(REMINDER_MAX_MIN, settings.intervalMin + dir * REMINDER_STEP_MIN)),
-                  })
-                }
-              />
-            </View>
+          <T tone="muted" style={type.small} testID="remind-note">{remindNote}</T>
+          {settings.remindersOn && !planOn && (
+            <Stepper
+              label="Time between feeds"
+              testID="interval"
+              display={span(settings.intervalMin * 60_000)}
+              onStep={(dir) =>
+                updateSettings({
+                  intervalMin: Math.max(REMINDER_MIN_MIN, Math.min(REMINDER_MAX_MIN, settings.intervalMin + dir * REMINDER_STEP_MIN)),
+                })
+              }
+            />
           )}
-          <T style={{ marginTop: space.s }}>Also remind me every day at</T>
-          {!plus && (
-            <QuietButton label="Daily reminders at set times (Nuzzle Plus) ›" tone="ink" onPress={() => router.push('/plus?feature=clock')} style={styles.left} testID="add-clock" />
-          )}
-          {plus && settings.clockReminders.map((c, i) => (
-            <View key={i} style={styles.clockRow}>
-              <View style={{ flex: 1 }}>
-                <Stepper
-                  label={`Daily reminder ${i + 1}`}
-                  testID={`clock-${i}`}
-                  display={clockTime(c.hour, c.minute)}
-                  onStep={(dir, fast) => setClock(i, moveClock(c, dir * (fast ? 60 : 15)))}
-                />
-              </View>
-              <QuietButton label="Remove" onPress={() => setClock(i, null)} />
-            </View>
-          ))}
-          {plus && settings.clockReminders.length < 8 && (
-            <QuietButton label="Add a time ›" tone="ink" onPress={addClock} style={styles.left} testID="add-clock" />
-          )}
-          <T style={{ marginTop: space.s }}>Quiet hours</T>
-          <T tone="muted" style={type.label}>Reminders in these hours still arrive, but without a sound.</T>
-          <Choice<'on' | 'off'>
-            label="Quiet hours"
-            value={settings.quiet.on ? 'on' : 'off'}
-            onChange={(v) => updateSettings({ quiet: { ...settings.quiet, on: v === 'on' } })}
-            options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]}
-          />
-          {settings.quiet.on && (
-            <View style={{ gap: space.s }}>
-              <T tone="muted" style={type.label}>From</T>
-              <Stepper
-                label="Quiet hours start"
-                testID="quiet-from"
-                display={clockTime(Math.floor(settings.quiet.fromMin / 60), settings.quiet.fromMin % 60)}
-                onStep={(dir, fast) => updateSettings({ quiet: { ...settings.quiet, fromMin: wrapMin(settings.quiet.fromMin + dir * (fast ? 60 : 15)) } })}
-              />
-              <T tone="muted" style={type.label}>Until</T>
-              <Stepper
-                label="Quiet hours end"
-                testID="quiet-to"
-                display={clockTime(Math.floor(settings.quiet.toMin / 60), settings.quiet.toMin % 60)}
-                onStep={(dir, fast) => updateSettings({ quiet: { ...settings.quiet, toMin: wrapMin(settings.quiet.toMin + dir * (fast ? 60 : 15)) } })}
-              />
-            </View>
-          )}
-          {(settings.remindersOn || settings.clockReminders.length > 0) && permission === 'denied' && (
+          {settings.remindersOn && permission === 'denied' && (
             <View style={{ gap: space.xs }}>
               <T tone="muted" style={type.label}>Notifications are off for {APP_NAME} in your phone settings.</T>
               <QuietButton label="Open settings" tone="ink" onPress={() => Linking.openSettings()} style={styles.left} />
             </View>
           )}
-          {(settings.remindersOn || settings.clockReminders.length > 0) && permission === 'undetermined' && (
-            <QuietButton label="Allow notifications ›" tone="ink" onPress={askReminders} style={styles.left} testID="allow" />
-          )}
-        </Section>
+        </Card>
 
-        <Section label="Units">
-          <Choice<Units>
-            label="Units"
-            value={settings.units}
-            onChange={(v) => updateSettings({ units: v })}
-            options={[{ value: 'ml', label: 'ml, kg, cm' }, { value: 'oz', label: 'oz, lb, in' }]}
-          />
-        </Section>
-
-        <Section label="Theme">
+        <Card style={{ gap: space.m }}>
+          <T tone="muted" style={type.label}>Look</T>
           <Choice<ThemeChoice>
             label="Theme"
             value={settings.theme}
             onChange={(v) => updateSettings({ theme: v })}
-            options={[{ value: 'night', label: 'Night' }, { value: 'day', label: 'Day' }, { value: 'system', label: 'Phone' }]}
+            options={[{ value: 'night', label: 'Night' }, { value: 'day', label: 'Day' }, { value: 'system', label: 'Auto' }]}
           />
-          {settings.theme === 'system' && <T tone="muted" style={type.label}>Follows your phone: Night when it is in dark mode.</T>}
-        </Section>
+        </Card>
 
-        <Section label="Backup and second phone">
-          <SyncSection />
-        </Section>
-
-        <Section label="Your data">
-          <T tone="muted" style={type.label}>
-            {sync.code ? 'Your feeds are on this phone and in the backup. Nothing else is sent anywhere.' : 'Everything stays on this phone. Nothing is sent anywhere.'}
-          </T>
-          <QuietButton
-            label="Export everything as a spreadsheet ›"
-            tone="ink"
-            onPress={exportCsv}
-            style={styles.left}
-            testID="export"
+        <Card style={{ gap: space.xs }}>
+          <LinkRow
+            label="Units"
+            value={settings.units === 'oz' ? 'oz, lb, in' : 'ml, kg, cm'}
+            testID="units"
+            onPress={() => updateSettings({ units: settings.units === 'oz' ? 'ml' : 'oz' })}
           />
-        </Section>
+          <LinkRow label="Backup and sharing" value={sync.code ? 'On' : 'Off'} testID="open-sharing" onPress={() => router.push('/sharing')} />
+          <LinkRow label="Daily plan" value={planOn ? 'On' : 'Off'} testID="open-plan" onPress={() => router.push('/plan')} />
+          <LinkRow
+            label="Nuzzle Plus"
+            value={settings.plus?.owned ? 'On' : plus ? `${trialDaysLeft(settings, now)} days free` : 'Off'}
+            testID="open-plus"
+            onPress={() => router.push('/plus')}
+          />
+          <LinkRow label="Another baby" value="Add" testID="add-baby" onPress={plus ? addBaby : () => router.push('/plus?feature=babies')} />
+        </Card>
 
-        <T tone="muted" style={[type.small, { textAlign: 'center', marginTop: space.xl }]}>
+        <T tone="muted" style={[type.small, { textAlign: 'center', marginTop: space.l }]}>
           {APP_NAME} {Constants.expoConfig?.version ?? ''}
         </T>
       </ScrollView>
@@ -231,20 +148,29 @@ export default function SettingsScreen() {
   );
 }
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
-  const p = usePalette();
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** A row that opens or changes one thing: the name on the left, its value and a chevron on the right. */
+function LinkRow({ label, value, onPress, testID }: { label: string; value: string; onPress: () => void; testID: string }) {
   return (
-    <View style={[styles.section, { borderBottomColor: line(p) }]}>
-      <T tone="muted" style={type.label} accessibilityRole="header">{label}</T>
-      {children}
-    </View>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}, ${value}`}
+      style={({ pressed }) => [styles.pair, styles.link, { opacity: pressed ? 0.7 : 1 }]}
+    >
+      <T tone="muted">{label}</T>
+      <T style={styles.value}>{value} ›</T>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: space.side, paddingBottom: space.xxl },
-  section: { gap: space.m, paddingVertical: space.l, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
-  input: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l },
+  body: { paddingHorizontal: space.side, paddingTop: space.s, paddingBottom: space.xxl, gap: space.l },
+  pair: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.m, minHeight: 44 },
+  link: { minHeight: TAP - 8 },
+  name: { flex: 1, textAlign: 'right', fontWeight: '700', minHeight: 44 },
+  value: { fontWeight: '700' },
   left: { alignSelf: 'flex-start', paddingHorizontal: 0 },
-  clockRow: { flexDirection: 'row', alignItems: 'center', gap: space.s },
 });

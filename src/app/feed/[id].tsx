@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { CalendarSheet } from '../../components/CalendarSheet';
 import { Stepper } from '../../components/Stepper';
@@ -35,6 +35,9 @@ export default function FeedEditor() {
   });
   const [problem, setProblem] = useState<string | null>(null);
   const [calendar, setCalendar] = useState(false);
+  // a new feed starts with the time showing, since that is the thing most often fixed
+  const [whenOpen, setWhenOpen] = useState(!existing && kind !== 'bottle');
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const set = (patch: Partial<FeedDraft>) => {
     setProblem(null);
@@ -65,100 +68,102 @@ export default function FeedEditor() {
   const day0 = new Date(new Date(draft.start).setHours(0, 0, 0, 0)).getTime();
   const both = draft.leftMin > 0 && draft.rightMin > 0;
 
+  const when = Math.abs(now - draft.start) < 2 * MIN ? 'Now' : `${dayLabel(day0, now)} ${timeOf(draft.start)}`;
+
   return (
     <Screen>
-      <TopBar left={<PillButton label="Cancel" onPress={() => router.back()} testID="cancel" />} title={existing ? (isBottle ? 'Edit bottle' : 'Edit feed') : isBottle ? 'Log a bottle' : 'Add a feed'} />
+      <TopBar left={<PillButton label="Cancel" onPress={() => router.back()} testID="cancel" />} title="Feed" />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        {!existing && (
-          <View style={{ paddingTop: space.s }}>
-            <Choice<'breast' | 'bottle'>
-              label="Kind of feed"
-              value={draft.kind ?? 'breast'}
-              onChange={(v) => set({ kind: v })}
-              options={[{ value: 'breast', label: 'Breast' }, { value: 'bottle', label: 'Bottle' }]}
+        <Choice<'breast' | 'bottle'>
+          label="Feed type"
+          value={draft.kind ?? 'breast'}
+          onChange={(v) => set({ kind: v })}
+          options={[{ value: 'breast', label: 'Breast' }, { value: 'bottle', label: 'Bottle' }]}
+        />
+        <Pressable
+          testID="when"
+          accessibilityRole="button"
+          accessibilityLabel={`When: ${when}`}
+          accessibilityHint={whenOpen ? 'Hides the day and time' : 'Change the day and time'}
+          onPress={() => setWhenOpen((o) => !o)}
+          style={({ pressed }) => [styles.whenRow, { backgroundColor: p.surface, opacity: pressed ? 0.8 : 1 }]}
+        >
+          <T tone="muted">When</T>
+          <T style={{ fontWeight: '700' }}>{when} {whenOpen ? '⌄' : '›'}</T>
+        </Pressable>
+        {whenOpen && (
+          <View style={{ gap: space.s }}>
+            <Stepper
+              label="Day"
+              testID="day"
+              display={dayLabel(day0, now)}
+              onStep={(dir) => {
+                const d = new Date(draft.start);
+                d.setDate(d.getDate() + dir); // a calendar day, so daylight saving changes don't move the time
+                if (d.getTime() <= now + MIN) set({ start: d.getTime() });
+              }}
+              onPressValue={() => setCalendar(true)}
+            />
+            <Stepper label="Start time" testID="time" display={timeOf(draft.start)} onStep={(dir, fast) => set({ start: draft.start + dir * (fast ? 5 : 1) * MIN })} />
+            <CalendarSheet
+              visible={calendar}
+              title="Which day?"
+              value={day0}
+              max={today0}
+              onDone={(day) => {
+                // the chosen day at the same clock time
+                const t = new Date(draft.start);
+                const d = new Date(day);
+                d.setHours(t.getHours(), t.getMinutes(), 0, 0);
+                set({ start: Math.min(d.getTime(), now) });
+                setCalendar(false);
+              }}
+              onCancel={() => setCalendar(false)}
             />
           </View>
         )}
-        <Row label="Day">
-          <Stepper
-            label="Day"
-            testID="day"
-            display={dayLabel(day0, now)}
-            onStep={(dir) => {
-              const d = new Date(draft.start);
-              d.setDate(d.getDate() + dir); // a calendar day, so daylight saving changes don't move the time
-              if (d.getTime() <= now + MIN) set({ start: d.getTime() });
-            }}
-            onPressValue={() => setCalendar(true)}
-          />
-          <CalendarSheet
-            visible={calendar}
-            title="Which day?"
-            value={day0}
-            max={today0}
-            onDone={(day) => {
-              // the chosen day at the same clock time
-              const t = new Date(draft.start);
-              const d = new Date(day);
-              d.setHours(t.getHours(), t.getMinutes(), 0, 0);
-              set({ start: Math.min(d.getTime(), now) });
-              setCalendar(false);
-            }}
-            onCancel={() => setCalendar(false)}
-          />
-        </Row>
-        <Row label={isBottle ? 'At' : 'Started at'}>
-          <Stepper label="Start time" testID="time" display={timeOf(draft.start)} onStep={(dir, fast) => set({ start: draft.start + dir * (fast ? 5 : 1) * MIN })} />
-        </Row>
         {isBottle ? (
-          <>
-            <Row label="Amount">
-              <Stepper
-                label="Amount" testID="amount" numeric={oz ? undefined : ml} display={amount(ml, settings.units)}
-                onStep={stepAmount}
-                onType={oz ? undefined : (n) => set({ amountMl: clampMl(n) })}
-              />
-            </Row>
-            <Row label="Milk">
-              <Choice<Milk>
-                label="Milk"
-                value={draft.milk ?? 'breast'}
-                onChange={(v) => set({ milk: v })}
-                options={[{ value: 'breast', label: 'Breast milk' }, { value: 'formula', label: 'Formula' }]}
-              />
-            </Row>
-          </>
-        ) : (
-          <>
-        <Row label="Left">
-          <Stepper
-            label="Minutes on the left" testID="left" numeric={draft.leftMin} display={`${draft.leftMin} min`}
-            onStep={(dir, fast) => set({ leftMin: clampMin(draft.leftMin + dir * (fast ? 5 : 1)) })}
-            onType={(n) => set({ leftMin: clampMin(n) })}
-          />
-        </Row>
-        <Row label="Right">
-          <Stepper
-            label="Minutes on the right" testID="right" numeric={draft.rightMin} display={`${draft.rightMin} min`}
-            onStep={(dir, fast) => set({ rightMin: clampMin(draft.rightMin + dir * (fast ? 5 : 1)) })}
-            onType={(n) => set({ rightMin: clampMin(n) })}
-          />
-        </Row>
-        {both && (
-          <View style={[styles.row, { borderBottomColor: line(p) }]}>
-            <T tone="muted" style={type.label}>Ended on</T>
-            <Choice<Side>
-              label="Ended on"
-              value={effectiveEndSide(draft)}
-              onChange={(v) => set({ endedOn: v })}
-              options={[{ value: 'L', label: 'Left' }, { value: 'R', label: 'Right' }]}
+          <View style={{ gap: space.m }}>
+            <T tone="muted" style={type.label}>Amount{oz ? '' : ', tap to type'}</T>
+            <Stepper
+              label="Amount" testID="amount" numeric={oz ? undefined : ml} display={amount(ml, settings.units)}
+              onStep={stepAmount}
+              onType={oz ? undefined : (n) => set({ amountMl: clampMl(n) })}
+            />
+            <Choice<Milk>
+              label="Milk"
+              value={draft.milk ?? 'breast'}
+              onChange={(v) => set({ milk: v })}
+              options={[{ value: 'breast', label: 'Breast milk' }, { value: 'formula', label: 'Formula' }]}
             />
           </View>
+        ) : (
+          <View style={{ gap: space.m }}>
+            <T tone="accent" style={type.label}>Left</T>
+            <Stepper
+              label="Minutes on the left" testID="left" numeric={draft.leftMin} display={`${draft.leftMin}m`}
+              onStep={(dir, fast) => set({ leftMin: clampMin(draft.leftMin + dir * (fast ? 5 : 1)) })}
+              onType={(n) => set({ leftMin: clampMin(n) })}
+            />
+            <T tone="peach" style={type.label}>Right</T>
+            <Stepper
+              label="Minutes on the right" testID="right" numeric={draft.rightMin} display={`${draft.rightMin}m`}
+              onStep={(dir, fast) => set({ rightMin: clampMin(draft.rightMin + dir * (fast ? 5 : 1)) })}
+              onType={(n) => set({ rightMin: clampMin(n) })}
+            />
+            {both && (
+              // which side came last decides the side to start on next time
+              <Choice<Side>
+                label="Ended on"
+                value={effectiveEndSide(draft)}
+                onChange={(v) => set({ endedOn: v })}
+                options={[{ value: 'L', label: 'Ended on left' }, { value: 'R', label: 'Ended on right' }]}
+              />
+            )}
+          </View>
         )}
-          </>
-        )}
-        <Row label="Note">
+        {noteOpen || draft.note ? (
           <TextInput
             testID="note"
             value={draft.note ?? ''}
@@ -166,10 +171,13 @@ export default function FeedEditor() {
             placeholder="Anything to remember"
             placeholderTextColor={p.muted}
             multiline
+            autoFocus={noteOpen && !draft.note}
             accessibilityLabel="Note"
             style={[type.body, styles.note, { color: p.ink, backgroundColor: p.surface }]}
           />
-        </Row>
+        ) : (
+          <QuietButton label="+ Note" onPress={() => setNoteOpen(true)} testID="add-note" style={styles.left} />
+        )}
       </ScrollView>
       <View style={styles.bottom}>
         {problem && (
@@ -194,20 +202,11 @@ export default function FeedEditor() {
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  const p = usePalette();
-  return (
-    <View style={[styles.row, { borderBottomColor: line(p) }]}>
-      <T tone="muted" style={type.label}>{label}</T>
-      {children}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: space.side, paddingBottom: space.xl, gap: space.s },
-  row: { gap: space.s, paddingVertical: space.m, borderBottomWidth: StyleSheet.hairlineWidth * 2 },
-  bottom: { paddingHorizontal: space.side, gap: space.xs },
+  body: { paddingHorizontal: space.side, paddingTop: space.s, paddingBottom: space.xl, gap: space.l },
+  whenRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: TAP, paddingHorizontal: space.side, borderRadius: radius.row },
+  bottom: { paddingHorizontal: space.side, paddingTop: space.s, gap: space.xs },
   problem: { borderRadius: radius.row, borderWidth: 1.5, paddingHorizontal: space.l, paddingVertical: space.m },
   note: { minHeight: TAP, borderRadius: radius.row, paddingHorizontal: space.l, paddingVertical: space.m, textAlignVertical: 'top' },
+  left: { alignSelf: 'flex-start', paddingHorizontal: 0 },
 });

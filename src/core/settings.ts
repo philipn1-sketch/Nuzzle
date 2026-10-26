@@ -15,6 +15,12 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderAsked: false,
 };
 
+/** Ounces where the phone's region uses them (the US, Liberia and Myanmar), millilitres everywhere else. */
+export function unitsForRegion(locale = Intl.DateTimeFormat().resolvedOptions().locale): Settings['units'] {
+  const region = locale.split(/[-_]/)[1]?.toUpperCase();
+  return region === 'US' || region === 'LR' || region === 'MM' ? 'oz' : 'ml';
+}
+
 /** Reads settings saved by any earlier version. The old single `babyName` becomes the first baby. */
 export function migrateSettings(raw: Record<string, unknown>): Settings {
   const { babyName, ...rest } = raw as Partial<Settings> & { babyName?: string };
@@ -35,6 +41,8 @@ export function migrateSettings(raw: Record<string, unknown>): Settings {
   if (s.planReminders === undefined) {
     s.planReminders = s.babies.filter((b) => b.plan?.reminders).map((b) => b.id);
   }
+  // a new install takes its units from the phone's region; they can still be changed in Settings
+  if (Object.keys(raw).length === 0) s.units = unitsForRegion();
   // families here before Nuzzle Plus keep everything; a new install starts its free week now
   if (raw.plus === undefined) s.plus = Object.keys(raw).length > 0 ? { owned: 'gift' } : { trialStartedAt: Date.now() };
   // anyone who already had settings saved was using the app before the welcome questions existed

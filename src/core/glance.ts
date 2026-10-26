@@ -46,7 +46,7 @@ function timer(f: Feed, now: number) {
   return { timerFrom: at - totalMs(f, at), pausedAt };
 }
 
-export function glanceProps(feeds: Feed[], name: string, units: Units, now: number, intervalMin = 120): GlanceProps {
+export function glanceProps(feeds: Feed[], name: string, units: Units, now: number, intervalMin = 120, dueAt?: number | null): GlanceProps {
   const last = lastSaved(feeds);
   const breast = lastBreast(feeds);
   const next = suggestedSide(feeds);
@@ -59,7 +59,7 @@ export function glanceProps(feeds: Feed[], name: string, units: Units, now: numb
     letter: a ? endSide(a) : next && breast ? next : '',
     feeding: a ? `${a.status === 'paused' ? 'Paused' : 'Feeding'} on the ${sideWord(endSide(a))}` : '',
     ...(a ? timer(a, now) : { timerFrom: 0, pausedAt: 0 }),
-    dueAt: last ? feedStart(last) + intervalMin * 60_000 : 0,
+    dueAt: last ? dueAt ?? feedStart(last) + intervalMin * 60_000 : 0,
     windowText: span(intervalMin * 60_000),
   };
 }

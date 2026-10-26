@@ -4,15 +4,14 @@ import type { Settings } from './types';
  * Nuzzle Plus. Everything she needs during a feed stays free: the Left and Right timer, the next feed
  * countdown and reminder, the lock screen timer, logging and the full history. Plus adds the extras.
  */
-export type PlusFeature = 'sharing' | 'plan' | 'insights' | 'widget' | 'babies' | 'clock';
+export type PlusFeature = 'sharing' | 'plan' | 'insights' | 'widget' | 'babies';
 
 export const PLUS_FEATURES: { id: PlusFeature; title: string; line: string }[] = [
   { id: 'sharing', title: 'Share with a second phone', line: 'Both parents see the same feeds, with an online backup.' },
-  { id: 'plan', title: 'Daily plans', line: 'Example days by age, your own plan, and reminders at plan feed times.' },
+  { id: 'plan', title: 'Daily plan', line: 'A gentle day for her age, with the next feed and reminder taken from it.' },
   { id: 'widget', title: 'Home screen widget', line: 'The next side and a live countdown, without opening the app.' },
   { id: 'insights', title: 'Week view and check up summary', line: 'Seven day charts, and a one page PDF to show your nurse or GP.' },
   { id: 'babies', title: 'More than one baby', line: 'Twins, or a little one on the way.' },
-  { id: 'clock', title: 'Daily reminders at set times', line: 'Reminders at the same times every day.' },
 ];
 
 export const TRIAL_DAYS = 7;

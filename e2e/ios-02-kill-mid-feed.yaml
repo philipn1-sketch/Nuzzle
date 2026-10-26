@@ -6,10 +6,9 @@ appId: com.philipnader.nuzzle
 - launchApp
 - tapOn:
     id: "side-L"
-- assertVisible: "Feeding on the left"
 - assertVisible:
     id: "timer"
-    text: "Fed for just now"
+    text: "Feeding on the left, fed for just now"
 - stopApp
 # about 70 seconds with the app closed
 - extendedWaitUntil:
@@ -17,14 +16,14 @@ appId: com.philipnader.nuzzle
     timeout: 70000
     optional: true
 - launchApp
-- assertVisible: "Feeding on the left"
 - assertVisible:
     id: "timer"
-    text: "Fed for 1 minute"
+    text: "Feeding on the left, fed for 1 minute"
 - takeScreenshot: night-08-home-running-after-reopening
 - tapOn:
     id: "done"
-- assertVisible: "Ended on the left"
+- assertVisible:
+    id: "last-side"
 - extendedWaitUntil:
     visible:
       id: "reminder-at"

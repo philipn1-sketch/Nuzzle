@@ -10,9 +10,11 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "feed-row-.*"
     index: 0
-- assertVisible: "Edit feed"
+- assertVisible: "Feed"
 - takeScreenshot: night-10-edit-feed
 # the feeds from the earlier flows are only minutes old; move this one to yesterday so 15 minutes fits
+- tapOn:
+    id: "when"
 - tapOn:
     id: "day-less"
 - tapOn:
@@ -36,7 +38,8 @@ appId: com.philipnader.nuzzle
     id: "snack-undo"
 - tapOn:
     id: "add-feed"
-- assertVisible: "Add a feed"
+- assertVisible:
+    id: "when"
 - tapOn:
     id: "save-feed"
 - assertVisible: "Add some minutes on at least one side."
@@ -73,27 +76,25 @@ appId: com.philipnader.nuzzle
 - takeScreenshot: day-09-history
 - tapOn:
     id: "choice-week"
-- assertVisible: "Time on the breast"
+- assertVisible: "Feeds through the day"
 - takeScreenshot: day-14-week
 - tapOn:
     id: "back"
 - tapOn:
     id: "log-bottle"
-- assertVisible: "Log a bottle"
+- assertVisible:
+    id: "amount-more"
 - tapOn:
     id: "amount-more"
 - tapOn:
     id: "save-feed"
 - assertVisible: "Bottle added.*"
-- assertVisible: ".*Bottle 100 ml.*"
 - takeScreenshot: day-15-home-after-bottle
 - tapOn:
     id: "log-nappy"
 - tapOn:
     id: "nappy-both"
 - assertVisible: "Wet and dirty nappy at.*"
-- assertVisible:
-    id: "nappies-today"
 - tapOn:
     id: "log-sleep"
 - assertVisible:
@@ -117,9 +118,13 @@ appId: com.philipnader.nuzzle
     visible:
       id: "timer"
     timeout: 10000
-- assertVisible: "Feeding on the right"
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the right.*"
 - openLink: "nuzzle://action?do=R"
-- assertVisible: "Feeding on the right"
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the right.*"
 # a feed under five seconds is treated as a mistap, so let it run a little
 - extendedWaitUntil:
     visible: "this text never appears"
@@ -127,5 +132,6 @@ appId: com.philipnader.nuzzle
     optional: true
 - openLink: "nuzzle://action?do=done"
 - extendedWaitUntil:
-    visible: "Ended on the right"
+    visible:
+      id: "last-side"
     timeout: 10000

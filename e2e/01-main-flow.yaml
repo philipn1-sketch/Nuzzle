@@ -16,31 +16,36 @@ appId: com.philipnader.nuzzle
 - takeScreenshot: night-01-home-first-launch
 - tapOn:
     id: "side-L"
-- assertVisible: "Feeding on the left"
-- assertVisible: "Started on the left."
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the left.*"
+- assertVisible:
+    id: "feed-state"
+    text: "this feed"
 - takeScreenshot: night-02-home-started
-- waitForAnimationToEnd
-- extendedWaitUntil:
-    notVisible: "Started on the left."
-    timeout: 10000
 - tapOn:
     id: "side-R"
-- assertVisible: "Feeding on the right"
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the right.*"
 - assertVisible:
     id: "side-R"
     text: ".*Tap to pause.*"
-- assertNotVisible: "Started on the left."
 - takeScreenshot: night-03-home-running
 - tapOn:
     id: "side-R"
-- assertVisible: "Paused on the right"
+- assertVisible:
+    id: "feed-state"
+    text: "Paused"
 - assertVisible:
     id: "side-R"
     text: ".*Carry on here.*"
 - takeScreenshot: night-04-home-paused
 - tapOn:
     id: "side-L"
-- assertVisible: "Feeding on the left"
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the left.*"
 - tapOn:
     id: "done"
 - assertVisible:
@@ -50,16 +55,20 @@ appId: com.philipnader.nuzzle
     timeout: 2000
 - tapOn:
     id: "snack-undo"
-- assertVisible: "Feeding on the left"
+- assertVisible:
+    id: "timer"
+    text: "Feeding on the left.*"
 - tapOn:
     id: "done"
-- assertVisible: "Ended on the left"
+- assertVisible:
+    id: "last-side"
+    text: "Last feed.*"
 - assertVisible:
     id: "side-R"
     text: ".*Start here.*"
 - extendedWaitUntil:
     visible:
-      text: "Want a reminder.*"
+      text: "Remind you when the next feed is due.*"
     timeout: 12000
 - takeScreenshot: night-06-home-ask-reminders
 - tapOn:
