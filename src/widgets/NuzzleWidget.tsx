@@ -21,7 +21,7 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   const list = all.babies ?? [];
   const chosen = env.configuration?.baby;
   const props = list.find((b) => b.babyId === chosen) ?? list[0] ?? {
-    babyId: '', name: 'Baby', lastStart: 0, lastLine: '', next: '', letter: '', feeding: '', timerFrom: 0, pausedAt: 0,
+    babyId: '', name: 'Baby', lastStart: 0, lastLine: '', next: '', letter: '', feeding: '', timerFrom: 0, pausedAt: 0, dueAt: 0, windowText: '',
   };
   // the app's palette; declared in here because a widget can't see anything outside this function
   const dark = env.colorScheme !== 'light';
@@ -34,6 +34,9 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   const feeding = props.feeding !== '';
   const hasLast = props.lastStart > 0;
   const day = 86_400_000;
+  // the moment this version of the widget is shown; the app also schedules one for when her window ends
+  const at = env.date ? new Date(env.date).getTime() : Date.now();
+  const waiting = hasLast && props.dueAt > at;
 
   const timerText = (size: number) => (
     <Text
@@ -43,11 +46,19 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
       modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(c.ink), minimumScaleFactor(0.6), lineLimit(1)]}
     />
   );
+  // counts down to the end of her window, then up from the last feed's start
+  const countdown = (size: number) => (
+    <Text
+      timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.dueAt) }}
+      countsDown
+      modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(c.ink), minimumScaleFactor(0.6), lineLimit(1)]}
+    />
+  );
   const sinceText = (size: number) => (
     <Text
-      date={new Date(props.lastStart)}
-      dateStyle="relative"
-      modifiers={[rounded(size, 'bold'), foregroundStyle(c.ink), minimumScaleFactor(0.5), lineLimit(1)]}
+      timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.lastStart + day) }}
+      countsDown={false}
+      modifiers={[rounded(size, 'bold'), monospacedDigit(), foregroundStyle(c.ink), minimumScaleFactor(0.6), lineLimit(1)]}
     />
   );
 
@@ -58,16 +69,22 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
   if (family === 'accessoryCircular') {
     return (
       <VStack spacing={0}>
-        <Text modifiers={[rounded(11, 'medium')]}>{feeding ? 'Feeding' : 'Next'}</Text>
-        <Text modifiers={[rounded(22, 'bold')]}>{props.letter || 'L R'}</Text>
+        <Text modifiers={[rounded(20, 'bold')]}>{props.letter || 'L R'}</Text>
+        {!feeding && waiting ? (
+          <Text timerInterval={{ lower: new Date(props.lastStart), upper: new Date(props.dueAt) }} countsDown modifiers={[rounded(11, 'semibold'), monospacedDigit(), minimumScaleFactor(0.6), lineLimit(1)]} />
+        ) : (
+          <Text modifiers={[rounded(11, 'medium')]}>{feeding ? 'Feeding' : 'Next'}</Text>
+        )}
       </VStack>
     );
   }
   if (family === 'accessoryRectangular') {
     return (
       <VStack alignment="leading" spacing={1}>
-        <Text modifiers={[rounded(13, 'semibold')]}>{feeding ? props.feeding : `${props.name}'s last feed started`}</Text>
-        {feeding ? timerText(20) : hasLast ? sinceText(20) : <Text>No feeds yet</Text>}
+        <Text modifiers={[rounded(13, 'semibold')]}>
+          {feeding ? props.feeding : waiting ? 'Next feed in' : hasLast ? 'Since last feed started' : props.name}
+        </Text>
+        {feeding ? timerText(20) : waiting ? countdown(20) : hasLast ? sinceText(20) : <Text>No feeds yet</Text>}
         {!feeding && props.next !== '' && <Text modifiers={[rounded(13, 'medium')]}>Next: {props.next}</Text>}
       </VStack>
     );
@@ -84,11 +101,19 @@ const NuzzleWidget = (all: WidgetProps, env: WidgetEnvironment<WidgetConfig>) =>
       <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{props.feeding}</Text>
       {timerText(family === 'systemSmall' ? 34 : 40)}
     </VStack>
+  ) : waiting ? (
+    <VStack alignment="leading" spacing={4}>
+      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>Next feed in</Text>
+      {countdown(family === 'systemSmall' ? 34 : 40)}
+      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{props.lastLine}</Text>
+    </VStack>
   ) : hasLast ? (
     <VStack alignment="leading" spacing={4}>
-      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>Since the last feed started</Text>
-      {sinceText(family === 'systemSmall' ? 22 : 26)}
-      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>{props.lastLine}</Text>
+      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>Since last feed started</Text>
+      {sinceText(family === 'systemSmall' ? 34 : 40)}
+      <Text modifiers={[rounded(13, 'medium'), foregroundStyle(c.muted), lineLimit(1)]}>
+        {props.windowText ? `Past your ${props.windowText} window` : props.lastLine}
+      </Text>
     </VStack>
   ) : (
     <Text modifiers={[rounded(15, 'medium'), foregroundStyle(c.muted)]}>No feeds yet. Tap to start.</Text>

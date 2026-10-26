@@ -13,7 +13,11 @@ export function updateWidget(props: WidgetProps): void {
   if (key === lastWidget || Platform.OS !== 'ios') return;
   lastWidget = key;
   try {
-    NuzzleWidget.updateSnapshot(props);
+    // one version now, and one at the end of each baby's window, so the countdown turns into
+    // "Past your 2h window" right on time even if the app is never opened
+    const now = Date.now();
+    const ends = [...new Set(props.babies.map((b) => b.dueAt).filter((t) => t > now))].sort((a, b) => a - b);
+    NuzzleWidget.updateTimeline([{ date: new Date(now), props }, ...ends.map((t) => ({ date: new Date(t), props }))]);
   } catch {
     // no widget support on this phone: the app works the same without it
   }

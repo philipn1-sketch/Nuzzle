@@ -5,7 +5,7 @@ import { Ring } from '../components/Ring';
 import { SideButton, type SideState } from '../components/SideButton';
 import { Card, Choice, PillButton, PrimaryButton, QuietButton, Screen, SecondaryButton, SnackbarSlot, T, TopBar } from '../components/ui';
 import {
-  activeFeed, dayStartOf, endSide, feedStart, isDue, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
+  activeFeed, dayStartOf, endSide, feedStart, lastBreast, lastSaved, looksForgotten, runningSide, sideMs, sideRuns, suggestedSide, totalMs,
 } from '../core/feeds';
 import { ageText, amount, clock, mins, sideWord, span, spanWords, timeOf } from '../core/format';
 import { babyName } from '../core/reminder';
@@ -51,7 +51,7 @@ export default function Home() {
   const showAsk = !active && last !== null && !settings.reminderAsked && permission === 'undetermined' && app.snack === null;
   const showStill = active !== null && !app.stillFeedingAnswered && looksForgotten(feeds, settings, now);
   // only when a reminder can actually ring
-  const due = settings.remindersOn && permission === 'granted' && isDue(feeds, settings, now);
+  const windowMs = settings.intervalMin * 60_000;
 
   const { width, height } = useWindowDimensions();
   // the ring makes room when a question card is showing
@@ -151,10 +151,14 @@ export default function Home() {
                 </T>
               )}
               {last.note ? <T tone="muted" style={[type.label, styles.centreText, { fontStyle: 'italic', paddingRight: 2 }]} numberOfLines={2}>{last.note}</T> : null}
-              {due ? (
-                <T style={[type.body, styles.centreText]}>Past your {span(settings.intervalMin * 60_000)} reminder time</T>
+              {/* her own window, counted from when the last feed started */}
+              {now < feedStart(last) + windowMs ? (
+                <T testID="reminder-at" style={[type.body, styles.centreText]}
+                  accessibilityLabel={`Next feed in ${spanWords(feedStart(last) + windowMs - now)}, at ${timeOf(feedStart(last) + windowMs)}`}>
+                  Next feed in {span(feedStart(last) + windowMs - now + 59_999)} · at {timeOf(feedStart(last) + windowMs)}
+                </T>
               ) : (
-                app.scheduledAt !== null && <T testID="reminder-at" tone="muted" style={[type.label, styles.centreText]}>Reminder at {timeOf(app.scheduledAt)}</T>
+                <T style={[type.body, styles.centreText]}>Past your {span(windowMs)} window</T>
               )}
             </View>
           ) : null}

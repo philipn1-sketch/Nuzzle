@@ -204,10 +204,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       notices.push({ babyId: b.id, text: a ? `${many ? `${babyName(b)}: ` : ''}${runningText(a)}` : null });
     }
     // the home screen widget follows the baby on screen; the lock screen timer follows a running feed
-    const shown = glanceProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), settings.units, now);
+    const shown = glanceProps(feedsOf(allFeeds, settings, baby.id), babyName(baby), settings.units, now, settings.intervalMin);
     const others = settings.babies
       .filter((b) => b.id !== baby.id)
-      .map((b) => ({ ...glanceProps(feedsOf(allFeeds, settings, b.id), babyName(b), settings.units, now), babyId: b.id }));
+      .map((b) => ({ ...glanceProps(feedsOf(allFeeds, settings, b.id), babyName(b), settings.units, now, settings.intervalMin), babyId: b.id }));
     glance.updateWidget({ babies: [{ ...shown, babyId: baby.id }, ...others] });
     glance.offerBabies(settings.babies);
     // the same numbers go to the Watch and to Siri

@@ -1,5 +1,5 @@
 import { activeFeed, endSide, feedStart, lastBreast, lastSaved, suggestedSide, totalMs } from './feeds';
-import { amount, sideName, sideWord, timeOf } from './format';
+import { amount, sideName, sideWord, span, timeOf } from './format';
 import type { Feed, Units } from './types';
 
 /**
@@ -22,6 +22,10 @@ export interface GlanceProps {
   timerFrom: number;
   /** When paused, the moment the timer stopped; 0 while running. */
   pausedAt: number;
+  /** The end of her window: the last feed's start plus her interval; 0 before the first feed. */
+  dueAt: number;
+  /** Her window in words, such as "2h". */
+  windowText: string;
 }
 
 /** What the lock screen and Dynamic Island show while a feed is being timed. */
@@ -42,7 +46,7 @@ function timer(f: Feed, now: number) {
   return { timerFrom: at - totalMs(f, at), pausedAt };
 }
 
-export function glanceProps(feeds: Feed[], name: string, units: Units, now: number): GlanceProps {
+export function glanceProps(feeds: Feed[], name: string, units: Units, now: number, intervalMin = 120): GlanceProps {
   const last = lastSaved(feeds);
   const breast = lastBreast(feeds);
   const next = suggestedSide(feeds);
@@ -55,6 +59,8 @@ export function glanceProps(feeds: Feed[], name: string, units: Units, now: numb
     letter: a ? endSide(a) : next && breast ? next : '',
     feeding: a ? `${a.status === 'paused' ? 'Paused' : 'Feeding'} on the ${sideWord(endSide(a))}` : '',
     ...(a ? timer(a, now) : { timerFrom: 0, pausedAt: 0 }),
+    dueAt: last ? feedStart(last) + intervalMin * 60_000 : 0,
+    windowText: span(intervalMin * 60_000),
   };
 }
 

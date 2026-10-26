@@ -14,8 +14,10 @@ struct Glance: Codable, Equatable {
   var feeding: String
   var timerFrom: Double
   var pausedAt: Double
+  /// The end of her window; missing from phones on an older version.
+  var dueAt: Double?
 
-  static let empty = Glance(name: "Baby", lastStart: 0, lastLine: "", next: "", letter: "", feeding: "", timerFrom: 0, pausedAt: 0)
+  static let empty = Glance(name: "Baby", lastStart: 0, lastLine: "", next: "", letter: "", feeding: "", timerFrom: 0, pausedAt: 0, dueAt: nil)
 }
 
 enum Palette {
@@ -118,6 +120,19 @@ struct ContentView: View {
           )
           .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
           .foregroundStyle(Palette.ink)
+        } else if let due = g.dueAt, due / 1000 > Date().timeIntervalSince1970, g.lastStart > 0 {
+          Text("Next feed in")
+            .font(.system(size: 13, weight: .medium, design: .rounded))
+            .foregroundStyle(Palette.muted)
+          Text(
+            timerInterval: Date(timeIntervalSince1970: g.lastStart / 1000)...Date(timeIntervalSince1970: due / 1000),
+            countsDown: true
+          )
+          .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+          .foregroundStyle(Palette.ink)
+          Text(g.lastLine)
+            .font(.system(size: 13, weight: .medium, design: .rounded))
+            .foregroundStyle(Palette.muted)
         } else if g.lastStart > 0 {
           Text("Since the last feed started")
             .font(.system(size: 13, weight: .medium, design: .rounded))
