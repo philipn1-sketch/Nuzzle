@@ -17,7 +17,7 @@ import { shareSummaryPdf } from '../services/summary';
 import { useApp, useNow } from '../state/AppState';
 import { usePalette } from '../state/theme';
 import { radius, space, type, wash } from '../theme';
-import { t } from '../i18n';
+import { t, tn } from '../i18n';
 
 type Day = { key: string; dayStart: number; feeds: DayGroup | null; nappies: number };
 type Row = { kind: 'day'; day: Day } | { kind: 'feed'; feed: Feed } | { kind: 'entry'; entry: Entry };
@@ -80,7 +80,7 @@ export default function History() {
           renderItem={({ item }) => {
             if (item.kind === 'day') {
               const n = item.day.feeds?.count ?? 0;
-              const parts = [n ? `${n} ${n === 1 ? 'feed' : 'feeds'}` : '', item.day.nappies ? `${item.day.nappies} ${item.day.nappies === 1 ? 'nappy' : 'nappies'}` : ''].filter(Boolean);
+              const parts = [n ? tn('{n} feed', '{n} feeds', n) : '', item.day.nappies ? tn('{n} nappy', '{n} nappies', item.day.nappies) : ''].filter(Boolean);
               return (
                 <View style={styles.dayHead} accessibilityRole="header">
                   <T tone="muted" style={[type.label, { fontWeight: '700' }]}>{dayLabel(item.day.dayStart, now)}</T>
