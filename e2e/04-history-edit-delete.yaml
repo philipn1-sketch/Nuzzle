@@ -117,9 +117,11 @@ appId: com.philipnader.nuzzle
 - assertVisible: "Feed discarded."
 # Siri and the Shortcuts app open these links
 - openLink: "nuzzle://action?do=R"
+- takeScreenshot: day-17-siri-link-opened
 - tapOn:
     text: "Open"
     optional: true
+- takeScreenshot: day-18-siri-link-after-open
 - extendedWaitUntil:
     visible:
       id: "timer"
