@@ -115,21 +115,18 @@ appId: com.philipnader.nuzzle
 - tapOn:
     id: "discard"
 - assertVisible: "Feed discarded."
-# Siri and the Shortcuts app open these links
+# Siri and the Shortcuts app open these links from outside the app, so close it first.
+# (On the iOS 26 simulator a link opened while Nuzzle is already in front never reaches it.)
+- stopApp
 - openLink: "nuzzle://action?do=R"
-- takeScreenshot: day-17-siri-link-opened
 - tapOn:
     text: "Open"
     optional: true
-- takeScreenshot: day-18-siri-link-after-open
+- takeScreenshot: day-17-siri-link-opened
 - extendedWaitUntil:
     visible:
       id: "timer"
-    timeout: 10000
-- assertVisible:
-    id: "timer"
-    text: "Feeding on the right.*"
-- openLink: "nuzzle://action?do=R"
+    timeout: 15000
 - assertVisible:
     id: "timer"
     text: "Feeding on the right.*"
@@ -138,7 +135,11 @@ appId: com.philipnader.nuzzle
     visible: "this text never appears"
     timeout: 6000
     optional: true
+- stopApp
 - openLink: "nuzzle://action?do=done"
+- tapOn:
+    text: "Open"
+    optional: true
 - extendedWaitUntil:
     visible:
       id: "last-side"
