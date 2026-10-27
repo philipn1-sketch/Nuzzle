@@ -119,10 +119,15 @@ appId: com.philipnader.nuzzle
 # (On the iOS 26 simulator a link opened while Nuzzle is already in front never reaches it.)
 - stopApp
 - openLink: "nuzzle://action?do=R"
+- takeScreenshot: day-17-siri-link-opened
 - tapOn:
     text: "Open"
     optional: true
-- takeScreenshot: day-17-siri-link-opened
+- extendedWaitUntil:
+    visible: "this text never appears"
+    timeout: 5000
+    optional: true
+- takeScreenshot: day-18-siri-link-five-seconds-later
 - extendedWaitUntil:
     visible:
       id: "timer"
